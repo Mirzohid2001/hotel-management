@@ -1,0 +1,18 @@
+{% load i18n %}
+<div class="modal-overlay checkout-success-overlay" role="presentation">
+  <div class="modal-dialog payment-modal" role="dialog" aria-modal="true">
+    <div class="quick-add-head">
+      <strong>{% trans "Chiqish bajarildi" %}</strong>
+    </div>
+    <p class="muted">{{ reservation.code }} · {{ reservation.guest.full_name }}</p>
+    <p class="ok-line">{% trans "Xona kir holatiga o‘tkazildi. HK vazifasi yaratildi." %}</p>
+    <div class="actions" style="margin-top:1rem">
+      <a class="btn" href="{% url 'folio:receipt' folio.pk %}" target="_blank">{% trans "Chek" %}</a>
+      <a class="btn-ghost" href="{% url 'folio:pdf' folio.pk %}">{% trans "Hisob PDF" %}</a>
+    </div>
+    <button type="button" class="btn-ghost" style="margin-top:0.75rem;width:100%"
+            onclick="document.getElementById('modal-root').innerHTML='';document.body.classList.remove('modal-open');{% if from_board %}window.dispatchEvent(new CustomEvent('boardRefresh'));{% endif %}">
+      {% trans "Yopish" %}
+    </button>
+  </div>
+</div>

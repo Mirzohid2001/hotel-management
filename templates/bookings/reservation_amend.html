@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "O‘zgartirish" %} {{ reservation.code }}{% endblock %}
+{% block content %}
+{% url 'bookings:detail' reservation.pk as cancel_url %}
+{% include "includes/page_header.html" with title=reservation.code subtitle=_("Bronni o‘zgartirish") %}
+
+<section class="section-panel">
+{% include "includes/app_form.html" with form=form cancel_url=cancel_url %}
+</section>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Xizmatlar" %}{% endblock %}
+{% block content %}
+{% url 'services:create' as create_url %}
+{% url 'services:order' as order_url %}
+{% include "includes/page_header.html" with title=_("Xizmatlar") primary_url=create_url primary_label=_("Yangi") secondary_url=order_url secondary_label=_("Buyurtma") %}
+
+<section class="section-panel">
+<ul class="list entity-list">
+  {% for i in items %}
+  <li class="guest-chip entity-row">
+    <span>
+      <span class="entity-row-main">
+        <strong class="entity-title">{{ i.name }}</strong>
+        {% if not i.is_active %}<span class="status-pill status-cancelled">{% trans "o‘chiq" %}</span>{% endif %}
+      </span>
+      <span class="entity-meta"><span class="money">{{ i.unit_price|money }}</span> {{ i.currency|default:current_tenant.currency }}</span>
+    </span>
+    <a class="btn-ghost btn-sm" href="{% url 'services:edit' i.pk %}">{% trans "Tahrirlash" %}</a>
+  </li>
+  {% empty %}
+  {% include "includes/empty_state.html" with as_li=1 title=_("Katalog bo‘sh") hint=_("Restoran, spa yoki boshqa xizmatlarni qo‘shing.") cta_url=create_url cta_label=_("Xizmat qo‘shish") %}
+  {% endfor %}
+</ul>
+</section>
+
+<section class="section-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Tarix" %}</p>
+      <h2>{% trans "So‘nggi buyurtmalar" %}</h2>
+    </div>
+  </div>
+  <ul class="list entity-list">
+    {% for o in orders %}
+    <li class="entity-row">
+      <span class="entity-meta">
+        <a href="{% url 'bookings:detail' o.reservation_id %}">{{ o.reservation.code }}</a>
+        · {{ o.service.name }} · <span class="money">{{ o.amount|money }}</span>
+      </span>
+    </li>
+    {% empty %}
+    <li class="muted empty-row">{% trans "Yo‘q" %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

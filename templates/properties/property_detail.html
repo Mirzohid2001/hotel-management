@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{{ property_obj.name }}{% endblock %}
+{% block content %}
+{% url 'properties:settings' property_obj.pk as settings_url %}
+{% include "includes/page_header.html" with title=property_obj.name subtitle=property_obj.address|add:" "|add:property_obj.city primary_url=settings_url primary_label=_("Sozlamalar") %}
+
+<section class="section-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Infratuzilma" %}</p>
+      <h2>{% trans "Qavatlar" %}</h2>
+    </div>
+    <a class="btn-ghost btn-sm" href="{% url 'properties:floor_create' property_obj.pk %}">+ {% trans "Qavat" %}</a>
+  </div>
+  <ul class="list entity-list">
+    {% for f in floors %}
+    <li class="entity-row"><span class="entity-meta">{{ f.number }}{% if f.name %} · {{ f.name }}{% endif %}</span></li>
+    {% empty %}<li class="muted empty-row">{% trans "Bo‘sh" %}</li>{% endfor %}
+  </ul>
+</section>
+
+<section class="section-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Katalog" %}</p>
+      <h2>{% trans "Xona turlari" %}</h2>
+    </div>
+    <a class="btn-ghost btn-sm" href="{% url 'properties:room_type_create' property_obj.pk %}">+ {% trans "Tur" %}</a>
+  </div>
+
+  {% if missing_room_presets or extra_room_type_codes %}
+  <div class="room-preset-seed">
+    <div class="room-preset-seed-copy">
+      <strong>{% trans "Standart mehmonxona turlari" %}</strong>
+      <p class="muted">
+        {% trans "Twin, Double, Triple — yetishmayotganlari qo‘shiladi. Ortiqchalari o‘chiriladi (xonalar Double/Twin/Triple ga o‘tkaziladi)." %}
+      </p>
+      {% if extra_room_type_codes %}
+      <p class="muted">{% trans "Hozir ortiqcha" %}: {{ extra_room_type_codes|join:", " }}</p>
+      {% endif %}
+    </div>
+    {% if missing_room_presets %}
+    <div class="room-preset-chips">
+      {% for p in missing_room_presets %}
+      <span class="room-preset-chip">
+        <strong>{{ p.name }}</strong>
+        <small>{{ p.name_uz }} · {{ p.capacity_adults }}+{{ p.capacity_children }}</small>
+      </span>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <form method="post" action="{% url 'properties:room_types_seed' property_obj.pk %}" class="room-preset-seed-form" hx-boost="false">
+      {% csrf_token %}
+      <label class="room-preset-base">
+        <span>{% trans "Double/Twin baza narxi" %}</span>
+        <input type="number" name="base_price" min="0" step="1000" value="{{ suggested_base_price }}" required>
+      </label>
+      <label class="check-label room-preset-rates">
+        <input type="checkbox" name="with_rates" value="1" checked>
+        {% trans "Har biriga BAR tarif ham yaratilsin" %}
+      </label>
+      <button type="submit" class="btn">
+        {% if missing_room_presets %}
+        {% blocktrans count counter=missing_room_presets|length %}
+          {{ counter }} ta turni qo‘shish
+        {% plural %}
+          {{ counter }} ta turni qo‘shish
+        {% endblocktrans %}
+        {% else %}
+        {% trans "Faqat Double/Twin/Triple qoldirish" %}
+        {% endif %}
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
+  <ul class="list entity-list">
+    {% for rt in room_types %}
+    <li class="entity-row guest-chip">
+      <span>
+        <strong class="entity-title">{{ rt.name }}</strong>
+        <span class="entity-meta">
+          <code class="room-type-code">{{ rt.code }}</code>
+          · {{ rt.capacity_adults }}+{{ rt.capacity_children }}
+          · <span class="money">{{ rt.base_price|money }}</span> {{ rt.currency|default:current_tenant.currency }}
+        </span>
+      </span>
+      <a class="btn-ghost btn-sm" href="{% url 'properties:room_type_edit' property_obj.pk rt.pk %}">{% trans "Tahrirlash" %}</a>
+    </li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Xona turi yo‘q") hint=_("Yuqoridagi standart to‘plamni qo‘shing yoki qo‘lda yarating.") %}
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="section-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Inventar" %}</p>
+      <h2>{% trans "Xonalar" %}</h2>
+    </div>
+    <a class="btn-ghost btn-sm" href="{% url 'properties:room_create' property_obj.pk %}">+ {% trans "Xona" %}</a>
+  </div>
+  <ul class="list entity-list">
+    {% for room in rooms %}
+    <li class="entity-row guest-chip">
+      <span>
+        <span class="entity-row-main">
+          <strong class="entity-title">{% trans "Xona" %} {{ room.number }}</strong>
+          <span class="status-pill">{{ room.get_status_display }}</span>
+        </span>
+        <span class="entity-meta">{{ room.room_type.name }}{% if room.floor %} · {% trans "qavat" %} {{ room.floor.number }}{% endif %}</span>
+      </span>
+      <a class="btn-ghost btn-sm" href="{% url 'properties:room_edit' property_obj.pk room.pk %}">{% trans "Tahrirlash" %}</a>
+    </li>
+    {% empty %}<li class="muted empty-row">{% trans "Bo‘sh" %}</li>{% endfor %}
+  </ul>
+</section>
+
+<section class="section-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Narx" %}</p>
+      <h2>{% trans "Tariflar" %}</h2>
+    </div>
+    <a class="btn-ghost btn-sm" href="{% url 'properties:rate_plan_create' property_obj.pk %}">+ {% trans "Tarif" %}</a>
+  </div>
+  <ul class="list entity-list">
+    {% for rate in rate_plans %}
+    <li class="entity-row">
+      <span class="entity-row-main">
+        <strong class="entity-title">{{ rate.name }}</strong>
+        <span class="entity-meta">{{ rate.room_type.name }} · <span class="money">{{ rate.price|money }}</span></span>
+      </span>
+      <span class="detail-actions">
+        <a class="btn-ghost btn-sm" href="{% url 'properties:rate_matrix' rate.pk %}">{% trans "Jadval" %}</a>
+        <a class="btn-ghost btn-sm" href="{% url 'properties:season_create' rate.pk %}">+ {% trans "mavsum" %}</a>
+      </span>
+      {% for s in rate.seasons.all %}
+      <div class="entity-meta">{{ s.name }}: {{ s.date_from }}–{{ s.date_to }} · <span class="money">{{ s.price|money }}</span></div>
+      {% endfor %}
+    </li>
+    {% empty %}<li class="muted empty-row">{% trans "Bo‘sh" %}</li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

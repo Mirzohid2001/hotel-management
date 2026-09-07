@@ -1,0 +1,652 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-26 14:56+0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: bookings/views.py:87
+#, python-format
+msgid "Bron yaratildi: %(code)s"
+msgstr "Reservation created: %(code)s"
+
+#: bookings/views.py:92 templates/reports/dashboard.html:13
+msgid "Yangi bron"
+msgstr "New reservation"
+
+#: bookings/views.py:122
+msgid "Bron yangilandi."
+msgstr "Reservation updated."
+
+#: bookings/views.py:137
+msgid "Check-in qilindi."
+msgstr "Checked in."
+
+#: bookings/views.py:149
+msgid "Check-out qilindi."
+msgstr "Checked out."
+
+#: bookings/views.py:161
+msgid "Bron bekor qilindi."
+msgstr "Reservation cancelled."
+
+#: bookings/views.py:173
+msgid "No-show belgilandi."
+msgstr "Marked as no-show."
+
+#: bookings/views.py:238
+#, python-format
+msgid "Walk-in: %(code)s"
+msgstr "Walk-in: %(code)s"
+
+#: bookings/views.py:260
+msgid "Xona transfer qilindi."
+msgstr "Room transferred."
+
+#: bookings/views.py:343
+#, python-format
+msgid "Guruh bron: %(code)s"
+msgstr "Group booking: %(code)s"
+
+#: bookings/views.py:352
+msgid "Guruh bron"
+msgstr "Group booking"
+
+#: bookings/views.py:389
+msgid "Sanalarni tanlang"
+msgstr "Select dates"
+
+#: bookings/views.py:396
+msgid "Sana formati noto‘g‘ri"
+msgstr "Invalid date format"
+
+#: bookings/views.py:400
+msgid "Check-out check-in dan keyin bo‘lishi kerak"
+msgstr "Check-out must be after check-in"
+
+#: bookings/views.py:405
+msgid "Xona topilmadi"
+msgstr "Room not found"
+
+#: bookings/views.py:414
+#, python-format
+msgid "Xona bo‘sh · %(nights)s tun"
+msgstr "Room available · %(nights)s night(s)"
+
+#: bookings/views.py:421
+msgid "Xona tanlanmagan — faqat sanalar OK"
+msgstr "No room selected — dates OK"
+
+#: folio/views.py:71
+msgid "Charge qo‘shildi."
+msgstr "Charge added."
+
+#: folio/views.py:75
+msgid "Charge formasi noto‘g‘ri."
+msgstr "Invalid charge form."
+
+#: folio/views.py:87
+msgid "To‘lov qabul qilindi."
+msgstr "Payment received."
+
+#: folio/views.py:91
+msgid "To‘lov formasi noto‘g‘ri."
+msgstr "Invalid payment form."
+
+#: folio/views.py:110
+msgid "Split to‘lov qabul qilindi."
+msgstr "Split payment received."
+
+#: folio/views.py:114
+msgid "Split forma noto‘g‘ri."
+msgstr "Invalid split form."
+
+#: folio/views.py:136
+msgid "Depozit qabul qilindi."
+msgstr "Deposit received."
+
+#: folio/views.py:141
+msgid "Depozit formasi noto‘g‘ri."
+msgstr "Invalid deposit form."
+
+#: folio/views.py:151
+msgid "Folio yopildi."
+msgstr "Folio closed."
+
+#: folio/views.py:196
+msgid "Kassa smena ochildi."
+msgstr "Cash shift opened."
+
+#: folio/views.py:200 folio/views.py:227
+msgid "Forma noto‘g‘ri."
+msgstr "Invalid form."
+
+#: folio/views.py:209
+msgid "Ochiq smena yo‘q."
+msgstr "No open shift."
+
+#: folio/views.py:222
+#, python-format
+msgid "Smena yopildi. Farq: %(v)s"
+msgstr "Shift closed. Variance: %(v)s"
+
+#: templates/accounts/login.html:4 templates/accounts/login.html:22
+#: templates/accounts/login.html:36
+msgid "Kirish"
+msgstr ""
+
+#: templates/accounts/login.html:15
+msgid ""
+"Mehmonxona ichki boshqaruvi — bron, folio, uy xo‘jaligi va moliya bitta "
+"joyda."
+msgstr ""
+
+#: templates/accounts/login.html:21
+msgid "Staff access"
+msgstr ""
+
+#: templates/accounts/login.html:23
+msgid "Xodim hisobi bilan davom eting"
+msgstr ""
+
+#: templates/accounts/login.html:28
+msgid "Login"
+msgstr ""
+
+#: templates/accounts/login.html:32
+msgid "Parol"
+msgstr ""
+
+#: templates/accounts/profile.html:4 templates/accounts/profile.html:7
+#: templates/base.html:71
+msgid "Profil"
+msgstr "Profile"
+
+#: templates/accounts/profile.html:10
+msgid "Rol"
+msgstr ""
+
+#: templates/base.html:32
+msgid "Front office"
+msgstr "Front office"
+
+#: templates/base.html:33 templates/reports/dashboard.html:3
+msgid "Dashboard"
+msgstr "Dashboard"
+
+#: templates/base.html:34 templates/bookings/board.html:3
+#: templates/bookings/partials/board_page.html:6
+#: templates/reports/dashboard.html:12
+msgid "Board"
+msgstr "Board"
+
+#: templates/base.html:35 templates/bookings/calendar.html:3
+#: templates/bookings/calendar.html:8
+msgid "Calendar"
+msgstr "Calendar"
+
+#: templates/base.html:36
+msgid "Bronlar"
+msgstr "Reservations"
+
+#: templates/base.html:37 templates/reports/dashboard.html:11
+msgid "Walk-in"
+msgstr "Walk-in"
+
+#: templates/base.html:39 templates/bookings/reservation_detail.html:10
+msgid "Guruh"
+msgstr "Group"
+
+#: templates/base.html:41 templates/guests/guest_list.html:3
+#: templates/guests/guest_list.html:6
+msgid "Mehmonlar"
+msgstr "Guests"
+
+#: templates/base.html:44
+msgid "Property"
+msgstr "Property"
+
+#: templates/base.html:45 templates/bookings/group_form.html:9
+msgid "Xonalar"
+msgstr "Rooms"
+
+#: templates/base.html:47
+msgid "HK"
+msgstr "Housekeeping"
+
+#: templates/base.html:50
+msgid "Xizmatlar"
+msgstr "Services"
+
+#: templates/base.html:53
+msgid "Inventar"
+msgstr "Inventory"
+
+#: templates/base.html:56
+msgid "Ta’mir"
+msgstr "Maintenance"
+
+#: templates/base.html:60 templates/finance/expense_list.html:7
+#: templates/reports/dashboard.html:32
+msgid "Finance"
+msgstr "Finance"
+
+#: templates/base.html:62
+msgid "Kassa"
+msgstr "Cash desk"
+
+#: templates/base.html:65 templates/finance/expense_list.html:3
+#: templates/finance/expense_list.html:8
+msgid "Rasxodlar"
+msgstr "Expenses"
+
+#: templates/base.html:68 templates/reports/dashboard.html:37
+msgid "Oylik"
+msgstr "Payroll"
+
+#: templates/base.html:70
+msgid "Staff"
+msgstr "Staff"
+
+#: templates/base.html:89
+msgid "Chiqish"
+msgstr "Log out"
+
+#: templates/base.html:101
+msgid "Bildirishnomalar"
+msgstr "Notifications"
+
+#: templates/base.html:102
+msgid "Alerts"
+msgstr "Alerts"
+
+#: templates/base.html:113
+msgid "Yangi ogohlantirish yo‘q"
+msgstr "No new alerts"
+
+#: templates/base.html:121
+msgid "Language"
+msgstr "Language"
+
+#: templates/bookings/calendar.html:7
+msgid "14 days"
+msgstr "14 days"
+
+#: templates/bookings/calendar.html:19 templates/bookings/group_form.html:13
+#: templates/bookings/reservation_detail.html:19
+msgid "Xona"
+msgstr "Room"
+
+#: templates/bookings/calendar.html:34
+#: templates/bookings/partials/board_page.html:75
+#: templates/housekeeping/board.html:30
+msgid "Xona yo‘q"
+msgstr "No rooms"
+
+#: templates/bookings/group_detail.html:21
+#: templates/bookings/group_list.html:16
+#: templates/bookings/reservation_detail.html:69
+#: templates/finance/expense_list.html:33
+#: templates/folio/partials/folio_body.html:38
+#: templates/folio/partials/folio_body.html:58
+#: templates/reports/dashboard.html:53 templates/reports/dashboard.html:65
+#: templates/reports/dashboard.html:79
+msgid "Yo‘q"
+msgstr "None"
+
+#: templates/bookings/group_form.html:17
+#: templates/bookings/reservation_form.html:10
+msgid "Saqlash"
+msgstr "Save"
+
+#: templates/bookings/group_list.html:3 templates/bookings/group_list.html:6
+msgid "Guruh bronlar"
+msgstr "Group bookings"
+
+#: templates/bookings/group_list.html:7
+msgid "Yangi guruh"
+msgstr "New group"
+
+#: templates/bookings/group_list.html:14 templates/reports/dashboard.html:19
+msgid "xona"
+msgstr ""
+
+#: templates/bookings/partials/board_page.html:5
+msgid "Live rooms"
+msgstr ""
+
+#: templates/bookings/partials/board_page.html:25
+#: templates/bookings/partials/board_page.html:69
+msgid "Bo‘sh"
+msgstr "Vacant"
+
+#: templates/bookings/partials/board_page.html:26
+msgid "Band"
+msgstr ""
+
+#: templates/bookings/partials/board_page.html:27
+#: templates/bookings/partials/board_page.html:46
+msgid "Dirty"
+msgstr ""
+
+#: templates/bookings/partials/board_page.html:71
+msgid "Ready"
+msgstr ""
+
+#: templates/bookings/reservation_detail.html:15
+msgid "tun"
+msgstr "night(s)"
+
+#: templates/bookings/reservation_detail.html:19
+msgid "Xona biriktirilmagan"
+msgstr "No room assigned"
+
+#: templates/bookings/reservation_detail.html:23
+msgid "Folio / Kassa"
+msgstr "Folio / Cash"
+
+#: templates/bookings/reservation_detail.html:27
+msgid "Depozit"
+msgstr "Deposit"
+
+#: templates/bookings/reservation_detail.html:31
+msgid "Method"
+msgstr "Method"
+
+#: templates/bookings/reservation_detail.html:33
+msgid "Cash"
+msgstr "Cash"
+
+#: templates/bookings/reservation_detail.html:34
+msgid "Card"
+msgstr "Card"
+
+#: templates/bookings/reservation_detail.html:35
+#: templates/bookings/reservation_detail.html:57
+msgid "Transfer"
+msgstr "Transfer"
+
+#: templates/bookings/reservation_detail.html:39
+msgid "Amount"
+msgstr "Amount"
+
+#: templates/bookings/reservation_detail.html:43
+msgid "Note"
+msgstr "Note"
+
+#: templates/bookings/reservation_detail.html:44
+msgid "Depozit olish"
+msgstr "Take deposit"
+
+#: templates/bookings/reservation_detail.html:51
+msgid "Check-in"
+msgstr "Check-in"
+
+#: templates/bookings/reservation_detail.html:52
+msgid "Bekor"
+msgstr "Cancel"
+
+#: templates/bookings/reservation_detail.html:53
+msgid "No-show"
+msgstr "No-show"
+
+#: templates/bookings/reservation_detail.html:56
+msgid "Check-out"
+msgstr "Check-out"
+
+#: templates/bookings/reservation_detail.html:60
+msgid "Izmenit"
+msgstr "Amend"
+
+#: templates/bookings/reservation_detail.html:65
+msgid "O‘zgarishlar"
+msgstr "Changes"
+
+#: templates/bookings/reservation_form.html:9
+msgid "Xona va sanalarni tanlang"
+msgstr "Select room and dates"
+
+#: templates/finance/expense_list.html:11
+#, fuzzy
+#| msgid "Yangi bron"
+msgid "Yangi"
+msgstr "New reservation"
+
+#: templates/finance/expense_list.html:12
+msgid "Kategoriya/Vendor"
+msgstr "Category/Vendor"
+
+#: templates/finance/expense_list.html:28
+#, fuzzy
+#| msgid "Saqlash"
+msgid "Tasdiqlash"
+msgstr "Save"
+
+#: templates/folio/folio_detail.html:7
+msgid "Folio"
+msgstr "Folio"
+
+#: templates/folio/folio_detail.html:11
+msgid "Chek"
+msgstr "Receipt"
+
+#: templates/folio/folio_detail.html:12
+msgid "PDF invoice"
+msgstr "PDF invoice"
+
+#: templates/folio/partials/folio_body.html:4
+msgid "Subtotal"
+msgstr "Subtotal"
+
+#: templates/folio/partials/folio_body.html:8
+msgid "VAT"
+msgstr "VAT"
+
+#: templates/folio/partials/folio_body.html:12
+msgid "Jami"
+msgstr "Total"
+
+#: templates/folio/partials/folio_body.html:16
+#: templates/folio/partials/folio_body.html:51
+msgid "To‘lovlar"
+msgstr "Payments"
+
+#: templates/folio/partials/folio_body.html:20
+msgid "Balance"
+msgstr "Balance"
+
+#: templates/folio/partials/folio_body.html:25
+msgid "Open"
+msgstr "Open"
+
+#: templates/folio/partials/folio_body.html:25
+msgid "Closed"
+msgstr "Closed"
+
+#: templates/folio/partials/folio_body.html:30
+#: templates/folio/partials/folio_body.html:31
+msgid "Charges"
+msgstr "Charges"
+
+#: templates/folio/partials/folio_body.html:44
+msgid "Charge"
+msgstr "Charge"
+
+#: templates/folio/partials/folio_body.html:50
+msgid "Payments"
+msgstr "Payments"
+
+#: templates/folio/partials/folio_body.html:69
+msgid "To‘lov / Depozit"
+msgstr "Payment / Deposit"
+
+#: templates/folio/partials/folio_body.html:72
+msgid "Split to‘lov"
+msgstr "Split payment"
+
+#: templates/folio/partials/folio_body.html:81
+msgid "Split saqlash"
+msgstr "Save split"
+
+#: templates/folio/partials/folio_body.html:84
+msgid "Folio yopish"
+msgstr "Close folio"
+
+#: templates/guests/guest_list.html:8
+msgid "Yangi mehmon"
+msgstr "New guest"
+
+#: templates/guests/guest_list.html:9
+msgid "Kompaniyalar"
+msgstr "Companies"
+
+#: templates/guests/guest_list.html:17
+msgid "Qidiruv..."
+msgstr "Search..."
+
+#: templates/guests/guest_list.html:18
+msgid "Topish"
+msgstr "Find"
+
+#: templates/guests/partials/guest_results.html:11
+msgid "Mehmon yo‘q."
+msgstr "No guests."
+
+#: templates/housekeeping/board.html:3 templates/housekeeping/board.html:8
+msgid "Housekeeping"
+msgstr "Housekeeping"
+
+#: templates/housekeeping/board.html:7
+msgid "Operations"
+msgstr "Operations"
+
+#: templates/housekeeping/board.html:26
+msgid "OK"
+msgstr "OK"
+
+#: templates/housekeeping/board.html:35
+msgid "Tasks"
+msgstr "Tasks"
+
+#: templates/housekeeping/board.html:36
+msgid "Vazifalar"
+msgstr "Tasks"
+
+#: templates/housekeeping/board.html:42
+msgid "Done"
+msgstr "Done"
+
+#: templates/housekeeping/board.html:45
+#, fuzzy
+#| msgid "Xona yo‘q"
+msgid "Vazifa yo‘q"
+msgstr "No rooms"
+
+#: templates/reports/dashboard.html:7
+msgid "Bugungi smena"
+msgstr ""
+
+#: templates/reports/dashboard.html:9
+msgid "Bandlik, tushum va front office bir qarashda."
+msgstr ""
+
+#: templates/reports/dashboard.html:18
+msgid "Occupancy"
+msgstr ""
+
+#: templates/reports/dashboard.html:26
+msgid "Bugungi tushum"
+msgstr ""
+
+#: templates/reports/dashboard.html:27 templates/reports/dashboard.html:72
+msgid "In-house"
+msgstr ""
+
+#: templates/reports/dashboard.html:33
+msgid "oy"
+msgstr ""
+
+#: templates/reports/dashboard.html:35
+msgid "Tushum"
+msgstr ""
+
+#: templates/reports/dashboard.html:36
+#, fuzzy
+#| msgid "Rasxodlar"
+msgid "Rasxod"
+msgstr "Expenses"
+
+#: templates/reports/dashboard.html:45
+msgid "Arrivals"
+msgstr ""
+
+#: templates/reports/dashboard.html:46
+msgid "Bugungi kelishlar"
+msgstr ""
+
+#: templates/reports/dashboard.html:57
+msgid "Departures"
+msgstr ""
+
+#: templates/reports/dashboard.html:58
+msgid "Bugungi ketishlar"
+msgstr ""
+
+#: templates/reports/dashboard.html:71
+msgid "Stay"
+msgstr ""
+
+#: templates/reports/dashboard.html:85
+#, fuzzy
+#| msgid "Closed"
+msgid "Close of day"
+msgstr "Closed"
+
+#: templates/reports/dashboard.html:86
+msgid "Night audit / Export"
+msgstr ""
+
+#: templates/reports/dashboard.html:88
+msgid "Oxirgi"
+msgstr ""
+
+#: templates/reports/dashboard.html:94
+msgid "Night audit"
+msgstr ""
+
+#: templates/reports/dashboard.html:98
+#, fuzzy
+#| msgid "Payments"
+msgid "Payments CSV"
+msgstr "Payments"
+
+#: templates/subscriptions/expired.html:3
+msgid "Obuna tugagan"
+msgstr ""
+
+#: templates/subscriptions/expired.html:6
+msgid "Obuna faol emas"
+msgstr ""
+
+#: templates/subscriptions/expired.html:14
+msgid "Platforma administratori bilan bog‘laning."
+msgstr ""
+
+#~ msgid "Holat"
+#~ msgstr "Status"
+
+#~ msgid "Bron"
+#~ msgstr "Reservation"

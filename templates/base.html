@@ -1,0 +1,321 @@
+{% load static i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% trans "Mehmonxona PMS" %}{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/favicon.ico' %}" sizes="any">
+  <link rel="icon" type="image/png" href="{% static 'img/favicon-32.png' %}" sizes="32x32">
+  <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/premium.css' %}">
+  <link rel="stylesheet" href="{% static 'css/hero-pages.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'css/ux-polish.css' %}">
+  <script src="{% static 'js/htmx.min.js' %}" defer></script>
+  {% if user.is_authenticated and current_tenant %}
+  <script src="{% static 'js/spa.js' %}" defer></script>
+  <script src="{% static 'js/chart.umd.min.js' %}" defer></script>
+  <script src="{% static 'js/charts.js' %}" defer></script>
+  {% endif %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  {% if user.is_authenticated and current_tenant %}
+  <div class="app-shell" id="app-shell"
+       hx-boost="true"
+       hx-target="#spa-root"
+       hx-select="#spa-root"
+       hx-swap="innerHTML show:window:top">
+    <div id="spa-progress" class="spa-progress" hidden aria-hidden="true"></div>
+    <div class="nav-backdrop" id="nav-backdrop" hidden></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-row">
+          <img class="brand-logo" src="{% static 'img/rivoj-logo.png' %}" width="40" height="40" alt="Rivoj">
+          <div class="brand-text">
+            <span class="brand-mark">Rivoj</span>
+            {{ current_tenant.name }}
+            <span class="brand-sub">{% if subscription %}{{ subscription.plan.name }}{% else %}{% trans "Mehmonxona PMS" %}{% endif %}</span>
+          </div>
+        </div>
+        <button type="button" class="nav-close" id="nav-close" aria-label="{% trans 'Yopish' %}">×</button>
+      </div>
+      <nav>
+        <div class="nav-group">
+          <div class="nav-label">{% trans "Qabulxona" %}</div>
+          <a href="{% url 'reports:dashboard' %}" data-nav="dashboard" class="{% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}">{% trans "Bosh sahifa" %}</a>
+          {% if nav_perms.front_office %}
+          <a href="{% url 'bookings:board' %}" data-nav="board" class="{% if request.resolver_match.url_name == 'board' %}is-active{% endif %}">{% trans "Doska" %}</a>
+          <a href="{% url 'bookings:calendar' %}" data-nav="calendar" class="{% if request.resolver_match.url_name == 'calendar' %}is-active{% endif %}">{% trans "Taqvim" %}</a>
+          <a href="{% url 'bookings:list' %}" data-nav="list" class="{% if request.resolver_match.namespace == 'bookings' and request.resolver_match.url_name == 'list' %}is-active{% endif %}">{% trans "Bronlar" %}</a>
+          <a href="{% url 'bookings:inquiries' %}" data-nav="inquiries" class="{% if request.resolver_match.url_name == 'inquiries' %}is-active{% endif %}">{% trans "So‘rov" %}</a>
+          <a href="{% url 'bookings:walk_in' %}" data-nav="walk_in" class="{% if request.resolver_match.url_name == 'walk_in' %}is-active{% endif %}">{% trans "Darhol joylash" %}</a>
+          {% if "company_group" in plan_features %}
+          <a href="{% url 'bookings:group_list' %}" data-nav="group" class="{% if request.resolver_match.url_name == 'group_list' or request.resolver_match.url_name == 'group_create' or request.resolver_match.url_name == 'group_detail' %}is-active{% endif %}">{% trans "Guruh" %}</a>
+          {% endif %}
+          <a href="{% url 'bookings:referrer_list' %}" data-nav="referrers" class="{% if request.resolver_match.url_name == 'referrer_list' or request.resolver_match.url_name == 'referrer_create' or request.resolver_match.url_name == 'referrer_edit' %}is-active{% endif %}">{% trans "Yo‘naltiruvchilar" %}</a>
+          <a href="{% url 'guests:list' %}" data-nav="guests" class="{% if request.resolver_match.namespace == 'guests' %}is-active{% endif %}">{% trans "Mehmonlar" %}</a>
+          {% endif %}
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">{% trans "Mehmonxona" %}</div>
+          {% if nav_perms.properties %}
+          <a href="{% url 'properties:list' %}" data-nav="properties" class="{% if request.resolver_match.namespace == 'properties' %}is-active{% endif %}">{% trans "Xonalar" %}</a>
+          {% endif %}
+          {% if "housekeeping" in plan_features and nav_perms.housekeeping %}
+          <a href="{% url 'housekeeping:board' %}" data-nav="housekeeping" class="{% if request.resolver_match.namespace == 'housekeeping' %}is-active{% endif %}">{% trans "Tozalash" %}</a>
+          {% endif %}
+          {% if "services" in plan_features and nav_perms.services %}
+          <a href="{% url 'services:list' %}" data-nav="services" class="{% if request.resolver_match.namespace == 'services' %}is-active{% endif %}">{% trans "Xizmatlar" %}</a>
+          {% endif %}
+          {% if "inventory" in plan_features and nav_perms.inventory %}
+          <a href="{% url 'inventory:list' %}" data-nav="inventory" class="{% if request.resolver_match.namespace == 'inventory' and request.resolver_match.url_name != 'minibar_quick' %}is-active{% endif %}">{% trans "Inventar" %}</a>
+          <a href="{% url 'inventory:minibar_quick' %}" data-nav="minibar_quick" class="{% if request.resolver_match.url_name == 'minibar_quick' %}is-active{% endif %}">{% trans "Minibar tez" %}</a>
+          {% endif %}
+          {% if "maintenance" in plan_features and nav_perms.maintenance %}
+          <a href="{% url 'maintenance:list' %}" data-nav="maintenance" class="{% if request.resolver_match.namespace == 'maintenance' %}is-active{% endif %}">{% trans "Ta’mir" %}</a>
+          {% endif %}
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">{% trans "Moliya" %}</div>
+          {% if "cash_shift" in plan_features and nav_perms.cash %}
+          <a href="{% url 'folio:cash_shift' %}" data-nav="cash_shift" class="{% if request.resolver_match.url_name == 'cash_shift' %}is-active{% endif %}">{% trans "Kassa" %}</a>
+          {% endif %}
+          {% if "company_group" in plan_features and nav_perms.city_ledger %}
+          <a href="{% url 'folio:city_ledger' %}" data-nav="city_ledger" class="{% if request.resolver_match.url_name == 'city_ledger' or request.resolver_match.url_name == 'invoice_detail' or request.resolver_match.url_name == 'invoice_pay' %}is-active{% endif %}">{% trans "Kompaniya hisobi" %}</a>
+          {% endif %}
+          {% if "expenses" in plan_features and nav_perms.expenses %}
+          <a href="{% url 'finance:exchange_rates' %}" data-nav="currencies" class="{% if request.resolver_match.url_name == 'exchange_rates' %}is-active{% endif %}">{% trans "Valyutalar" %}</a>
+          <a href="{% url 'finance:list' %}" data-nav="finance" class="{% if request.resolver_match.namespace == 'finance' and 'profit' not in request.resolver_match.url_name and request.resolver_match.url_name != 'exchange_rates' and request.resolver_match.url_name != 'exchange_rate_delete' %}is-active{% endif %}">{% trans "Rasxodlar" %}</a>
+          {% endif %}
+          {% if "payroll" in plan_features and nav_perms.hr %}
+          <a href="{% url 'hr:employees' %}" data-nav="hr" class="{% if request.resolver_match.namespace == 'hr' %}is-active{% endif %}">{% trans "Oylik" %}</a>
+          {% endif %}
+          {% if "pnl" in plan_features and nav_perms.pnl %}
+          <a href="{% url 'reports:pnl' %}" data-nav="pnl" class="{% if request.resolver_match.url_name == 'pnl' %}is-active{% endif %}">{% trans "Foyda/zarar" %}</a>
+          <a href="{% url 'finance:profit_share' %}" data-nav="profit_share" class="{% if request.resolver_match.url_name and 'profit' in request.resolver_match.url_name %}is-active{% endif %}">{% trans "Foyda ulushi" %}</a>
+          <a href="{% url 'bookings:commission_report' %}" data-nav="commission" class="{% if request.resolver_match.url_name == 'commission_report' %}is-active{% endif %}">{% trans "Komissiya" %}</a>
+          <a href="{% url 'bookings:emehmon_report' %}" data-nav="emehmon" class="{% if request.resolver_match.url_name == 'emehmon_report' %}is-active{% endif %}">{% trans "E-mehmon" %}</a>
+          <a href="{% url 'reports:flash' %}" data-nav="flash" class="{% if request.resolver_match.url_name == 'flash' %}is-active{% endif %}">{% trans "Kunlik hisobot" %}</a>
+          {% endif %}
+          {% if "reports_advanced" in plan_features and nav_perms.audit %}
+          <a href="{% url 'reports:audit_log' %}" data-nav="audit_log" class="{% if request.resolver_match.url_name == 'audit_log' %}is-active{% endif %}">{% trans "Nazorat" %}</a>
+          {% endif %}
+          {% if nav_perms.staff %}
+          <a href="{% url 'tenants:staff_list' %}" data-nav="staff" class="{% if request.resolver_match.url_name == 'staff_list' or request.resolver_match.url_name == 'staff_invite' or request.resolver_match.url_name == 'staff_edit' %}is-active{% endif %}">{% trans "Xodimlar" %}</a>
+          {% endif %}
+          <a href="{% url 'accounts:profile' %}" data-nav="profile" class="{% if request.resolver_match.url_name == 'profile' %}is-active{% endif %}">{% trans "Profil" %}</a>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        {% if tenant_properties|length > 1 %}
+        <div class="tenant-switch property-switch">
+          <div class="nav-label" style="margin:0 0 0.35rem">{% trans "Filial" %}</div>
+          <form method="post" action="{% url 'properties:switch_all' %}" hx-boost="false">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="{% if property_scope_all %}active{% endif %}">
+              {% trans "Barcha filiallar" %}
+            </button>
+          </form>
+          {% for p in tenant_properties %}
+          <form method="post" action="{% url 'properties:switch' p.pk %}" hx-boost="false">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="{% if current_property and current_property.id == p.id %}active{% endif %}">
+              {{ p.display_label }}
+            </button>
+          </form>
+          {% endfor %}
+        </div>
+        {% elif current_property %}
+        <p class="muted sidebar-property-label">{{ current_property.display_label }}</p>
+        {% endif %}
+        {% if user_memberships|length > 1 %}
+        <div class="tenant-switch">
+          {% for m in user_memberships %}
+          <form method="post" action="{% url 'tenants:switch' m.tenant_id %}" hx-boost="false">
+            {% csrf_token %}
+            <button type="submit" class="{% if m.tenant_id == current_tenant.id %}active{% endif %}">
+              {{ m.tenant.name }}
+            </button>
+          </form>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <form method="post" action="{% url 'accounts:logout' %}" class="logout-form" hx-boost="false">
+          {% csrf_token %}
+          <button type="submit">{% trans "Chiqish" %}</button>
+        </form>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="topbar">
+        <div class="topbar-left">
+          <a href="{% url 'reports:dashboard' %}" class="topbar-home" title="{% trans 'Bosh sahifa' %}" aria-label="{% trans 'Bosh sahifa' %}">
+            <span aria-hidden="true">⌂</span>
+          </a>
+          <button type="button" class="nav-toggle" id="nav-toggle" aria-label="{% trans 'Menyu' %}" aria-controls="sidebar" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+          <div class="topbar-meta">
+            {% if current_membership %}<span class="role-label">{{ current_membership.get_role_display }}</span>{% endif %}
+            {% if subscription %}<span class="plan-pill">{{ subscription.plan.name }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="topbar-right">
+          <details class="notify-panel">
+            <summary class="notify-bell" title="{% trans 'Bildirishnomalar' %}">
+              <span class="notify-label">{% trans "Ogohlantirishlar" %}</span>
+              {% if notifications.count %}<span class="notify-count">{{ notifications.count }}</span>{% endif %}
+            </summary>
+            <div class="notify-dropdown">
+              {% for n in notifications.items %}
+              <a class="notify-item kind-{{ n.kind }}"
+                 href="{% if n.pk %}{% if n.url_name == 'folio:detail' %}{% url 'folio:detail' n.pk %}{% else %}{% url 'bookings:detail' n.pk %}{% endif %}{% else %}{% url n.url_name %}{% endif %}">
+                <strong>{{ n.title }}</strong>
+                <span>{{ n.detail }}</span>
+              </a>
+              {% empty %}
+              <p class="notify-empty">{% trans "Yangi ogohlantirish yo‘q" %}</p>
+              {% endfor %}
+            </div>
+          </details>
+          <div class="topbar-meta lang-switch">
+            <form action="{% url 'set_language' %}" method="post" hx-boost="false">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <select name="language" onchange="this.form.submit()" aria-label="{% trans 'Til' %}">
+                {% get_current_language as LANGUAGE_CODE %}
+                {% get_available_languages as LANGUAGES %}
+                {% for lang_code, lang_name in LANGUAGES %}
+                <option value="{{ lang_code }}" {% if lang_code == LANGUAGE_CODE %}selected{% endif %}>{{ lang_name }}</option>
+                {% endfor %}
+              </select>
+            </form>
+            · {% trans "Baza" %}: {{ current_tenant.currency }}
+            · <a href="{% url 'finance:exchange_rates' %}" class="topbar-link">{% trans "USD/EUR" %}</a>
+          </div>
+        </div>
+      </div>
+      <div id="spa-root">
+      {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      <div class="page-content">
+      {% block content %}{% endblock %}
+      </div>
+      </div>
+    </main>
+  </div>
+  <div id="modal-root"></div>
+  {% else %}
+  <main class="auth-main">
+    {% block auth_content %}{% endblock %}
+  </main>
+  {% endif %}
+  <script>
+  (function () {
+    var shell = document.getElementById("app-shell");
+    var toggle = document.getElementById("nav-toggle");
+    var closeBtn = document.getElementById("nav-close");
+    var backdrop = document.getElementById("nav-backdrop");
+    if (!shell || !toggle) return;
+    function setOpen(open) {
+      shell.classList.toggle("nav-open", open);
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      if (backdrop) backdrop.hidden = !open;
+      document.body.classList.toggle("nav-lock", open);
+    }
+    toggle.addEventListener("click", function () {
+      setOpen(!shell.classList.contains("nav-open"));
+    });
+    if (closeBtn) closeBtn.addEventListener("click", function () { setOpen(false); });
+    if (backdrop) backdrop.addEventListener("click", function () { setOpen(false); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        var modal = document.getElementById("modal-root");
+        if (modal) modal.innerHTML = "";
+        document.body.classList.remove("modal-open");
+      }
+    });
+    shell.querySelectorAll(".sidebar nav a").forEach(function (a) {
+      a.addEventListener("click", function () {
+        if (window.matchMedia("(max-width: 980px)").matches) setOpen(false);
+      });
+    });
+  })();
+  document.body.addEventListener("htmx:afterSwap", function (e) {
+    if (e.detail && e.detail.target && e.detail.target.id === "modal-root") {
+      document.body.classList.toggle("modal-open", e.detail.target.innerHTML.trim() !== "");
+    }
+  });
+  document.body.addEventListener("modalClosed", function () {
+    document.body.classList.remove("modal-open");
+  });
+  /* SPA hx-select="#spa-root" qisman so‘rovlarga (modal, availability) meros bo‘lmasin */
+  document.body.addEventListener("htmx:beforeRequest", function (evt) {
+    var elt = evt.detail && evt.detail.elt;
+    if (!elt || !elt.getAttribute) return;
+    var target = elt.getAttribute("hx-target") || "";
+    if (target && target !== "#spa-root") {
+      elt.setAttribute("hx-select", "unset");
+    }
+  });
+  /* Bo‘lingan to‘lov: dinamik qatorlar */
+  document.body.addEventListener("click", function (e) {
+    var addBtn = e.target.closest("#split-line-add");
+    if (addBtn) {
+      e.preventDefault();
+      var lines = document.getElementById("split-lines");
+      var tpl = document.getElementById("split-line-template");
+      if (!lines || !tpl) return;
+      var max = parseInt(lines.getAttribute("data-max") || "10", 10);
+      if (lines.querySelectorAll(".split-line").length >= max) return;
+      lines.appendChild(tpl.content.cloneNode(true));
+      syncSplitLines(lines);
+      var focus = lines.querySelector(".split-line:last-child input[name='amount']");
+      if (focus) focus.focus();
+      return;
+    }
+    var remBtn = e.target.closest(".split-line-remove");
+    if (remBtn) {
+      e.preventDefault();
+      var line = remBtn.closest(".split-line");
+      var linesEl = document.getElementById("split-lines");
+      if (!line || !linesEl) return;
+      if (linesEl.querySelectorAll(".split-line").length <= 1) return;
+      line.remove();
+      syncSplitLines(linesEl);
+    }
+  });
+  function syncSplitLines(linesEl) {
+    var rows = linesEl.querySelectorAll(".split-line");
+    rows.forEach(function (row, i) {
+      var idx = row.querySelector(".split-line-idx");
+      if (idx) idx.textContent = String(i + 1);
+      var btn = row.querySelector(".split-line-remove");
+      if (btn) btn.hidden = rows.length <= 1;
+    });
+  }
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+    return match ? decodeURIComponent(match[2]) : "";
+  }
+  document.body.addEventListener("htmx:configRequest", function (event) {
+    var token = getCookie("csrftoken");
+    if (token) {
+      event.detail.headers["X-CSRFToken"] = token;
+    }
+  });
+  </script>
+</body>
+</html>

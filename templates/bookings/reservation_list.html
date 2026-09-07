@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Bronlar" %}{% endblock %}
+{% block content %}
+{% url 'bookings:inquiries' as inquiries_url %}
+{% url 'bookings:create' as create_url %}
+{% include "includes/page_header.html" with title=_("Bronlar") secondary_url=inquiries_url secondary_label=_("So‘rov") primary_url=create_url primary_label=_("Yangi bron") %}
+
+<form method="get" class="search-form">
+  <select name="status">
+    <option value="">{% trans "Barcha holat" %}</option>
+    {% for val, label in statuses %}
+    <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-sm">{% trans "Filtrlash" %}</button>
+</form>
+
+<section class="section-panel">
+<ul class="list entity-list">
+  {% for r in reservations %}
+  <li class="guest-chip entity-row">
+    <span>
+      <span class="entity-row-main">
+        <a href="{% url 'bookings:detail' r.pk %}" class="entity-title">{{ r.code }}</a>
+        <span class="status-pill status-{{ r.status }}">{{ r.get_status_display }}</span>
+      </span>
+      <span class="entity-meta">
+        {{ r.guest.full_name }}
+        · {{ r.check_in }} → {{ r.check_out }}
+        {% if r.room %}· {% trans "Xona" %} {{ r.room.number }}{% endif %}
+      </span>
+    </span>
+  </li>
+  {% empty %}
+  {% url 'bookings:create' as create_url %}
+  {% include "includes/empty_state.html" with as_li=1 title=_("Bron yo‘q") hint=_("Yangi rezervatsiya yarating yoki so‘rovlarni tekshiring.") cta_url=create_url cta_label=_("Yangi bron") %}
+  {% endfor %}
+</ul>
+</section>
+{% endblock %}

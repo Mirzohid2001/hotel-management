@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Xodimlar" %}{% endblock %}
+{% block content %}
+{% url 'tenants:staff_invite' as invite_url %}
+{% include "includes/page_header.html" with title=_("Xodimlar") subtitle=_("Tizimga kirish huquqi va filial biriktirish") primary_url=invite_url primary_label=_("Taklif qilish") %}
+
+<ul class="list entity-list">
+  {% for m in members %}
+  <li class="guest-chip entity-row">
+    <span>
+      <span class="entity-row-main">
+        <strong class="entity-title">{{ m.user.get_full_name|default:m.user.username }}</strong>
+        <span class="status-pill">{{ m.get_role_display }}</span>
+        {% if not m.is_active %}<span class="badge badge-blacklist">{% trans "nofaol" %}</span>{% endif %}
+      </span>
+      <span class="entity-meta">
+        @{{ m.user.username }}
+        · {% if m.has_property_restrictions %}{% for a in m.property_assignments.all %}{{ a.property.display_label }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}{% trans "Barcha filiallar" %}{% endif %}
+      </span>
+    </span>
+    <a class="btn-ghost btn-sm" href="{% url 'tenants:staff_edit' m.pk %}">{% trans "Tahrirlash" %}</a>
+  </li>
+  {% empty %}
+  {% include "includes/empty_state.html" with as_li=1 title=_("Xodim yo‘q") hint=_("Hamkasblarni taklif qiling — rol va filial biriktiriladi.") cta_url=invite_url cta_label=_("Taklif qilish") %}
+  {% endfor %}
+</ul>
+{% endblock %}

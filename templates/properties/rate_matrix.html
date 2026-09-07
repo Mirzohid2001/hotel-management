@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Narx jadvali" %} · {{ rate.name }}{% endblock %}
+{% block content %}
+<div class="app-page">
+<header class="app-hero page-head">
+  <div class="app-hero-text page-head-text">
+    <p class="eyebrow">{{ property_obj.name }} · {{ rate.room_type.name }}</p>
+    <h1>{% trans "Narx jadvali" %} · {{ rate.name }}</h1>
+    <p class="app-hero-sub">{% trans "Asos" %}: <span class="money">{{ rate.price|money }}</span> · {{ start }}</p>
+  </div>
+  <div class="app-hero-actions page-actions">
+    <a class="btn-ghost" href="?start={{ prev|date:'Y-m-d' }}">← 14</a>
+    <a class="btn-ghost" href="?start={{ next|date:'Y-m-d' }}">14 →</a>
+    <a class="btn" href="{% url 'properties:detail' property_obj.pk %}">{% trans "Orqaga" %}</a>
+  </div>
+</header>
+
+<div class="rate-matrix rate-matrix-premium section-panel">
+  {% for cell in matrix %}
+  <div class="rate-cell {% if cell.is_season %}is-season{% endif %} {% if cell.weekday >= 5 %}is-weekend{% endif %}">
+    <div class="d">{{ cell.date|date:"m/d" }}</div>
+    <div class="p money">{{ cell.price|money }}</div>
+    {% if cell.season %}<div class="s">{{ cell.season }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<section class="section-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Mavsumlar" %}</p>
+      <h2>{% trans "Mavsum qo‘shish" %}</h2>
+    </div>
+  </div>
+  <ul class="list entity-list">
+    {% for s in seasons %}
+    <li class="entity-row"><span class="entity-meta">{{ s.name }}: {{ s.date_from }}–{{ s.date_to }} · <span class="money">{{ s.price|money }}</span></span></li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Mavsum yo‘q") hint=_("Pasxa, yoz yoki dam olish kunlari uchun alohida narx qo‘shing.") compact=1 %}
+    {% endfor %}
+  </ul>
+  <form method="post" class="app-form is-embedded stack-gap">
+    {% csrf_token %}
+    <input type="hidden" name="start" value="{{ start|date:'Y-m-d' }}">
+    <div class="app-form-grid">
+      {% include "includes/form_fields.html" with form=form %}
+    </div>
+    <div class="form-actions"><button type="submit" class="btn">{% trans "Saqlash" %}</button></div>
+  </form>
+</section>
+</div>
+{% endblock %}

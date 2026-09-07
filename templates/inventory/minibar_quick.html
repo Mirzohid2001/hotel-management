@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Minibar tez" %}{% endblock %}
+{% block body_class %}page-minibar-quick{% endblock %}
+{% block content %}
+<div class="app-page">
+{% url 'inventory:create' as create_url %}
+{% include "includes/page_header.html" with title=_("Minibar tez sotuv") eyebrow=_("Inventar") subtitle=_("Xona raqamini kiriting — mehmon hisobiga avtomatik yoziladi.") primary_url=create_url primary_label=_("Mahsulot qo‘shish") %}
+
+<section class="section-panel minibar-quick-card">
+  <div class="folio-panel-head">
+    <div>
+      <p class="eyebrow">{% trans "Tez sotuv" %}</p>
+      <h2>{% trans "Xona + mahsulot" %}</h2>
+      <p class="folio-panel-sub">{% trans "Xona raqamini kiriting — mehmon hisobiga yoziladi." %}</p>
+    </div>
+  </div>
+  <form method="post" class="folio-mini-form minibar-quick-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="folio-fields folio-fields-4">
+      {% for field in form %}
+        {% if field.name == "item" %}
+        <div class="folio-field folio-field-wide field-with-add">
+          <span>{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+          <div class="field-row">
+            {{ field }}
+            <button type="button" class="btn-ghost"
+                    hx-get="{% url 'inventory:quick_item' %}"
+                    hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
+                    hx-target="#modal-root" hx-select="unset"
+                    hx-swap="innerHTML">
+              {% trans "+ Yangi" %}
+            </button>
+          </div>
+          {% if field.errors %}<em class="field-error">{{ field.errors }}</em>{% endif %}
+          <em class="field-help">{% trans "Ro‘yxat bo‘sh bo‘lsa — «+ Yangi» bilan qo‘shing." %}</em>
+        </div>
+        {% else %}
+        <label class="folio-field">
+          <span>{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+          {{ field }}
+          {% if field.errors %}<em class="field-error">{{ field.errors }}</em>{% endif %}
+        </label>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="folio-form-actions">
+      <button type="submit" class="btn btn-lg">{% trans "Sotish" %}</button>
+    </div>
+  </form>
+  <p class="folio-panel-sub" style="margin-top:1rem">
+    <a href="{% url 'inventory:minibar' %}">{% trans "Bron ro‘yxati orqali sotish" %}</a>
+    ·
+    <a href="{% url 'inventory:list' %}">{% trans "Inventar ro‘yxati" %}</a>
+  </p>
+</section>
+</div>
+{% endblock %}

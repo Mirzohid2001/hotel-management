@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "So‘rov" %}{% endblock %}
+{% block content %}
+{% url 'bookings:create' as create_base %}
+{% include "includes/page_header.html" with title=_("So‘rov") eyebrow=_("Navbat") primary_href=create_base|add:"?status=inquiry" primary_label=_("Yangi") %}
+
+<ul class="list entity-list">
+  {% for r in reservations %}
+  <li class="guest-chip entity-row">
+    <span>
+      <span class="entity-row-main">
+        <a href="{% url 'bookings:detail' r.pk %}" class="entity-title code">{{ r.code }}</a>
+        {% if r.guest.is_blacklisted %}<span class="badge badge-blacklist">{% trans "Qora ro‘yxat" %}</span>{% endif %}
+      </span>
+      <span class="entity-meta">
+        {{ r.guest.full_name }}
+        · {{ r.check_in }} → {{ r.check_out }}
+        {% if r.room %}· {{ r.room.number }}{% endif %}
+      </span>
+    </span>
+    <form method="post" action="{% url 'bookings:confirm' r.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'bookings:inquiries' %}">
+      <button type="submit" class="btn btn-sm">{% trans "Tasdiqlash" %}</button>
+    </form>
+  </li>
+  {% empty %}
+  {% url 'bookings:create' as create_url %}
+  {% include "includes/empty_state.html" with as_li=1 title=_("So‘rov yo‘q") hint=_("Yangi so‘rov yaratilganda shu yerda tasdiqlash mumkin.") cta_url=create_url cta_label=_("Yangi so‘rov") %}
+  {% endfor %}
+</ul>
+{% endblock %}

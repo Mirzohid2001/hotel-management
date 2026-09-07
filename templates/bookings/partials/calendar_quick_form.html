@@ -1,0 +1,29 @@
+{% load i18n %}
+<div class="modal-overlay" role="presentation" onclick="if(event.target===this){this.closest('#modal-root').innerHTML='';document.body.classList.remove('modal-open');}">
+  <div class="modal-dialog" role="dialog" aria-modal="true" aria-label="{% trans 'Tez bron' %}">
+    <div class="quick-add-head">
+      <strong>{% trans "Tez bron" %}</strong>
+      <button type="button" class="btn-ghost" onclick="document.getElementById('modal-root').innerHTML='';document.body.classList.remove('modal-open');">
+        {% trans "Yopish" %}
+      </button>
+    </div>
+    <p class="muted" style="margin:0 0 0.75rem">
+      {% trans "Xona" %} <strong>{{ room.number }}</strong>
+      · {{ check_in }} → {{ check_out }}
+    </p>
+    <form class="stack-form quick-add-form"
+          hx-post="{% url 'bookings:calendar_quick' %}"
+          hx-target="#modal-root" hx-select="unset"
+          hx-swap="innerHTML">
+      {% csrf_token %}
+      <input type="hidden" name="room" value="{{ room.pk }}">
+      <input type="hidden" name="check_in" value="{{ check_in|date:'Y-m-d' }}">
+      <input type="hidden" name="check_out" value="{{ check_out|date:'Y-m-d' }}">
+      {{ form.as_p }}
+      <button type="submit">{% trans "Bron yaratish" %}</button>
+    </form>
+    <p class="muted" style="margin:0.75rem 0 0;font-size:0.82rem">
+      <a href="{% url 'bookings:create' %}?room={{ room.pk }}&amp;check_in={{ check_in|date:'Y-m-d' }}&amp;check_out={{ check_out|date:'Y-m-d' }}">{% trans "To‘liq forma" %}</a>
+    </p>
+  </div>
+</div>

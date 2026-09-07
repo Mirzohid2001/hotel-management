@@ -1,0 +1,11 @@
+{% load i18n %}
+<div class="filter-panel panel">
+  <form method="{{ method|default:'get' }}" class="filter-form{% if hx_get %} filter-form-htmx{% endif %}"
+        {% if hx_get %}hx-get="{{ hx_get }}"{% endif %}
+        {% if hx_trigger %}hx-trigger="{{ hx_trigger }}"{% endif %}
+        {% if hx_target %}hx-target="{{ hx_target }}"{% endif %}
+        {% if hx_swap %}hx-swap="{{ hx_swap }}"{% endif %}>
+    {% block filter_fields %}{% endblock %}
+    <button type="submit" class="btn btn-sm">{% trans "Filtrlash" %}</button>
+  </form>
+</div>

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ item.name }}{% endblock %}
+{% block content %}
+{% url 'inventory:list' as cancel_url %}
+{% include "includes/page_header.html" with title=item.name subtitle=_("Joriy qoldiq") %}
+
+<section class="section-panel">
+<p class="muted" style="margin:-0.5rem 0 1rem">{{ item.quantity_on_hand }} {{ item.get_unit_display }}</p>
+{% include "includes/app_form.html" with form=form cancel_url=cancel_url %}
+</section>
+{% endblock %}

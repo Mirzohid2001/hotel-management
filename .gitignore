@@ -1,0 +1,35 @@
+# Python / Django
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Local & production secrets (keep *.example in repo)
+.env
+.env.*
+!.env.example
+config/settings_dev.py
+config/settings_prod.py
+
+# Databases / local data
+*.sqlite3
+db.sqlite3
+
+# Media & collected static
+media/
+staticfiles/
+
+# Tools / IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.egg-info/
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log

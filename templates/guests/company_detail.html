@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{{ company.name }}{% endblock %}
+{% block content %}
+{% url 'guests:company_list' as list_url %}
+{% if "company_group" in plan_features %}
+{% url 'folio:city_ledger' as ledger_url %}
+{% include "includes/page_header.html" with title=company.name eyebrow=_("Kompaniya") secondary_url=ledger_url secondary_label=_("Kompaniya hisobi") primary_url=list_url primary_label=_("Ro‘yxat") %}
+{% else %}
+{% include "includes/page_header.html" with title=company.name eyebrow=_("Kompaniya") primary_url=list_url primary_label=_("Ro‘yxat") %}
+{% endif %}
+
+<p class="muted page-subtitle">
+  {% if company.inn %}INN {{ company.inn }} · {% endif %}
+  {{ company.phone }}{% if company.email %} · {{ company.email }}{% endif %}
+  · {% trans "Terms" %}: {{ company.payment_terms_days }} {% trans "kun" %}
+  {% if company.credit_limit %} · {% trans "Chegara" %}: <span class="money">{{ company.credit_limit|money }}</span>{% endif %}
+</p>
+
+<div class="stats-grid">
+  <div class="stat"><span>{% trans "Ochiq debitorlik" %}</span><strong class="money">{{ open_ar|money }}</strong></div>
+  <div class="stat"><span>{% trans "Hisob-fakturalar" %}</span><strong class="num">{{ invoices|length }}</strong></div>
+</div>
+
+<section class="section-panel">
+  <h2>{% trans "Hisoblar" %}</h2>
+  <ul class="list entity-list">
+    {% for inv in invoices %}
+    <li class="guest-chip entity-row">
+      <span>
+        <span class="entity-row-main">
+          <a class="entity-title code" href="{% url 'folio:invoice_detail' inv.pk %}">{{ inv.code }}</a>
+          <span class="status-pill">{{ inv.get_status_display }}</span>
+        </span>
+        {% if inv.due_date %}<span class="entity-meta">{% trans "muddat" %} {{ inv.due_date }}</span>{% endif %}
+      </span>
+      <span class="money">{{ inv.balance|money }}</span>
+    </li>
+    {% empty %}<li class="muted empty-row">{% trans "Yo‘q" %}</li>{% endfor %}
+  </ul>
+</section>
+
+<section class="section-panel">
+  <h2>{% trans "Bronlar" %}</h2>
+  <ul class="list entity-list">
+    {% for r in reservations %}
+    <li class="guest-chip entity-row">
+      <span>
+        <a class="entity-title code" href="{% url 'bookings:detail' r.pk %}">{{ r.code }}</a>
+        <span class="entity-meta">{{ r.guest.full_name }}</span>
+      </span>
+      <span class="muted">{{ r.check_in }} → {{ r.check_out }}</span>
+    </li>
+    {% empty %}<li class="muted empty-row">{% trans "Yo‘q" %}</li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

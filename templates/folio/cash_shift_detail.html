@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Smena" %} {{ shift.opened_at|date:"Y-m-d" }}{% endblock %}
+{% block content %}
+<div class="app-page cash-shift-page">
+{% url 'folio:cash_shift' as back_url %}
+{% include "includes/page_header.html" with title=_("Kassa smena") subtitle=shift.opened_at|date:"d.m.Y H:i" eyebrow=_("Moliya") primary_href=back_url primary_label=_("Orqaga") %}
+
+<div class="cash-shift-detail-actions">
+  <p class="muted report-section-meta">
+    {{ shift.opened_by }}{% if shift.closed_by %} → {{ shift.closed_by }}{% endif %}
+    {% if shift.notes %} · {{ shift.notes }}{% endif %}
+  </p>
+  <a class="btn" href="{% url 'folio:cash_shift_print' shift.pk %}" target="_blank" rel="noopener">{% trans "Chop etish" %}</a>
+</div>
+
+<div class="cash-shift-expected cash-shift-expected-inline" style="margin-bottom:1rem">
+  <span class="cash-shift-expected-lbl">{% trans "Kutilgan naqd" %}</span>
+  <strong class="money cash-shift-expected-val">{{ report.expected_cash|money }}</strong>
+  <span class="muted cash-shift-formula">{{ report.formula_label }}</span>
+</div>
+
+<div class="stats-grid dash-stats cash-shift-stats">
+  <div class="stat dash-stat">
+    <span class="dash-stat-lbl">{% trans "Boshlang‘ich" %}</span>
+    <strong class="money">{{ shift.opening_float|money }}</strong>
+  </div>
+  <div class="stat dash-stat">
+    <span class="dash-stat-lbl">{% trans "Naqd kirim" %}</span>
+    <strong class="money">{{ report.payments.cash_in|money }}</strong>
+  </div>
+  <div class="stat dash-stat">
+    <span class="dash-stat-lbl">{% trans "Karta" %}</span>
+    <strong class="money">{{ report.payments.card_total|money }}</strong>
+  </div>
+  <div class="stat dash-stat">
+    <span class="dash-stat-lbl">{% trans "O‘tkazma" %}</span>
+    <strong class="money">{{ report.payments.transfer_total|money }}</strong>
+  </div>
+  <div class="stat dash-stat">
+    <span class="dash-stat-lbl">{% trans "Kassa kirim" %}</span>
+    <strong class="money">{{ report.movements.pay_in|money }}</strong>
+  </div>
+  <div class="stat dash-stat">
+    <span class="dash-stat-lbl">{% trans "Kassa chiqim" %}</span>
+    <strong class="money">{{ report.movements.pay_out|money }}</strong>
+  </div>
+  <div class="stat dash-stat">
+    <span class="dash-stat-lbl">{% trans "Rasxod / oylik" %}</span>
+    <strong class="money">{{ report.cash_out.total|money }}</strong>
+  </div>
+  {% if shift.closed_at %}
+  <div class="stat dash-stat">
+    <span class="dash-stat-lbl">{% trans "Sanangan" %}</span>
+    <strong class="money">{{ shift.closing_cash|money }}</strong>
+  </div>
+  <div class="stat dash-stat">
+    <span class="dash-stat-lbl">{% trans "Farq" %}</span>
+    <strong class="money cash-shift-var {% if shift.variance > 0 %}is-plus{% elif shift.variance < 0 %}is-minus{% else %}is-zero{% endif %}">
+      {% if shift.variance > 0 %}+{% endif %}{{ shift.variance|money }}
+    </strong>
+  </div>
+  {% endif %}
+</div>
+
+{% if report.movements.rows %}
+<section class="section-panel">
+  <h2>{% trans "Kassa harakatlari" %}</h2>
+  <ul class="list entity-list">
+    {% for m in report.movements.rows %}
+    <li class="guest-chip entity-row">
+      <span>
+        <span class="cash-shift-kind cash-shift-kind-{{ m.kind }}">{{ m.get_kind_display }}</span>
+        {% if m.note %} · {{ m.note }}{% endif %}
+        · {{ m.created_at|date:"d.m H:i" }}
+      </span>
+      <span class="money">{% if m.kind == "pay_out" %}−{% endif %}{{ m.amount|money }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="section-panel">
+  <h2>{% trans "Naqd to‘lovlar" %}</h2>
+  <ul class="list entity-list">
+    {% for p in report.payments.rows %}
+    <li class="guest-chip entity-row">
+      <span>{{ p.folio.reservation.code }} · {{ p.get_method_display }} · {{ p.created_at|date:"H:i" }}</span>
+      <span class="money">{{ p.amount|money }}</span>
+    </li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Naqd to‘lov yo‘q") hint=_("Shu smenada qabul qilingan naqd to‘lovlar shu yerda.") compact=1 %}
+    {% endfor %}
+  </ul>
+</section>
+
+{% if report.payments.card_rows or report.payments.transfer_rows %}
+<section class="section-panel">
+  <h2>{% trans "Naqd bo‘lmagan" %}</h2>
+  <ul class="list entity-list">
+    {% for p in report.payments.card_rows %}
+    <li class="guest-chip entity-row">
+      <span>{{ p.folio.reservation.code }} · {% trans "Karta" %} · {{ p.created_at|date:"H:i" }}</span>
+      <span class="money">{{ p.amount|money }}</span>
+    </li>
+    {% endfor %}
+    {% for p in report.payments.transfer_rows %}
+    <li class="guest-chip entity-row">
+      <span>{{ p.folio.reservation.code }} · {% trans "O‘tkazma" %} · {{ p.created_at|date:"H:i" }}</span>
+      <span class="money">{{ p.amount|money }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if report.cash_out.expense_rows or report.cash_out.payroll_rows %}
+<section class="section-panel">
+  <h2>{% trans "Naqd chiqimlar" %}</h2>
+  <ul class="list entity-list">
+    {% for e in report.cash_out.expense_rows %}
+    <li class="guest-chip entity-row">
+      <span>{% trans "Rasxod" %}: {{ e.title }}</span>
+      <span class="money">−{{ e.amount|money }}</span>
+    </li>
+    {% endfor %}
+    {% for p in report.cash_out.payroll_rows %}
+    <li class="guest-chip entity-row">
+      <span>{% trans "Oylik" %}: {{ p.item.employee.full_name }}</span>
+      <span class="money">−{{ p.amount|money }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+</div>
+{% endblock %}

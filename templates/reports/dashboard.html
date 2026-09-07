@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Bosh sahifa" %}{% endblock %}
+{% block content %}
+<div class="dash-page">
+
+  <header class="dash-hero dash-hero-premium">
+    <div class="dash-hero-main">
+      <p class="eyebrow">{% trans "Bugungi smena" %} · {{ day|date:"d F Y" }}</p>
+      <h1>{{ tenant.name }}</h1>
+      {% if active_hotel %}
+      <p class="dash-hero-badge">{{ active_hotel.display_label }}</p>
+      {% elif property_scope_all %}
+      <p class="dash-hero-badge">{% trans "Barcha filiallar" %}</p>
+      {% endif %}
+      <p class="dash-hero-desc">{% trans "Bandlik, tushum va qabulxona bir qarashda." %}</p>
+      <div class="dash-quick-actions">
+        <a class="btn" href="{% url 'bookings:walk_in' %}">{% trans "Darhol joylash" %}</a>
+        <a class="btn-ghost" href="{% url 'bookings:board' %}">{% trans "Doska" %}</a>
+        <a class="btn-ghost" href="{% url 'folio:cash_shift' %}">{% trans "Kassa" %}</a>
+      </div>
+    </div>
+    <div class="occ-ring-card dash-occ-card">
+      <div class="occ-ring" style="--p: {{ stats.occupancy_percent|default:0 }}">{{ stats.occupancy_percent }}%</div>
+      <div class="occ-ring-label">{% trans "Bandlik" %}</div>
+      <p class="dash-occ-meta">{{ stats.occupied_rooms }}/{{ stats.total_rooms }} {% trans "xona" %}</p>
+      {% if insights.occupancy_delta is not None %}
+      <p class="stat-delta {% if insights.occupancy_delta >= 0 %}up{% else %}down{% endif %}">
+        {% if insights.occupancy_delta >= 0 %}+{% endif %}{{ insights.occupancy_delta }}% {% trans "kecha" %}
+      </p>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="stats-grid dash-stats">
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-money" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">ADR</span>
+      <strong class="money">{{ stats.adr|money }}</strong>
+      {% if insights.adr_delta is not None %}
+      <small class="stat-delta {% if insights.adr_delta >= 0 %}up{% else %}down{% endif %}">
+        {% if insights.adr_delta >= 0 %}+{% endif %}{{ insights.adr_delta }}%
+      </small>
+      {% endif %}
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-rev" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">RevPAR</span>
+      <strong class="money">{{ stats.revpar|money }}</strong>
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-up" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "Bugungi tushum" %}</span>
+      <strong class="money">{{ revenue_today|money }}</strong>
+      {% if insights.revenue_delta is not None %}
+      <small class="stat-delta {% if insights.revenue_delta >= 0 %}up{% else %}down{% endif %}">
+        {% if insights.revenue_delta >= 0 %}+{% endif %}{{ insights.revenue_delta }}%
+      </small>
+      {% endif %}
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-guest" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "Mehmonxonada" %}</span>
+      <strong class="num">{{ in_house|length }}</strong>
+    </div>
+  </div>
+
+  {% include "includes/nav_hub.html" %}
+  <script>
+  (function () {
+    var hub = document.getElementById("nav-hub");
+    if (!hub || !window.matchMedia) return;
+    if (window.matchMedia("(max-width: 720px)").matches) hub.removeAttribute("open");
+  })();
+  </script>
+
+  <section class="section-panel ops-panel dash-ops">
+    <div class="dash-section-head">
+      <div>
+        <p class="eyebrow">{% trans "Operatsiya" %}</p>
+        <h2>{% trans "Bugungi holat" %}</h2>
+      </div>
+      <a class="btn-ghost btn-sm" href="{% url 'housekeeping:board' %}">{% trans "Tozalash doskasi" %}</a>
+    </div>
+    <div class="ops-grid">
+      <a class="ops-chip warn" href="{% url 'housekeeping:board' %}">
+        <strong class="num">{{ ops.dirty_rooms }}</strong>
+        <span>{% trans "Kir xona" %}</span>
+      </a>
+      <a class="ops-chip" href="{% url 'housekeeping:board' %}">
+        <strong class="num">{{ ops.cleaning_rooms }}</strong>
+        <span>{% trans "Tozalanmoqda" %}</span>
+      </a>
+      <a class="ops-chip ok" href="{% url 'housekeeping:board' %}">
+        <strong class="num">{{ ops.ready_rooms }}</strong>
+        <span>{% trans "Tayyor" %}</span>
+      </a>
+      <a class="ops-chip danger" href="{% url 'housekeeping:board' %}">
+        <strong class="num">{{ ops.ooo_rooms }}</strong>
+        <span>{% trans "Nosoz" %}</span>
+      </a>
+      <a class="ops-chip" href="{% url 'housekeeping:board' %}">
+        <strong class="num">{{ ops.hk_tasks }}</strong>
+        <span>{% trans "HK vazifa" %}</span>
+      </a>
+      <a class="ops-chip" href="{% url 'maintenance:list' %}">
+        <strong class="num">{{ ops.maintenance_open }}</strong>
+        <span>{% trans "Ta’mirlash" %}</span>
+      </a>
+      <a class="ops-chip" href="{% url 'bookings:inquiries' %}">
+        <strong class="num">{{ ops.inquiries }}</strong>
+        <span>{% trans "So‘rov" %}</span>
+      </a>
+      <a class="ops-chip {% if ops.open_folio_count %}warn{% endif %}" href="{% url 'bookings:board' %}">
+        <strong class="money">{{ ops.open_folio_balance|money }}</strong>
+        <span>{% trans "Ochiq qarz" %} ({{ ops.open_folio_count }})</span>
+      </a>
+    </div>
+  </section>
+
+  <div class="dash-columns">
+    <section class="section-panel">
+      <p class="eyebrow">{% trans "Xonalar" %}</p>
+      <h2>{% trans "Xona holati" %}</h2>
+      <div class="chart-wrap chart-wrap-donut">
+        <canvas id="chart-room-status" aria-label="{% trans 'Xona holati' %}"></canvas>
+      </div>
+      <div class="room-status-bar dash-status-bar">
+        {% for row in room_status %}
+        {% if row.count %}
+        <div class="room-status-seg status-{{ row.status }}" style="flex: {{ row.count }}" title="{{ row.label }}: {{ row.count }}">
+          <span>{{ row.count }}</span>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      <ul class="room-status-legend">
+        {% for row in room_status %}
+        <li><span class="dot status-{{ row.status }}"></span>{{ row.label }} <strong>{{ row.count }}</strong></li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    {% if nav_perms.pnl %}
+    <section class="section-panel">
+      <p class="eyebrow">{% trans "Analitika" %}</p>
+      <h2>{% trans "7 kun — tushum va bandlik" %}</h2>
+      <div class="chart-wrap chart-wrap-line">
+        <canvas id="chart-revenue-trend" aria-label="{% trans '7 kunlik tushum' %}"></canvas>
+      </div>
+    </section>
+    {% else %}
+    <section class="section-panel">
+      <p class="eyebrow">{% trans "Analitika" %}</p>
+      <h2>{% trans "Xona holati" %}</h2>
+      <p class="muted nav-hub-desc">{% trans "Batafsil statistika uchun menejer yoki hisobchi hisobidan kiring." %}</p>
+    </section>
+    {% endif %}
+  </div>
+
+  {% if pnl and nav_perms.pnl %}
+  <section class="section-panel dash-pnl">
+    <div class="dash-section-head">
+      <div>
+        <p class="eyebrow">{% trans "Moliya" %}</p>
+        <h2>{% trans "Foyda/zarar" %} · {% trans "oy" %}</h2>
+      </div>
+    </div>
+    <div class="dash-pnl-row">
+      <div class="dash-pnl-item">
+        <span>{% trans "Tushum" %}</span>
+        <strong class="money">{{ pnl.revenue|money }}</strong>
+      </div>
+      <div class="dash-pnl-item">
+        <span>{% trans "Xarajat" %}</span>
+        <strong class="money">{{ pnl.operating_costs|money }}</strong>
+      </div>
+      <div class="dash-pnl-item">
+        <span>{% trans "Mehnat" %}</span>
+        <strong class="money">{{ pnl.labor_total|money }}</strong>
+      </div>
+      <div class="dash-pnl-item dash-pnl-net">
+        <span>{% trans "Sof" %}</span>
+        <strong class="money">{{ pnl.net|money }}</strong>
+        <small>{{ current_tenant.currency }}</small>
+      </div>
+    </div>
+    <div class="dash-quick-actions">
+      <a class="btn-ghost btn-sm" href="{% url 'reports:pnl' %}">{% trans "To‘liq foyda/zarar" %}</a>
+      <a class="btn-ghost btn-sm" href="{% url 'reports:flash' %}">{% trans "Kunlik hisobot" %}</a>
+    </div>
+  </section>
+  {% endif %}
+
+  <div class="dash-columns">
+    <section class="section-panel dash-list-panel">
+      <div class="dash-section-head">
+        <div>
+          <p class="eyebrow">{% trans "Kelishlar" %}</p>
+          <h2>{% trans "Bugungi kelishlar" %}</h2>
+        </div>
+        <span class="dash-count-badge">{{ arrivals|length }}</span>
+      </div>
+      <ul class="list entity-list dash-guest-list">
+        {% for r in arrivals %}
+        <li class="guest-chip entity-row">
+          <span>
+            <span class="entity-row-main">
+              <span class="status-dot"></span>
+              <a class="entity-title code" href="{% url 'bookings:detail' r.pk %}">{{ r.code }}</a>
+            </span>
+            <span class="entity-meta">{{ r.guest.full_name }}</span>
+          </span>
+          <span class="muted">{% if r.room %}{% trans "Xona" %} {{ r.room.number }}{% endif %}</span>
+        </li>
+        {% empty %}
+        <li class="muted empty-row">{% trans "Bugun kelish yo‘q" %}</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="section-panel dash-list-panel">
+      <div class="dash-section-head">
+        <div>
+          <p class="eyebrow">{% trans "Ketishlar" %}</p>
+          <h2>{% trans "Bugungi ketishlar" %}</h2>
+        </div>
+        <span class="dash-count-badge warn">{{ departures|length }}</span>
+      </div>
+      <ul class="list entity-list dash-guest-list">
+        {% for r in departures %}
+        <li class="guest-chip entity-row">
+          <span>
+            <span class="entity-row-main">
+              <span class="status-dot warn"></span>
+              <a class="entity-title code" href="{% url 'bookings:detail' r.pk %}">{{ r.code }}</a>
+            </span>
+            <span class="entity-meta">{{ r.guest.full_name }}</span>
+          </span>
+          <span class="muted">{% if r.room %}{% trans "Xona" %} {{ r.room.number }}{% endif %}</span>
+        </li>
+        {% empty %}
+        <li class="muted empty-row">{% trans "Bugun ketish yo‘q" %}</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  <section class="section-panel dash-list-panel">
+    <div class="dash-section-head">
+      <div>
+        <p class="eyebrow">{% trans "Yashash" %}</p>
+        <h2>{% trans "Mehmonxonada" %}</h2>
+      </div>
+      <span class="dash-count-badge">{{ in_house|length }}</span>
+    </div>
+    <ul class="list entity-list dash-guest-list">
+      {% for r in in_house %}
+      <li class="guest-chip entity-row">
+        <span>
+          <span class="entity-row-main">
+            <a class="entity-title code" href="{% url 'bookings:detail' r.pk %}">{{ r.code }}</a>
+          </span>
+          <span class="entity-meta">{{ r.guest.full_name }}</span>
+        </span>
+        <span class="muted">{% if r.room %}{% trans "Xona" %} {{ r.room.number }}{% endif %}</span>
+      </li>
+      {% empty %}
+      <li class="muted empty-row">{% trans "Hozir mehmon yo‘q" %}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {% if nav_perms.audit and can_night_audit or nav_perms.audit and can_csv %}
+  <section class="section-panel cod-wizard dash-cod">
+    <div class="dash-section-head">
+      <div>
+        <p class="eyebrow">{% trans "Kun yakuni" %}</p>
+        <h2>{% trans "Kun yopish rejasi" %}</h2>
+      </div>
+      {% if today_locked %}
+      <span class="dash-count-badge ok">{% trans "Yopilgan" %}</span>
+      {% elif audit_blocked %}
+      <span class="dash-count-badge warn">{% trans "Blok" %}</span>
+      {% endif %}
+    </div>
+
+    {% if today_locked %}
+    <p class="muted">{% trans "Bugun yopilgan" %} · {{ day }}</p>
+    {% endif %}
+
+    {% if latest_audit %}
+    <p class="muted dash-audit-meta">
+      {% trans "Oxirgi" %}: {{ latest_audit.audit_date }}
+      · {% trans "xona" %} {{ latest_audit.posted_room_charges }}
+      · {% trans "kelmagan" %} {{ latest_audit.no_shows_marked }}
+      · {% trans "qarz" %} {{ latest_audit.overdue_folios }}
+    </p>
+    {% if latest_audit.cod.overdue_folios %}
+    <ul class="list entity-list">
+      {% for row in latest_audit.cod.overdue_folios %}
+      <li class="guest-chip entity-row">
+        <span>{% trans "Qarz" %} · <a class="code" href="{% url 'folio:detail' row.pk %}">{{ row.code }}</a> · {{ row.guest }}</span>
+        <span class="money">{{ row.balance }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% endif %}
+
+    {% if cod_preview %}
+    <div class="cod-checklist">
+      <div class="cod-item {% if cod_preview.missed_arrivals %}has-issues{% endif %}">
+        <div class="cod-item-head">
+          <strong>{% trans "Kelmaganlar" %}</strong>
+          <span class="badge">{{ cod_preview.missed_arrivals|length }}</span>
+        </div>
+        {% if cod_preview.missed_arrivals %}
+        <ul class="list compact">
+          {% for row in cod_preview.missed_arrivals %}
+          <li><a href="{% url 'bookings:detail' row.pk %}">{{ row.code }}</a> · {{ row.guest__first_name }} {{ row.guest__last_name }}{% if row.room__number %} · {{ row.room__number }}{% endif %}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted ok-line">{% trans "Hammasi joyida" %}</p>
+        {% endif %}
+      </div>
+
+      <div class="cod-item {% if cod_preview.overdue_folios %}has-issues{% endif %}">
+        <div class="cod-item-head">
+          <strong>{% trans "Qarzdor hisoblar" %}</strong>
+          <span class="badge">{{ cod_preview.overdue_folios|length }}</span>
+        </div>
+        {% if cod_preview.overdue_folios %}
+        <ul class="list compact">
+          {% for row in cod_preview.overdue_folios %}
+          <li><a href="{% url 'folio:detail' row.pk %}">{{ row.code }}</a> · {{ row.guest }} · <span class="money">{{ row.balance }}</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted ok-line">{% trans "Hammasi joyida" %}</p>
+        {% endif %}
+      </div>
+
+      <div class="cod-item {% if cod_preview.still_in_house_past_out_count %}has-issues{% endif %}">
+        <div class="cod-item-head">
+          <strong>{% trans "Muddat o‘tib hali ichkarida" %}</strong>
+          <span class="badge">{{ cod_preview.still_in_house_past_out_count }}</span>
+        </div>
+        {% if cod_preview.still_in_house_past_out %}
+        <ul class="list compact">
+          {% for row in cod_preview.still_in_house_past_out %}
+          <li><a href="{% url 'bookings:detail' row.pk %}">{{ row.code }}</a> · {{ row.guest__first_name }} {{ row.guest__last_name }}{% if row.room__number %} · {{ row.room__number }}{% endif %}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted ok-line">{% trans "Hammasi joyida" %}</p>
+        {% endif %}
+      </div>
+
+      <div class="cod-item {% if cod_preview.dirty_rooms %}has-issues{% endif %}">
+        <div class="cod-item-head">
+          <strong>{% trans "Kir xonalar" %}</strong>
+          <span class="badge">{{ cod_preview.dirty_rooms }}</span>
+        </div>
+        {% if cod_preview.dirty_room_list %}
+        <ul class="list compact">
+          {% for row in cod_preview.dirty_room_list %}
+          <li><a href="{% url 'housekeeping:board' %}">{{ row.number }}</a>{% if row.property__name %} · {{ row.property__name }}{% endif %}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted ok-line">{% trans "Hammasi joyida" %}</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if audit_blocked %}
+    <div class="alert-banner warn dash-audit-alert">
+      <strong>{% trans "Kun yopish bloklangan" %}</strong>
+      {% for b in audit_blockers %} · {{ b.label }} ({{ b.count }}){% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="dash-quick-actions">
+      {% if can_night_audit %}
+      <form method="post" action="{% url 'reports:night_audit' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn" {% if today_locked or audit_blocked %}disabled{% endif %}>
+          {% if today_locked %}{% trans "Kun yopilgan" %}{% elif audit_blocked %}{% trans "Avval muammolarni hal qiling" %}{% else %}{% trans "Kun yopish" %}{% endif %}
+        </button>
+      </form>
+      {% endif %}
+      {% if can_csv %}
+      <a class="btn-ghost btn-sm" href="{% url 'reports:export_payments' %}">{% trans "To‘lovlar CSV" %}</a>
+      <a class="btn-ghost btn-sm" href="{% url 'reports:export_ar' %}">{% trans "Debitor CSV" %}</a>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+</div>
+{{ chart_data|json_script:"chart-data-dashboard" }}
+{% endblock %}

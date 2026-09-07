@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ guest.full_name }}{% endblock %}
+{% block content %}
+{% url 'guests:edit' guest.pk as edit_url %}
+<div class="detail-hero">
+  <div class="page-head-text">
+    <h1>
+      {{ guest.full_name }}
+      {% if guest.is_vip %}<span class="badge badge-vip">VIP</span>{% endif %}
+      {% if guest.is_blacklisted %}<span class="badge badge-blacklist">{% trans "Qora ro‘yxat" %}</span>{% endif %}
+    </h1>
+    <p class="muted page-subtitle">{{ guest.phone }}{% if guest.email %} · {{ guest.email }}{% endif %}{% if guest.nationality %} · {{ guest.nationality }}{% endif %}</p>
+  </div>
+  <div class="detail-actions">
+    <a class="btn" href="{{ edit_url }}">{% trans "Tahrirlash" %}</a>
+  </div>
+</div>
+
+{% if guest.is_blacklisted %}
+<div class="alert-banner blacklist">
+  <strong>{% trans "Qora ro‘yxat" %}</strong>
+  — {{ guest.blacklist_reason|default:"Sabab ko‘rsatilmagan" }}
+</div>
+{% endif %}
+
+<section class="section-panel">
+  <h2>{% trans "Hujjatlar" %}</h2>
+  <ul class="list entity-list">
+    {% for d in guest.documents.all %}
+    <li class="entity-row"><span class="entity-meta">{{ d.get_doc_type_display }} · {{ d.number }}</span></li>
+    {% empty %}<li class="muted empty-row">{% trans "Yo‘q" %}</li>{% endfor %}
+  </ul>
+  <form method="post" action="{% url 'guests:add_document' guest.pk %}" enctype="multipart/form-data" class="app-form panel" style="margin-top:1rem;max-width:none">
+    {% csrf_token %}
+    <div class="form-grid app-form-grid">{{ doc_form.as_p }}</div>
+    <div class="form-actions"><button type="submit" class="btn">{% trans "Hujjat qo‘shish" %}</button></div>
+  </form>
+</section>
+
+<section class="section-panel">
+  <h2>{% trans "Izohlar" %}</h2>
+  <ul class="list entity-list">
+    {% for n in guest.guest_notes.all %}
+    <li class="entity-row"><span class="entity-meta">{{ n.body }} · {{ n.created_at }}</span></li>
+    {% empty %}<li class="muted empty-row">{% trans "Yo‘q" %}</li>{% endfor %}
+  </ul>
+  <form method="post" action="{% url 'guests:add_note' guest.pk %}" class="app-form panel" style="margin-top:1rem;max-width:none">
+    {% csrf_token %}
+    <div class="form-grid app-form-grid">{{ note_form.as_p }}</div>
+    <div class="form-actions"><button type="submit" class="btn">{% trans "Izoh" %}</button></div>
+  </form>
+</section>
+{% endblock %}

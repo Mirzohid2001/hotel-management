@@ -1,0 +1,10 @@
+{% load i18n %}
+{% if as_li %}<li class="empty-state-li">{% endif %}
+<div class="empty-state{% if compact %} is-compact{% endif %}">
+  <p class="empty-state-title">{{ title|default:_("Hali yozuv yo‘q") }}</p>
+  {% if hint %}<p class="empty-state-hint">{{ hint }}</p>{% endif %}
+  {% if cta_url and cta_label %}
+  <a class="btn btn-sm" href="{{ cta_url }}">{{ cta_label }}</a>
+  {% endif %}
+</div>
+{% if as_li %}</li>{% endif %}

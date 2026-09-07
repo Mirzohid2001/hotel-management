@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{{ group.code }}{% endblock %}
+{% block content %}
+<div class="detail-hero">
+  <div class="page-head-text">
+    <h1>{{ group.code }} · {{ group.name }}</h1>
+    <p class="muted page-subtitle">
+      {{ group.hotel.name }} · {{ group.check_in }} → {{ group.check_out }}
+      {% if group.company %} · {{ group.company.name }}{% endif %}
+    </p>
+  </div>
+</div>
+
+<section class="section-panel">
+<ul class="list entity-list">
+  {% for r in reservations %}
+  <li class="guest-chip entity-row">
+    <span>
+      <span class="entity-row-main">
+        <a href="{% url 'bookings:detail' r.pk %}" class="entity-title">{{ r.code }}</a>
+        <span class="status-pill status-{{ r.status }}">{{ r.get_status_display }}</span>
+      </span>
+      <span class="entity-meta">
+        {{ r.guest.full_name }}
+        {% if r.room %} · {% trans "Xona" %} {{ r.room.number }}{% endif %}
+        · <span class="money">{{ r.total_amount|money }}</span>
+      </span>
+    </span>
+  </li>
+  {% empty %}
+  <li class="muted empty-row">{% trans "Yo‘q" %}</li>
+  {% endfor %}
+</ul>
+</section>
+{% endblock %}

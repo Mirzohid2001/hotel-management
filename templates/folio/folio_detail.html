@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Mehmon hisobi" %} {{ reservation.code }}{% endblock %}
+{% block content %}
+<div class="folio-page">
+
+  <header class="folio-hero">
+    <div class="folio-hero-main">
+      <p class="eyebrow">{% trans "Mehmon hisobi" %} · {{ reservation.get_status_display }}</p>
+      <h1>{{ reservation.guest.full_name }}</h1>
+      <p class="folio-hero-code">{{ reservation.code }}</p>
+      {% if reservation.room %}
+      <p class="folio-hero-sub">
+        {% trans "Xona" %} {{ reservation.room.number }}
+        · {{ reservation.check_in|date:"d.m" }} — {{ reservation.check_out|date:"d.m.Y" }}
+      </p>
+      {% endif %}
+      <div class="folio-hero-badges">
+        {% if folio.is_open %}
+        <span class="folio-badge is-open">{% trans "Ochiq" %}</span>
+        {% else %}
+        <span class="folio-badge is-closed">{% trans "Yopilgan" %}</span>
+        {% endif %}
+        {% if folio.balance > 0 %}
+        <span class="folio-badge is-due">{% trans "Qoldiq" %} {{ folio.balance|money }}</span>
+        {% else %}
+        <span class="folio-badge is-paid">{% trans "To‘langan" %}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="folio-hero-side">
+      <div class="folio-balance-card {% if folio.balance > 0 %}has-balance{% endif %}">
+        <span class="folio-balance-lbl">{% trans "Qoldiq" %}</span>
+        <strong class="money folio-balance-num">{{ folio.balance|money }}</strong>
+        <span class="folio-balance-meta">{{ current_tenant.currency }}</span>
+      </div>
+      <div class="folio-hero-actions">
+        <a class="btn-ghost" href="{% url 'bookings:detail' reservation.pk %}">{% trans "Bron" %}</a>
+        <a class="btn-ghost" href="{% url 'folio:receipt' folio.pk %}" target="_blank" hx-boost="false">{% trans "Chek" %}</a>
+        <a class="btn" href="{% url 'folio:pdf' folio.pk %}" target="_blank" hx-boost="false">{% trans "PDF" %}</a>
+      </div>
+    </div>
+  </header>
+
+  <div id="folio-body">
+    {% include "folio/partials/folio_body.html" %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Rasxod sozlamalari" %}{% endblock %}
+{% block body_class %}page-expenses{% endblock %}
+{% block content %}
+<div class="expense-page">
+{% url 'finance:category_create' as cat_url %}
+{% url 'finance:vendor_create' as vendor_url %}
+{% url 'finance:list' as back_url %}
+{% include "includes/page_header.html" with title=_("Kategoriya / Yetkazib beruvchi") eyebrow=_("Moliya") subtitle=_("Faollashtirish, tahrirlash va yangi qo‘shish.") secondary_url=back_url secondary_label=_("← Rasxodlar") %}
+
+<div class="expense-setup-toolbar">
+  <a class="btn" href="{{ cat_url }}">+ {% trans "Kategoriya" %}</a>
+  <a class="btn-ghost" href="{{ vendor_url }}">+ {% trans "Yetkazib beruvchi" %}</a>
+</div>
+
+<div class="expense-setup-grid">
+  <section class="section-panel expense-setup-panel">
+    <div class="dash-section-head">
+      <div>
+        <p class="eyebrow">{% trans "Tasnif" %}</p>
+        <h2>{% trans "Kategoriyalar" %}</h2>
+      </div>
+      <span class="dash-count-badge">{{ categories|length }}</span>
+    </div>
+    <ul class="list expense-setup-list">
+      {% for c in categories %}
+      <li class="expense-setup-row {% if not c.is_active %}is-inactive{% endif %}">
+        <div class="expense-setup-info">
+          <strong>{{ c.name }}</strong>
+          {% if c.is_active %}
+          <span class="status-pill status-approved">{% trans "Faol" %}</span>
+          {% else %}
+          <span class="status-pill status-cancelled">{% trans "O‘chirilgan" %}</span>
+          {% endif %}
+        </div>
+        <div class="expense-setup-actions">
+          <a class="btn-ghost btn-sm" href="{% url 'finance:category_edit' c.pk %}">{% trans "Tahrir" %}</a>
+          <form method="post" action="{% url 'finance:category_toggle' c.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-ghost btn-sm">
+              {% if c.is_active %}{% trans "O‘chirish" %}{% else %}{% trans "Faollashtirish" %}{% endif %}
+            </button>
+          </form>
+        </div>
+      </li>
+      {% empty %}
+      <li class="expense-empty expense-empty-compact">
+        <p class="muted">{% trans "Hali kategoriya yo‘q." %}</p>
+        <a class="btn btn-sm" href="{{ cat_url }}">+ {% trans "Qo‘shish" %}</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="section-panel expense-setup-panel">
+    <div class="dash-section-head">
+      <div>
+        <p class="eyebrow">{% trans "Hamkorlar" %}</p>
+        <h2>{% trans "Yetkazib beruvchilar" %}</h2>
+      </div>
+      <span class="dash-count-badge">{{ vendors|length }}</span>
+    </div>
+    <ul class="list expense-setup-list">
+      {% for v in vendors %}
+      <li class="expense-setup-row {% if not v.is_active %}is-inactive{% endif %}">
+        <div class="expense-setup-info">
+          <strong>{{ v.name }}</strong>
+          {% if v.is_active %}
+          <span class="status-pill status-approved">{% trans "Faol" %}</span>
+          {% else %}
+          <span class="status-pill status-cancelled">{% trans "O‘chirilgan" %}</span>
+          {% endif %}
+          {% if v.phone %}<span class="entity-meta">{{ v.phone }}</span>{% endif %}
+        </div>
+        <div class="expense-setup-actions">
+          <a class="btn-ghost btn-sm" href="{% url 'finance:vendor_edit' v.pk %}">{% trans "Tahrir" %}</a>
+          <form method="post" action="{% url 'finance:vendor_toggle' v.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-ghost btn-sm">
+              {% if v.is_active %}{% trans "O‘chirish" %}{% else %}{% trans "Faollashtirish" %}{% endif %}
+            </button>
+          </form>
+        </div>
+      </li>
+      {% empty %}
+      <li class="expense-empty expense-empty-compact">
+        <p class="muted">{% trans "Hali yetkazib beruvchi yo‘q." %}</p>
+        <a class="btn btn-sm" href="{{ vendor_url }}">+ {% trans "Qo‘shish" %}</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+</div>
+{% endblock %}

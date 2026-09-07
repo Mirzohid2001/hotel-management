@@ -1,0 +1,122 @@
+{% load i18n %}
+<div id="calendar-page" class="calendar-page">
+  <header class="calendar-hero">
+    <div class="calendar-hero-text">
+      <p class="eyebrow">{% trans "Bron rejasi" %} · {% trans "Shaxmatka · 14 kun" %}</p>
+      <h1>{% trans "Taqvim" %}</h1>
+      {% if hotel %}<p class="calendar-hero-sub">{{ hotel.display_label }}</p>{% endif %}
+    </div>
+    <nav class="calendar-date-nav" aria-label="{% trans 'Davr' %}">
+      <a class="calendar-nav-btn"
+         href="?start={{ today|date:'Y-m-d' }}"
+         hx-get="{% url 'bookings:calendar' %}?start={{ today|date:'Y-m-d' }}"
+         hx-target="#calendar-page"
+         hx-select="unset"
+         hx-swap="outerHTML"
+         hx-push-url="true">{% trans "Bugun" %}</a>
+      <a class="board-date-btn"
+         href="?start={{ prev|date:'Y-m-d' }}"
+         hx-get="{% url 'bookings:calendar' %}?start={{ prev|date:'Y-m-d' }}"
+         hx-target="#calendar-page"
+         hx-select="unset"
+         hx-swap="outerHTML"
+         hx-push-url="true"
+         aria-label="{% trans 'Oldingi hafta' %}">←</a>
+      <div class="board-date-pill calendar-range-pill">
+        <span class="board-date-label">{% trans "Davr" %}</span>
+        <strong>{{ start|date:"d.m" }} — {{ end|date:"d.m.Y" }}</strong>
+      </div>
+      <a class="board-date-btn"
+         href="?start={{ next|date:'Y-m-d' }}"
+         hx-get="{% url 'bookings:calendar' %}?start={{ next|date:'Y-m-d' }}"
+         hx-target="#calendar-page"
+         hx-select="unset"
+         hx-swap="outerHTML"
+         hx-push-url="true"
+         aria-label="{% trans 'Keyingi hafta' %}">→</a>
+    </nav>
+  </header>
+
+  <div class="board-stats calendar-stats">
+    <div class="board-stat">
+      <span class="board-stat-num">{{ cal_stats.rooms }}</span>
+      <span class="board-stat-lbl">{% trans "Xona" %}</span>
+    </div>
+    <div class="board-stat is-occupied">
+      <span class="board-stat-num">{{ cal_stats.stays }}</span>
+      <span class="board-stat-lbl">{% trans "Bron" %}</span>
+    </div>
+    <div class="board-stat is-vacant">
+      <span class="board-stat-num">{{ cal_stats.vip }}</span>
+      <span class="board-stat-lbl">VIP</span>
+    </div>
+    <div class="board-stat">
+      <span class="board-stat-num">14</span>
+      <span class="board-stat-lbl">{% trans "Kun" %}</span>
+    </div>
+  </div>
+
+  <div class="calendar-toolbar">
+    <div class="board-legend board-legend-pills">
+      <span class="board-pill leg-cal-confirmed">{% trans "Tasdiqlangan" %}</span>
+      <span class="board-pill leg-cal-inhouse">{% trans "Mehmonxonada" %}</span>
+      <span class="board-pill leg-cal-vip">VIP</span>
+      <span class="board-pill leg-vacant">{% trans "Bo‘sh → +" %}</span>
+    </div>
+    <div class="board-toolbar-actions">
+      <a class="btn-ghost btn-sm" href="{% url 'bookings:board' %}">{% trans "Bugungi doska" %}</a>
+      <a class="btn btn-sm" href="{% url 'bookings:create' %}">{% trans "Yangi bron" %}</a>
+    </div>
+  </div>
+
+  <div class="calendar-wrap calendar-wrap-premium table-scroll">
+    <table class="board-table calendar-table calendar-table-premium">
+      <thead>
+        <tr>
+          <th class="cal-room-col">{% trans "Xona" %}</th>
+          {% for d in days %}
+          <th class="cal-day-col {% if d == today %}is-today{% endif %}">
+            <span class="cal-day-num">{{ d|date:"d" }}</span>
+            <span class="cal-day-wd">{{ d|date:"D" }}</span>
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+      {% for row in rows %}
+        <tr class="status-{{ row.room.status }} cal-room-row">
+          <td class="cal-room-cell">
+            <strong class="cal-room-num">{{ row.room.number }}</strong>
+            <span class="cal-room-type">{{ row.room.room_type.name }}</span>
+          </td>
+          {% for seg in row.segments %}
+            {% if seg.kind == 'stay' %}
+            <td colspan="{{ seg.colspan }}" class="cal-bar status-{{ seg.status }}{% if seg.is_vip %} is-vip{% endif %}">
+              <a href="{% url 'bookings:detail' seg.reservation.pk %}">
+                <span class="cal-name">{{ seg.reservation.guest.first_name }}{% if seg.is_vip %} ★{% endif %}</span>
+                <span class="cal-code">{{ seg.reservation.code }}</span>
+              </a>
+            </td>
+            {% else %}
+            <td class="cal-empty">
+              <button type="button" class="cal-new"
+                      hx-get="{% url 'bookings:calendar_quick' %}?room={{ row.room.pk }}&amp;check_in={{ seg.date|date:'Y-m-d' }}&amp;check_out={{ seg.check_out|date:'Y-m-d' }}"
+                      hx-target="#modal-root" hx-select="unset"
+                      hx-swap="innerHTML"
+                      title="{% trans 'Tez bron' %}">+</button>
+            </td>
+            {% endif %}
+          {% endfor %}
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="15" class="calendar-empty">
+            {% url 'properties:list' as props_url %}
+            {% include "includes/empty_state.html" with title=_("Xona yo‘q") hint=_("Avval filial va xonalarni qo‘shing — taqvim to‘ladi.") cta_url=props_url cta_label=_("Filiallar") compact=1 %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Komissiya hisoboti" %}{% endblock %}
+{% block content %}
+<div class="report-page">
+  <header class="report-hero pnl-hero">
+    <div class="report-hero-text">
+      <p class="eyebrow">{% trans "Moliya" %} · {% trans "Komissiya" %}</p>
+      <h1>{% trans "Oylik komissiya" %}</h1>
+      <p class="report-hero-sub">
+        {{ report.start|date:"d.m.Y" }} → {{ report.end|date:"d.m.Y" }}
+        · {% trans "Qarz" %}: <strong class="money">{{ report.grand_remaining|money }}</strong>
+      </p>
+    </div>
+    <div class="report-hero-actions">
+      <a class="btn-ghost" href="{% url 'bookings:referrer_list' %}">{% trans "Yo‘naltiruvchilar" %}</a>
+    </div>
+  </header>
+
+  <form method="get" class="filter-panel report-filter" role="search">
+    <div class="filter-panel-grid">
+      <label class="filter-field">
+        <span class="filter-field-label">{% trans "Oy" %}</span>
+        <select name="month" id="id_month">
+          {% for m, label in months %}
+          <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="filter-field">
+        <span class="filter-field-label">{% trans "Yil" %}</span>
+        <select name="year" id="id_year">
+          {% for y in years %}
+          <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="filter-field filter-field-action">
+        <span class="filter-field-label" aria-hidden="true">&nbsp;</span>
+        <button type="submit" class="btn">{% trans "Ko‘rsatish" %}</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="dash-pnl-row pnl-summary-row">
+    <div class="dash-pnl-item">
+      <span>{% trans "Hisoblangan" %}</span>
+      <strong class="money">{{ report.grand_commission|money }}</strong>
+    </div>
+    <div class="dash-pnl-item">
+      <span>{% trans "To‘langan" %}</span>
+      <strong class="money">{{ report.grand_paid|money }}</strong>
+    </div>
+    <div class="dash-pnl-item">
+      <span>{% trans "Bronlar" %}</span>
+      <strong>{{ report.reservation_count }}</strong>
+    </div>
+    <div class="dash-pnl-item dash-pnl-net">
+      <span>{% trans "Qolgan" %}</span>
+      <strong class="money">{{ report.grand_remaining|money }}</strong>
+    </div>
+  </div>
+
+  {% if report.groups %}
+  {% for group in report.groups %}
+  <section class="section-panel stack-gap">
+    <div class="dash-section-head">
+      <div>
+        <h2>{{ group.referrer.name }}</h2>
+        <p class="muted">
+          {% if group.referrer.phone %}{{ group.referrer.phone }} · {% endif %}
+          {{ group.count }} {% trans "bron" %}
+          · {% trans "Hisoblangan" %}: <strong class="money">{{ group.commission_total|money }}</strong>
+          · {% trans "To‘langan" %}: <strong class="money">{{ group.paid_total|money }}</strong>
+          · {% trans "Qolgan" %}: <strong class="money">{{ group.remaining|money }}</strong>
+        </p>
+      </div>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{% trans "Bron" %}</th>
+          <th>{% trans "Mehmon" %}</th>
+          <th>{% trans "Chiqish" %}</th>
+          <th>{% trans "Asos" %}</th>
+          <th>%</th>
+          <th>{% trans "Komissiya" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in group.rows %}
+        <tr>
+          <td><a href="{% url 'bookings:detail' row.reservation.pk %}">{{ row.reservation.code }}</a></td>
+          <td>{{ row.reservation.guest.full_name }}</td>
+          <td>{{ row.reservation.check_out|date:"d.m.Y" }}</td>
+          <td class="money">{{ row.base|money }}</td>
+          <td>{{ row.percent }}%</td>
+          <td class="money"><strong>{{ row.commission|money }}</strong></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="muted">{% trans "Bu oyda bron yo‘q" %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if group.payments %}
+    <p class="muted report-footnote">
+      {% trans "To‘lovlar" %}:
+      {% for p in group.payments %}
+        {{ p.paid_on|date:"d.m.Y" }} — <span class="money">{{ p.amount|money }}</span>{% if not forloop.last %}; {% endif %}
+      {% endfor %}
+    </p>
+    {% endif %}
+
+    {% if group.remaining > 0 %}
+    <form method="post" action="{% url 'bookings:commission_pay' group.referrer.pk %}" class="app-form panel stack-gap-sm" style="margin-top:0.85rem">
+      {% csrf_token %}
+      <input type="hidden" name="year" value="{{ year }}">
+      <input type="hidden" name="month" value="{{ month }}">
+      <div class="form-grid app-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:0.65rem;align-items:end">
+        <p class="form-field" style="margin:0">
+          <label>{% trans "Summa" %}</label>
+          <input type="number" name="amount" step="0.01" min="0.01" required value="{{ group.remaining }}">
+        </p>
+        <p class="form-field" style="margin:0">
+          <label>{% trans "Sana" %}</label>
+          <input type="date" name="paid_on" value="{{ pay_form.paid_on.value|default:'' }}">
+        </p>
+        <p class="form-field" style="margin:0">
+          <label>{% trans "Usul" %}</label>
+          <select name="method">
+            {% for val, label in pay_form.fields.method.choices %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </p>
+        <p class="form-field" style="margin:0">
+          <label>{% trans "Izoh" %}</label>
+          <input type="text" name="note" maxlength="255">
+        </p>
+        <p class="form-field" style="margin:0">
+          <label aria-hidden="true">&nbsp;</label>
+          <button type="submit" class="btn">{% trans "To‘lash" %}</button>
+        </p>
+      </div>
+    </form>
+    {% else %}
+    <p class="muted">{% trans "Shu oy uchun to‘liq to‘langan." %}</p>
+    {% endif %}
+  </section>
+  {% endfor %}
+  {% else %}
+  {% include "includes/empty_state.html" with title=_("Bu oyda komissiya yo‘q") hint=_("Chiqish sanasi shu oyga tushgan va yo‘naltiruvchisi bor bronlar shu yerda chiqadi.") %}
+  {% endif %}
+</div>
+{% endblock %}

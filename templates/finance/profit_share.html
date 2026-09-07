@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Foyda ulushi" %}{% endblock %}
+{% block content %}
+<div class="report-page profit-share-page">
+  <header class="report-hero pnl-hero">
+    <div class="report-hero-text">
+      <p class="eyebrow">{% trans "Moliya" %} · {% trans "Sheriklik" %}</p>
+      <h1>{% trans "Foyda ulushi" %}</h1>
+      <p class="report-hero-sub">
+        {% trans "Davr" %}: {{ ledger.start }} → {{ ledger.end }}
+        · {% trans "Sof" %}: <strong class="money">{{ ledger.net|money }}</strong>
+      </p>
+    </div>
+    <div class="report-hero-actions">
+      <a class="btn-ghost" href="{% url 'reports:pnl' %}">{% trans "Foyda/zarar" %}</a>
+      <a class="btn-ghost" href="{% url 'finance:profit_partner_create' %}">{% trans "Sherik" %}</a>
+      <a class="btn" href="{% url 'finance:profit_withdraw' %}">{% trans "Foyda olish" %}</a>
+      <a class="btn" href="{% url 'finance:profit_reset' %}">{% trans "0 qilib qayta" %}</a>
+    </div>
+  </header>
+
+  {% if ledger.next_steps %}
+  <section class="section-panel mb-md">
+    <div class="dash-section-head">
+      <h2>{% trans "Keyingi qadamlar" %}</h2>
+    </div>
+    <ul class="list report-breakdown">
+      {% for step in ledger.next_steps %}
+      <li class="guest-chip">
+        <span>{{ step.text }}</span>
+        {% if step.key == "add_partner" or step.key == "share_gap" %}
+        <a class="btn btn-sm" href="{% url 'finance:profit_partner_create' %}">{% trans "Sherik qo‘shish" %}</a>
+        {% elif step.key == "withdraw" or step.key == "partial" %}
+        <a class="btn btn-sm" href="{% url 'finance:profit_withdraw' %}">{% trans "Olish" %}</a>
+        {% elif step.key == "reset" %}
+        <a class="btn btn-sm" href="{% url 'finance:profit_reset' %}">{% trans "0 qilib qayta" %}</a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if not ledger.share_ok %}
+  <p class="muted panel mb-md">
+    {% blocktrans with sum=ledger.share_sum gap=ledger.share_gap %}Faol ulushlar: {{ sum }}%. Ideal 100% (qolgan {{ gap }}%). Har foiz sof foydadan hisoblanadi; biriktirilmagan qism «Taqsimlanmagan»da.{% endblocktrans %}
+  </p>
+  {% endif %}
+
+  <div class="dash-pnl-row pnl-summary-row">
+    <div class="dash-pnl-item">
+      <span>{% trans "Tushum" %}</span>
+      <strong class="money">{{ ledger.pnl.revenue_total|money }}</strong>
+    </div>
+    <div class="dash-pnl-item">
+      <span>{% trans "Xarajat" %}</span>
+      <strong class="money">{{ ledger.pnl.operating_costs|money }}</strong>
+    </div>
+    <div class="dash-pnl-item">
+      <span>{% trans "Mehnat" %}</span>
+      <strong class="money">{{ ledger.pnl.labor_total|money }}</strong>
+    </div>
+    <div class="dash-pnl-item dash-pnl-net">
+      <span>{% trans "Sof foyda" %}</span>
+      <strong class="money">{{ ledger.net|money }}</strong>
+    </div>
+  </div>
+
+  {% if ledger.undistributed %}
+  <p class="muted report-footnote stack-gap-sm">
+    {% trans "Taqsimlanmagan" %} ({{ ledger.share_gap }}%):
+    <strong class="money">{{ ledger.undistributed|money }}</strong>
+  </p>
+  {% endif %}
+
+  <section class="section-panel stack-gap">
+    <div class="dash-section-head">
+      <h2>{% trans "Sheriklar" %}</h2>
+    </div>
+    <ul class="list report-breakdown">
+      {% for row in ledger.rows %}
+      <li class="guest-chip profit-partner-row">
+        <span>
+          <strong>{{ row.partner.name }}</strong>
+          · {{ row.share_percent }}%
+          {% if row.inactive %}<span class="muted">({% trans "nofaol" %})</span>{% endif %}
+          <a class="btn-ghost btn-sm" href="{% url 'finance:profit_partner_edit' row.partner.pk %}">{% trans "Tahrirlash" %}</a>
+        </span>
+        <span class="muted">
+          {% trans "Ulush" %}: <span class="money">{{ row.entitled|money }}</span>
+          · {% trans "Olingan" %}: <span class="money">{{ row.withdrawn|money }}</span>
+          · {% trans "Qoldiq" %}: <strong class="money">{{ row.remaining|money }}</strong>
+        </span>
+        {% if row.remaining > 0 %}
+        <a class="btn btn-sm" href="{% url 'finance:profit_withdraw' %}?partner={{ row.partner.pk }}">{% trans "Qoldiqni olish" %}</a>
+        {% else %}
+        <a class="btn-ghost btn-sm" href="{% url 'finance:profit_withdraw' %}?partner={{ row.partner.pk }}">{% trans "Olish" %}</a>
+        {% endif %}
+      </li>
+      {% empty %}
+      {% url 'finance:profit_partner_create' as partner_url %}
+      {% include "includes/empty_state.html" with as_li=1 title=_("Hali sherik yo‘q") hint=_("Ulush foizlarini qo‘shing — sof foyda avtomatik taqsimlanadi.") cta_url=partner_url cta_label=_("Birinchi sherik") %}
+      {% endfor %}
+    </ul>
+    {% if ledger.rows %}
+    <p class="muted report-footnote">
+      {% trans "Jami olingan" %}: <span class="money">{{ ledger.withdrawn_total|money }}</span>
+      · {% trans "Jami qoldiq" %}: <span class="money">{{ ledger.remaining_total|money }}</span>
+    </p>
+    {% endif %}
+  </section>
+
+  {% if ledger.ready_to_reset %}
+  <section class="section-panel stack-gap">
+    <p>
+      {% trans "Barcha qoldiqlar yopilgan. Yangi sof hisobni boshlashga tayyor." %}
+      <a class="btn" href="{% url 'finance:profit_reset' %}">{% trans "0 qilib qayta" %}</a>
+    </p>
+  </section>
+  {% endif %}
+
+  {% if ledger.withdrawals %}
+  <section class="section-panel stack-gap">
+    <div class="dash-section-head">
+      <h2>{% trans "So‘nggi olishlar" %}</h2>
+    </div>
+    <ul class="list report-breakdown">
+      {% for w in ledger.withdrawals %}
+      <li class="guest-chip">
+        <span>{{ w.paid_on }} · {{ w.partner.name }} · {{ w.get_payment_method_display }}{% if w.note %} · {{ w.note }}{% endif %}</span>
+        <span class="money">{{ w.amount|money }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if closed_periods %}
+  <section class="section-panel stack-gap">
+    <div class="dash-section-head">
+      <h2>{% trans "Yopilgan davrlar" %}</h2>
+    </div>
+    <ul class="list report-breakdown">
+      {% for p in closed_periods %}
+      <li class="guest-chip">
+        <span>{{ p.started_on }} → {{ p.ended_on }}{% if p.note %} · {{ p.note }}{% endif %}</span>
+        <span class="money">{% if p.net_snapshot is not None %}{{ p.net_snapshot|money }}{% else %}—{% endif %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

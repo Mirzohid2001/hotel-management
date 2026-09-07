@@ -1,0 +1,83 @@
+{% load static i18n %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ welcome_title }} — {% trans "Bron" %}</title>
+  <link rel="stylesheet" href="{% static 'widget/widget.css' %}">
+</head>
+<body class="widget-body">
+  <div class="widget-shell">
+    <header class="widget-head">
+      <h1>{{ welcome_title }}</h1>
+      <p>{{ welcome_text }}</p>
+    </header>
+
+    <form id="widget-form" class="widget-form" novalidate>
+      <fieldset class="widget-step" data-step="1">
+        <legend>{% trans "Sanalar" %}</legend>
+        <div class="widget-row">
+          <label>{% trans "Kirish" %}
+            <input type="date" name="check_in" required>
+          </label>
+          <label>{% trans "Chiqish" %}
+            <input type="date" name="check_out" required>
+          </label>
+          <label>{% trans "Kattalar" %}
+            <input type="number" name="adults" min="1" max="8" value="2" required>
+          </label>
+        </div>
+        <button type="button" class="widget-btn primary" id="btn-search">{% trans "Xonalarni ko‘rish" %}</button>
+      </fieldset>
+
+      <fieldset class="widget-step hidden" data-step="2">
+        <legend>{% trans "Xona turi" %}</legend>
+        <div id="room-types" class="room-types"></div>
+        <p id="no-rooms" class="widget-alert hidden">{% trans "Bu sanalarda bo‘sh xona yo‘q (band)." %}</p>
+      </fieldset>
+
+      <fieldset class="widget-step hidden" data-step="3">
+        <legend>{% trans "Ma’lumotlaringiz" %}</legend>
+        <input type="hidden" name="room_type_id" id="room_type_id">
+        <div class="widget-row">
+          <label>{% trans "Ism" %} *
+            <input type="text" name="first_name" required autocomplete="given-name">
+          </label>
+          <label>{% trans "Familiya" %}
+            <input type="text" name="last_name" autocomplete="family-name">
+          </label>
+        </div>
+        <div class="widget-row">
+          <label>{% trans "Telefon" %} *
+            <input type="tel" name="phone" required autocomplete="tel" placeholder="+998901234567">
+          </label>
+          <label>{% trans "Email" %}
+            <input type="email" name="email" autocomplete="email">
+          </label>
+        </div>
+        <label>{% trans "Izoh" %}
+          <textarea name="notes" rows="2" placeholder="{% trans 'Ixtiyoriy' %}"></textarea>
+        </label>
+        <button type="submit" class="widget-btn primary">{% trans "Bron qilish" %}</button>
+      </fieldset>
+    </form>
+
+    <div id="widget-success" class="widget-success hidden">
+      <h2>{% trans "Rahmat!" %}</h2>
+      <p id="success-text"></p>
+    </div>
+    <p id="widget-error" class="widget-alert hidden"></p>
+  </div>
+
+  <script>
+  window.WIDGET_CONFIG = {
+    slug: "{{ tenant_slug|escapejs }}",
+    branch: "{{ branch_code|escapejs }}",
+    apiBase: "{{ api_base|escapejs }}",
+    currency: "{{ tenant.currency|escapejs }}"
+  };
+  </script>
+  <script src="{% static 'widget/booking.js' %}"></script>
+</body>
+</html>

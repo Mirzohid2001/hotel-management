@@ -1,0 +1,4434 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-03 14:18+0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: bookings/forms.py:36 bookings/forms.py:265 bookings/forms.py:329
+#: templates/bookings/reservation_detail.html:41
+#: templates/bookings/walk_in.html:21
+msgid "Mehmon"
+msgstr "Mehmon"
+
+#: bookings/forms.py:37 bookings/forms.py:312 guests/forms.py:30
+#: guests/models.py:34 templates/folio/partials/folio_body.html:105
+#: templates/guests/company_detail.html:8
+#: templates/guests/company_detail.html:10
+#: templates/guests/company_form.html:3
+msgid "Kompaniya"
+msgstr "Kompaniya"
+
+#: bookings/forms.py:38 bookings/forms.py:330 properties/forms.py:82
+#: properties/forms.py:113 properties/views.py:139
+#: templates/widget/booking.html:35
+msgid "Xona turi"
+msgstr "Xona turi"
+
+#: bookings/forms.py:39 bookings/forms.py:94 bookings/forms.py:161
+#: bookings/forms.py:331 maintenance/forms.py:14
+#: templates/bookings/group_detail.html:26
+#: templates/bookings/group_form.html:27
+#: templates/bookings/partials/calendar_page.html:40
+#: templates/bookings/partials/calendar_page.html:70
+#: templates/bookings/partials/calendar_quick_form.html:11
+#: templates/bookings/partials/checkout_modal.html:12
+#: templates/bookings/reservation_detail.html:32
+#: templates/bookings/reservation_list.html:31
+#: templates/bookings/walk_in.html:23 templates/folio/folio_detail.html:14
+#: templates/folio/receipt.html:125 templates/maintenance/ticket_list.html:30
+#: templates/properties/property_detail.html:46
+#: templates/reports/audit_log.html:34 templates/reports/dashboard.html:208
+#: templates/reports/dashboard.html:234 templates/reports/dashboard.html:260
+msgid "Xona"
+msgstr "Xona"
+
+#: bookings/forms.py:40 bookings/forms.py:95 bookings/forms.py:162
+#: bookings/forms.py:267 bookings/forms.py:332
+msgid "Tarif"
+msgstr "Tarif"
+
+#: bookings/forms.py:41 bookings/forms.py:92 bookings/forms.py:313
+#: templates/accounts/login.html:4
+#: templates/bookings/partials/board_page.html:99
+#: templates/bookings/reservation_detail.html:79
+#: templates/bookings/walk_in.html:107 templates/widget/booking.html:21
+msgid "Kirish"
+msgstr "Kirish"
+
+#: bookings/forms.py:42 bookings/forms.py:93 bookings/forms.py:314
+#: templates/base.html:140 templates/bookings/partials/board_page.html:109
+#: templates/bookings/partials/checkout_modal.html:3
+#: templates/bookings/partials/checkout_modal.html:5
+#: templates/bookings/reservation_detail.html:99
+#: templates/bookings/walk_in.html:112 templates/reports/audit_log.html:16
+#: templates/tenants/no_access.html:19 templates/widget/booking.html:24
+msgid "Chiqish"
+msgstr "Chiqish"
+
+#: bookings/forms.py:43 bookings/forms.py:96 bookings/forms.py:172
+#: bookings/forms.py:269 bookings/forms.py:333
+#: templates/widget/booking.html:27
+msgid "Kattalar"
+msgstr "Kattalar"
+
+#: bookings/forms.py:44 bookings/forms.py:97 bookings/forms.py:334
+msgid "Bolalar"
+msgstr "Bolalar"
+
+#: bookings/forms.py:45
+msgid "Manba"
+msgstr "Manba"
+
+#: bookings/forms.py:46 bookings/forms.py:276 properties/forms.py:85
+#: templates/finance/expense_list.html:28
+msgid "Holat"
+msgstr "Holat"
+
+#: bookings/forms.py:47 bookings/forms.py:177 bookings/forms.py:280
+#: bookings/forms.py:281 bookings/forms.py:315 finance/forms.py:29
+#: finance/forms.py:67 finance/forms.py:80 finance/forms.py:98
+#: finance/forms.py:118 finance/models.py:114 finance/models.py:143
+#: finance/models.py:185 folio/forms.py:42 folio/forms.py:59 folio/forms.py:83
+#: folio/forms.py:89 folio/forms.py:118 folio/forms.py:186 guests/forms.py:34
+#: guests/forms.py:66 guests/forms.py:89 guests/models.py:16 hr/forms.py:39
+#: inventory/forms.py:41 properties/forms.py:86 services/forms.py:28
+#: templates/folio/partials/folio_body.html:118
+#: templates/folio/partials/folio_body.html:289
+#: templates/guests/guest_detail.html:51 templates/widget/booking.html:59
+msgid "Izoh"
+msgstr "Izoh"
+
+#: bookings/forms.py:98 bookings/forms.py:298 folio/forms.py:48
+#: templates/finance/partials/expense_row.html:15
+msgid "Sabab"
+msgstr "Sabab"
+
+#: bookings/forms.py:125 finance/forms.py:77 finance/models.py:106
+#: guests/forms.py:25 guests/forms.py:44 templates/widget/booking.html:44
+#: tenants/forms.py:34
+msgid "Ism"
+msgstr "Ism"
+
+#: bookings/forms.py:129
+msgid "Masalan: Alisher"
+msgstr "Masalan: Alisher"
+
+#: bookings/forms.py:137 guests/forms.py:26 guests/forms.py:45
+#: templates/widget/booking.html:47 tenants/forms.py:35
+msgid "Familiya"
+msgstr "Familiya"
+
+#: bookings/forms.py:139 folio/forms.py:43 templates/widget/booking.html:60
+msgid "Ixtiyoriy"
+msgstr "Ixtiyoriy"
+
+#: bookings/forms.py:145 bookings/models.py:74 finance/forms.py:66
+#: finance/forms.py:79 finance/models.py:113 guests/forms.py:27
+#: guests/forms.py:46 guests/forms.py:86 guests/forms.py:140
+#: guests/models.py:13 hr/forms.py:25 properties/forms.py:16
+#: templates/accounts/profile.html:12 templates/widget/booking.html:52
+msgid "Telefon"
+msgstr "Telefon"
+
+#: bookings/forms.py:152 guests/forms.py:54
+msgid "Hujjat turi"
+msgstr "Hujjat turi"
+
+#: bookings/forms.py:153 guests/models.py:93
+msgid "Pasport"
+msgstr "Pasport"
+
+#: bookings/forms.py:153 guests/models.py:94
+msgid "ID karta"
+msgstr "ID karta"
+
+#: bookings/forms.py:158
+msgid "Hujjat raqami"
+msgstr "Hujjat raqami"
+
+#: bookings/forms.py:166
+msgid "Tunlar"
+msgstr "Tunlar"
+
+#: bookings/forms.py:178
+msgid "Maxsus so‘rov yoki eslatma"
+msgstr "Maxsus so‘rov yoki eslatma"
+
+#: bookings/forms.py:242
+msgid "Xona tanlang."
+msgstr "Xona tanlang."
+
+#: bookings/forms.py:251 inventory/forms.py:77
+msgid "Xona topilmadi."
+msgstr "Xona topilmadi."
+
+#: bookings/forms.py:259
+msgid "Bu xona band — boshqa xona tanlang."
+msgstr "Bu xona band — boshqa xona tanlang."
+
+#: bookings/forms.py:272 bookings/models.py:66 finance/models.py:40
+#: templates/bookings/partials/calendar_page.html:58
+msgid "Tasdiqlangan"
+msgstr "Tasdiqlangan"
+
+#: bookings/forms.py:273 bookings/models.py:65 templates/base.html:51
+#: templates/bookings/inquiry_list.html:3
+#: templates/bookings/inquiry_list.html:6
+#: templates/bookings/reservation_list.html:7
+#: templates/includes/nav_hub.html:32 templates/reports/dashboard.html:106
+msgid "So‘rov"
+msgstr "So‘rov"
+
+#: bookings/forms.py:297 properties/views.py:161
+msgid "Yangi xona"
+msgstr "Yangi xona"
+
+#: bookings/forms.py:311
+msgid "Guruh nomi"
+msgstr "Guruh nomi"
+
+#: bookings/models.py:67
+msgid "Joylashgan"
+msgstr "Joylashgan"
+
+#: bookings/models.py:68
+msgid "Chiqgan"
+msgstr "Chiqgan"
+
+#: bookings/models.py:69 maintenance/models.py:14 subscriptions/models.py:96
+#: templates/folio/partials/folio_body.html:144
+#: templates/folio/partials/folio_body.html:199
+msgid "Bekor qilingan"
+msgstr "Bekor qilingan"
+
+#: bookings/models.py:70 templates/bookings/reservation_detail.html:96
+msgid "Kelmagan"
+msgstr "Kelmagan"
+
+#: bookings/models.py:73
+msgid "Darhol"
+msgstr "Darhol"
+
+#: bookings/models.py:75
+msgid "Veb-sayt"
+msgstr "Veb-sayt"
+
+#: bookings/models.py:76 folio/models.py:78 guests/models.py:95
+msgid "Boshqa"
+msgstr "Boshqa"
+
+#: bookings/services.py:70
+msgid "Xona faol emas."
+msgstr "Xona faol emas."
+
+#: bookings/services.py:72
+msgid "Xona nosoz."
+msgstr "Xona nosoz."
+
+#: bookings/services.py:79
+msgid "Tanlangan sanalarda xona band."
+msgstr "Tanlangan sanalarda xona band."
+
+#: bookings/services.py:129 bookings/services.py:273 bookings/services.py:509
+#, python-format
+msgid "Mehmon qora ro‘yxatda: %(r)s"
+msgstr "Mehmon qora ro‘yxatda: %(r)s"
+
+#: bookings/services.py:131
+msgid "Xona turi mos kelmaydi."
+msgstr "Xona turi mos kelmaydi."
+
+#: bookings/services.py:191 bookings/services.py:422
+msgid "Chiqish sanasi kirishdan keyin bo‘lishi kerak."
+msgstr "Chiqish sanasi kirishdan keyin bo‘lishi kerak."
+
+#: bookings/services.py:193
+msgid "Guruhga kamida bitta xona qo‘shing."
+msgstr "Guruhga kamida bitta xona qo‘shing."
+
+#: bookings/services.py:270
+msgid "Faqat tasdiqlangan/so‘rov bronlar joylashishi mumkin."
+msgstr "Faqat tasdiqlangan/so‘rov bronlar joylashishi mumkin."
+
+#: bookings/services.py:283
+msgid ""
+"Mehmonda pasport/ID yo‘q; hujjat qo‘shing yoki hujjat ruxsatini bering."
+msgstr ""
+"Mehmonda pasport/ID yo‘q; hujjat qo‘shing yoki hujjat ruxsatini bering."
+
+#: bookings/services.py:286
+msgid "Joylashdan oldin xona biriktiring."
+msgstr "Joylashdan oldin xona biriktiring."
+
+#: bookings/services.py:296
+#, python-format
+msgid ""
+"Xona %(n)s holati: %(s)s; avval tozalang yoki kir xona ruxsatini bering."
+msgstr ""
+"Xona %(n)s holati: %(s)s; avval tozalang yoki kir xona ruxsatini bering."
+
+#: bookings/services.py:330
+#, python-format
+msgid "%(time)s dan oldin"
+msgstr "%(time)s dan oldin"
+
+#: bookings/services.py:331
+msgid "Erta joylash to‘lovi"
+msgstr "Erta joylash to‘lovi"
+
+#: bookings/services.py:347
+msgid "Faqat joylashgan bronlar chiqishi mumkin."
+msgstr "Faqat joylashgan bronlar chiqishi mumkin."
+
+#: bookings/services.py:366
+#, python-format
+msgid "%(time)s dan keyin"
+msgstr "%(time)s dan keyin"
+
+#: bookings/services.py:367
+msgid "Kechikkan chiqish to‘lovi"
+msgstr "Kechikkan chiqish to‘lovi"
+
+#: bookings/services.py:375
+#, python-format
+msgid "To‘lanmagan qoldiq %(b)s — chiqish mumkin emas."
+msgstr "To‘lanmagan qoldiq %(b)s — chiqish mumkin emas."
+
+#: bookings/services.py:391
+msgid "Chiqishdan keyin tozalash"
+msgstr "Chiqishdan keyin tozalash"
+
+#: bookings/services.py:411
+msgid "Yopilgan bronni o‘zgartirib bo‘lmaydi."
+msgstr "Yopilgan bronni o‘zgartirib bo‘lmaydi."
+
+#: bookings/services.py:477
+msgid "Bron allaqachon yopilgan."
+msgstr "Bron allaqachon yopilgan."
+
+#: bookings/services.py:496
+#, python-format
+msgid "Bekor qilish to‘lovi (%(p)s%%)"
+msgstr "Bekor qilish to‘lovi (%(p)s%%)"
+
+#: bookings/services.py:506
+msgid "Faqat so‘rov bronlar tasdiqlanadi."
+msgstr "Faqat so‘rov bronlar tasdiqlanadi."
+
+#: bookings/services.py:520
+msgid "Faqat tasdiqlangan bronlar kelmagan deb belgilanadi."
+msgstr "Faqat tasdiqlangan bronlar kelmagan deb belgilanadi."
+
+#: bookings/services.py:539
+#, python-format
+msgid "Kelmaganlik to‘lovi (%(p)s%%)"
+msgstr "Kelmaganlik to‘lovi (%(p)s%%)"
+
+#: bookings/services.py:549
+msgid "Faqat joylashgan mehmonlar xona o‘tkazishi mumkin."
+msgstr "Faqat joylashgan mehmonlar xona o‘tkazishi mumkin."
+
+#: bookings/services.py:551
+msgid "Yangi xona kerak."
+msgstr "Yangi xona kerak."
+
+#: bookings/services.py:579
+msgid "Xona almashtirishdan keyin tozalash"
+msgstr "Xona almashtirishdan keyin tozalash"
+
+#: bookings/views.py:101
+msgid "So‘rov tasdiqlandi."
+msgstr "So‘rov tasdiqlandi."
+
+#: bookings/views.py:112 bookings/views.py:399 bookings/views.py:621
+#: bookings/views.py:702
+msgid "Avval mehmonxona yarating yoki tanlang."
+msgstr "Avval mehmonxona yarating yoki tanlang."
+
+#: bookings/views.py:155 bookings/views.py:674
+#, python-format
+msgid "Bron yaratildi: %(code)s"
+msgstr "Bron yaratildi: %(code)s"
+
+#: bookings/views.py:160 templates/bookings/partials/calendar_page.html:63
+#: templates/bookings/reservation_list.html:7
+#: templates/includes/nav_hub.html:42 templates/reports/dashboard.html:21
+msgid "Yangi bron"
+msgstr "Yangi bron"
+
+#: bookings/views.py:197
+msgid "Bron yangilandi."
+msgstr "Bron yangilandi."
+
+#: bookings/views.py:221
+msgid "kir xona ruxsati"
+msgstr "kir xona ruxsati"
+
+#: bookings/views.py:223
+msgid "hujjat ruxsati"
+msgstr "hujjat ruxsati"
+
+#: bookings/views.py:225
+#, python-format
+msgid "Kirish (%(n)s)."
+msgstr "Kirish (%(n)s)."
+
+#: bookings/views.py:227
+msgid "Kirish qilindi."
+msgstr "Kirish qilindi."
+
+#: bookings/views.py:232
+msgid ""
+"Xona kir yoki tozalanmoqda. Tozalang yoki “Kir xona ruxsati” bilan "
+"joylashtiring."
+msgstr ""
+"Xona kir yoki tozalanmoqda. Tozalang yoki “Kir xona ruxsati” bilan "
+"joylashtiring."
+
+#: bookings/views.py:238
+msgid "Hujjat qo‘shing yoki “Hujjat ruxsati” bilan joylashtiring."
+msgstr "Hujjat qo‘shing yoki “Hujjat ruxsati” bilan joylashtiring."
+
+#: bookings/views.py:276
+msgid "Chiqish qilindi."
+msgstr "Chiqish qilindi."
+
+#: bookings/views.py:317
+msgid "Bron bekor qilindi."
+msgstr "Bron bekor qilindi."
+
+#: bookings/views.py:329
+msgid "Kelmagan deb belgilandi."
+msgstr "Kelmagan deb belgilandi."
+
+#: bookings/views.py:457
+#, python-format
+msgid "Darhol joylash: %(code)s"
+msgstr "Darhol joylash: %(code)s"
+
+#: bookings/views.py:464
+msgid "Kir xona ruxsati bilan qayta urinib ko‘ring."
+msgstr "Kir xona ruxsati bilan qayta urinib ko‘ring."
+
+#: bookings/views.py:467
+msgid "Hujjat ruxsati yoki pasport raqamini kiriting."
+msgstr "Hujjat ruxsati yoki pasport raqamini kiriting."
+
+#: bookings/views.py:496
+msgid "Xona transfer qilindi."
+msgstr "Xona transfer qilindi."
+
+#: bookings/views.py:633
+msgid "Noto‘g‘ri xona yoki sana."
+msgstr "Noto‘g‘ri xona yoki sana."
+
+#: bookings/views.py:636 widget/services.py:119
+msgid "Chiqish sanasi noto‘g‘ri."
+msgstr "Chiqish sanasi noto‘g‘ri."
+
+#: bookings/views.py:730
+#, python-format
+msgid "Guruh bron: %(code)s"
+msgstr "Guruh bron: %(code)s"
+
+#: bookings/views.py:739
+msgid "Guruh bron"
+msgstr "Guruh bron"
+
+#: bookings/views.py:780
+msgid "Sanalarni tanlang"
+msgstr "Sanalarni tanlang"
+
+#: bookings/views.py:787
+msgid "Sana formati noto‘g‘ri"
+msgstr "Sana formati noto‘g‘ri"
+
+#: bookings/views.py:791
+msgid "Chiqish kirishdan keyin bo‘lishi kerak"
+msgstr "Chiqish kirishdan keyin bo‘lishi kerak"
+
+#: bookings/views.py:796
+msgid "Xona topilmadi"
+msgstr "Xona topilmadi"
+
+#: bookings/views.py:805
+#, python-format
+msgid "Xona bo‘sh · %(nights)s tun"
+msgstr "Xona bo‘sh · %(nights)s tun"
+
+#: bookings/views.py:812
+msgid "Xona tanlanmagan — faqat sanalar OK"
+msgstr "Xona tanlanmagan — faqat sanalar OK"
+
+#: bookings/widgets.py:20 templates/bookings/partials/board_page.html:43
+#: templates/bookings/partials/board_page.html:58
+#: templates/bookings/partials/board_page.html:78
+#: templates/bookings/partials/walk_in_rooms.html:29
+#: templates/bookings/walk_in.html:121
+msgid "Band"
+msgstr "Band"
+
+#: core/mixins.py:41 core/mixins.py:80
+msgid "Bu modul joriy tarifda yo‘q."
+msgstr "Bu modul joriy tarifda yo‘q."
+
+#: core/mixins.py:65
+msgid "Ruxsat yetarli emas."
+msgstr "Ruxsat yetarli emas."
+
+#: core/notifications.py:29
+#, python-format
+msgid "Veb-bron · %(code)s"
+msgstr "Veb-bron · %(code)s"
+
+#: core/notifications.py:47
+#, python-format
+msgid "Kelish · %(code)s"
+msgstr "Kelish · %(code)s"
+
+#: core/notifications.py:66
+#, python-format
+msgid "Ketish · %(code)s"
+msgstr "Ketish · %(code)s"
+
+#: core/notifications.py:98
+#, python-format
+msgid "Qarz · %(code)s"
+msgstr "Qarz · %(code)s"
+
+#: core/notifications.py:112
+#, python-format
+msgid "Kam ombor · %(name)s"
+msgstr "Kam ombor · %(name)s"
+
+#: core/notifications.py:113
+#, python-format
+msgid "%(qty)s %(unit)s (min %(min)s)"
+msgstr "%(qty)s %(unit)s (min %(min)s)"
+
+#: core/notifications.py:133
+#, python-format
+msgid "Ta’mir · %(title)s"
+msgstr "Ta’mir · %(title)s"
+
+#: finance/forms.py:22 finance/views.py:272
+#: templates/finance/expense_list.html:37 templates/finance/setup_list.html:13
+msgid "Kategoriya"
+msgstr "Kategoriya"
+
+#: finance/forms.py:23 finance/views.py:325
+#: templates/finance/expense_list.html:48 templates/finance/setup_list.html:14
+msgid "Yetkazib beruvchi"
+msgstr "Yetkazib beruvchi"
+
+#: finance/forms.py:24 maintenance/forms.py:15
+msgid "Sarlavha"
+msgstr "Sarlavha"
+
+#: finance/forms.py:25 finance/forms.py:93 finance/models.py:177
+#: folio/forms.py:36 folio/forms.py:82 hr/forms.py:37
+#: templates/bookings/reservation_detail.html:33
+#: templates/bookings/reservation_detail.html:60
+#: templates/folio/partials/folio_body.html:273
+#: templates/folio/partials/folio_body.html:311
+#: templates/folio/receipt.html:134 templates/folio/receipt.html:154
+msgid "Summa"
+msgstr "Summa"
+
+#: finance/forms.py:26 finance/forms.py:94 finance/models.py:178
+#: hr/forms.py:38 templates/bookings/partials/board_page.html:9
+#: templates/bookings/partials/board_page.html:18
+#: templates/reports/flash.html:24
+msgid "Sana"
+msgstr "Sana"
+
+#: finance/forms.py:27 folio/forms.py:25
+#: templates/finance/expense_list.html:59
+msgid "To‘lov usuli"
+msgstr "To‘lov usuli"
+
+#: finance/forms.py:28 templates/bookings/partials/checkout_success.html:10
+#: templates/folio/folio_detail.html:39 templates/folio/receipt.html:6
+msgid "Chek"
+msgstr "Chek"
+
+#: finance/forms.py:57 finance/forms.py:65 guests/forms.py:84
+#: guests/forms.py:139 guests/models.py:11 inventory/forms.py:26
+#: inventory/forms.py:93 properties/forms.py:12 properties/forms.py:60
+#: properties/forms.py:74 properties/forms.py:111 properties/forms.py:131
+#: services/forms.py:16
+msgid "Nomi"
+msgstr "Nomi"
+
+#: finance/forms.py:57 finance/forms.py:68 finance/forms.py:81
+#: finance/models.py:115 guests/forms.py:90 guests/models.py:17 hr/forms.py:26
+#: inventory/forms.py:34 properties/forms.py:18 properties/forms.py:66
+#: properties/forms.py:87 properties/forms.py:117 services/forms.py:20
+#: subscriptions/models.py:94 templates/finance/setup_list.html:32
+#: templates/finance/setup_list.html:70 tenants/forms.py:49
+msgid "Faol"
+msgstr "Faol"
+
+#: finance/forms.py:78 finance/models.py:110
+msgid "Ulush %"
+msgstr "Ulush %"
+
+#: finance/forms.py:87
+msgid "Ulush 0 dan katta va 100 dan oshmasin."
+msgstr "Ulush 0 dan katta va 100 dan oshmasin."
+
+#: finance/forms.py:92 templates/finance/profit_share.html:17
+msgid "Sherik"
+msgstr "Sherik"
+
+#: finance/forms.py:96 finance/models.py:183 folio/forms.py:81
+#: templates/bookings/reservation_detail.html:52
+#: templates/folio/partials/folio_body.html:248
+#: templates/folio/partials/folio_body.html:265
+#: templates/folio/partials/folio_body.html:303
+#: templates/folio/receipt.html:154
+msgid "Usul"
+msgstr "Usul"
+
+#: finance/forms.py:101
+msgid "Qoldiqdan ko‘p olishga ruxsat"
+msgstr "Qoldiqdan ko‘p olishga ruxsat"
+
+#: finance/forms.py:102
+msgid "Moslashuvchan rejim — keyin qayta hisobda ko‘rinadi."
+msgstr "Moslashuvchan rejim — keyin qayta hisobda ko‘rinadi."
+
+#: finance/forms.py:115
+msgid "Davr tugashi"
+msgstr "Davr tugashi"
+
+#: finance/models.py:39 hr/models.py:41
+msgid "Qoralama"
+msgstr "Qoralama"
+
+#: finance/models.py:41 folio/models.py:198 hr/models.py:43
+#: templates/folio/folio_detail.html:27
+#: templates/folio/partials/folio_body.html:44
+#: templates/folio/receipt.html:163 templates/hr/payroll_list.html:50
+msgid "To‘langan"
+msgstr "To‘langan"
+
+#: finance/models.py:42
+msgid "Rad etilgan"
+msgstr "Rad etilgan"
+
+#: finance/models.py:45 finance/models.py:167 folio/models.py:117
+#: reports/chart_data.py:120 templates/bookings/reservation_detail.html:54
+#: templates/reports/pnl.html:13 templates/reports/pnl.html:44
+msgid "Naqd"
+msgstr "Naqd"
+
+#: finance/models.py:46 finance/models.py:168 folio/models.py:118
+#: reports/chart_data.py:120 templates/bookings/reservation_detail.html:55
+#: templates/folio/cash_shift.html:30
+#: templates/folio/cash_shift_detail.html:23
+msgid "Karta"
+msgstr "Karta"
+
+#: finance/models.py:47 finance/models.py:169 folio/models.py:119
+msgid "O‘tkazma"
+msgstr "O‘tkazma"
+
+#: finance/models.py:111
+msgid "Masalan 30.00 — sof foydaning 30 foizi."
+msgstr "Masalan 30.00 — sof foydaning 30 foizi."
+
+#: finance/models.py:120
+msgid "Foyda sherigi"
+msgstr "Foyda sherigi"
+
+#: finance/models.py:121
+msgid "Foyda sheriklari"
+msgstr "Foyda sheriklari"
+
+#: finance/models.py:133 properties/forms.py:132
+msgid "Boshlanish"
+msgstr "Boshlanish"
+
+#: finance/models.py:134 properties/forms.py:133
+msgid "Tugash"
+msgstr "Tugash"
+
+#: finance/models.py:151
+#| msgid "Foyda/zarar"
+msgid "Foyda davri"
+msgstr "Foyda/zarar"
+
+#: finance/models.py:152
+#| msgid "Foyda/zarar"
+msgid "Foyda davrlari"
+msgstr "Foyda/zarar"
+
+#: finance/models.py:196 templates/finance/profit_share.html:18
+#: templates/finance/profit_withdraw.html:3
+#: templates/finance/profit_withdraw.html:6
+#| msgid "PDF yuklab olish"
+msgid "Foyda olish"
+msgstr "PDF yuklab olish"
+
+#: finance/models.py:197
+#| msgid "Kelishlar"
+msgid "Foyda olishlar"
+msgstr "Kelishlar"
+
+#: finance/profit.py:153
+#| msgid "Filial topilmadi."
+msgid "Sherik topilmadi."
+msgstr "Filial topilmadi."
+
+#: finance/profit.py:156
+#| msgid "Avans summasi musbat bo‘lishi kerak."
+msgid "Summa 0 dan katta bo‘lishi kerak."
+msgstr "Avans summasi musbat bo‘lishi kerak."
+
+#: finance/profit.py:164
+#, python-format
+msgid "Ulush qoldig‘idan ko‘p: qolgan %(r)s, so‘ralgan %(a)s."
+msgstr "Ulush qoldig‘idan ko‘p: qolgan %(r)s, so‘ralgan %(a)s."
+
+#: finance/profit.py:195
+#| msgid "Boshlanish sanasi tugashdan oldin bo‘lishi kerak."
+msgid "Tugash sanasi boshlanishdan oldin bo‘lishi mumkin emas."
+msgstr "Boshlanish sanasi tugashdan oldin bo‘lishi kerak."
+
+#: finance/profit.py:216
+msgid "Allaqachon ochiq davr bor."
+msgstr "Allaqachon ochiq davr bor."
+
+#: finance/services.py:15
+msgid "Faqat qoralama rasxodlar tasdiqlanadi."
+msgstr "Faqat qoralama rasxodlar tasdiqlanadi."
+
+#: finance/services.py:34
+msgid "Faqat qoralama/tasdiqlangan rasxodlar rad etiladi."
+msgstr "Faqat qoralama/tasdiqlangan rasxodlar rad etiladi."
+
+#: finance/services.py:38
+msgid "Rad etish sababi kerak."
+msgstr "Rad etish sababi kerak."
+
+#: finance/services.py:58
+msgid "Faqat tasdiqlangan rasxodlar to‘langan deb belgilanadi."
+msgstr "Faqat tasdiqlangan rasxodlar to‘langan deb belgilanadi."
+
+#: finance/services.py:85
+msgid "Faqat qoralama yoki tasdiqlangan (to‘lanmagan) rasxod tahrirlanadi."
+msgstr "Faqat qoralama yoki tasdiqlangan (to‘lanmagan) rasxod tahrirlanadi."
+
+#: finance/services.py:92
+msgid "Faqat rad etilgan rasxodlar qayta ochiladi."
+msgstr "Faqat rad etilgan rasxodlar qayta ochiladi."
+
+#: finance/services.py:123
+msgid "Faqat qoralama yoki rad etilgan rasxod o‘chiriladi."
+msgstr "Faqat qoralama yoki rad etilgan rasxod o‘chiriladi."
+
+#: finance/views.py:130
+msgid "Rasxod qo‘shildi."
+msgstr "Rasxod qo‘shildi."
+
+#: finance/views.py:135 templates/finance/expense_form.html:3
+#: templates/finance/expense_form.html:14
+#: templates/finance/expense_form.html:20
+#: templates/finance/expense_list.html:9
+#: templates/finance/expense_list.html:104
+msgid "Yangi rasxod"
+msgstr "Yangi rasxod"
+
+#: finance/views.py:157
+msgid "Rasxod yangilandi."
+msgstr "Rasxod yangilandi."
+
+#: finance/views.py:162
+msgid "Rasxodni tahrirlash"
+msgstr "Rasxodni tahrirlash"
+
+#: finance/views.py:173
+msgid "Tasdiqlandi."
+msgstr "Tasdiqlandi."
+
+#: finance/views.py:188
+msgid "Rad etildi."
+msgstr "Rad etildi."
+
+#: finance/views.py:203
+msgid "To‘langan deb belgilandi."
+msgstr "To‘langan deb belgilandi."
+
+#: finance/views.py:218
+msgid "Qoralamaga qaytarildi."
+msgstr "Qoralamaga qaytarildi."
+
+#: finance/views.py:233
+msgid "Rasxod o‘chirildi."
+msgstr "Rasxod o‘chirildi."
+
+#: finance/views.py:267
+msgid "Kategoriya qo‘shildi."
+msgstr "Kategoriya qo‘shildi."
+
+#: finance/views.py:284
+msgid "Kategoriya yangilandi."
+msgstr "Kategoriya yangilandi."
+
+#: finance/views.py:291
+msgid "Kategoriyani tahrirlash"
+msgstr "Kategoriyani tahrirlash"
+
+#: finance/views.py:306
+msgid "Kategoriya faol."
+msgstr "Kategoriya faol."
+
+#: finance/views.py:306
+msgid "Kategoriya o‘chirildi (faol emas)."
+msgstr "Kategoriya o‘chirildi (faol emas)."
+
+#: finance/views.py:320
+msgid "Yetkazib beruvchi qo‘shildi."
+msgstr "Yetkazib beruvchi qo‘shildi."
+
+#: finance/views.py:337
+msgid "Yetkazib beruvchi yangilandi."
+msgstr "Yetkazib beruvchi yangilandi."
+
+#: finance/views.py:344
+msgid "Yetkazib beruvchini tahrirlash"
+msgstr "Yetkazib beruvchini tahrirlash"
+
+#: finance/views.py:359
+msgid "Yetkazib beruvchi faol."
+msgstr "Yetkazib beruvchi faol."
+
+#: finance/views.py:361
+msgid "Yetkazib beruvchi o‘chirildi (faol emas)."
+msgstr "Yetkazib beruvchi o‘chirildi (faol emas)."
+
+#: finance/views.py:392
+#| msgid "Tarif qo‘shildi."
+msgid "Sherik qo‘shildi."
+msgstr "Tarif qo‘shildi."
+
+#: finance/views.py:397 finance/views.py:424
+#, python-format
+msgid "Faol ulushlar yig‘indisi %(t)s%% (ideal 100%%)."
+msgstr "Faol ulushlar yig‘indisi %(t)s%% (ideal 100%%)."
+
+#: finance/views.py:405
+#| msgid "Yangi smena"
+msgid "Yangi sherik"
+msgstr "Yangi smena"
+
+#: finance/views.py:419
+#| msgid "Bron yangilandi."
+msgid "Sherik yangilandi."
+msgstr "Bron yangilandi."
+
+#: finance/views.py:432
+#| msgid "Kategoriyani tahrirlash"
+msgid "Sherikni tahrirlash"
+msgstr "Kategoriyani tahrirlash"
+
+#: finance/views.py:468
+#| msgid "nomiga yoziladi."
+msgid "Foyda olish yozildi."
+msgstr "nomiga yoziladi."
+
+#: finance/views.py:500
+#, python-format
+msgid ""
+"Davr yopildi (%(start)s → %(end)s). Yangi hisob %(fresh)s dan boshlanadi."
+msgstr ""
+"Davr yopildi (%(start)s → %(end)s). Yangi hisob %(fresh)s dan boshlanadi."
+
+#: folio/city_ledger.py:69 folio/services.py:42 folio/services.py:124
+#: folio/services.py:159
+msgid "Mehmon hisobi yopilgan."
+msgstr "Mehmon hisobi yopilgan."
+
+#: folio/city_ledger.py:72
+msgid "Avval bron (yoki mehmon) ga kompaniya biriktiring."
+msgstr "Avval bron (yoki mehmon) ga kompaniya biriktiring."
+
+#: folio/city_ledger.py:74
+msgid "Kompaniya shu mehmonxonaga tegishli bo‘lishi kerak."
+msgstr "Kompaniya shu mehmonxonaga tegishli bo‘lishi kerak."
+
+#: folio/city_ledger.py:84
+msgid "O‘tkazish uchun kamida bitta faol yozuv tanlang."
+msgstr "O‘tkazish uchun kamida bitta faol yozuv tanlang."
+
+#: folio/city_ledger.py:86
+msgid "Ba’zi yozuvlar yo‘q yoki bekor qilingan."
+msgstr "Ba’zi yozuvlar yo‘q yoki bekor qilingan."
+
+#: folio/city_ledger.py:98
+#, python-format
+msgid "Kompaniya kredit limiti %(lim)s oshib ketdi (bo‘lardi %(p)s)."
+msgstr "Kompaniya kredit limiti %(lim)s oshib ketdi (bo‘lardi %(p)s)."
+
+#: folio/city_ledger.py:155
+msgid "Hisob-faktura bekor qilingan."
+msgstr "Hisob-faktura bekor qilingan."
+
+#: folio/city_ledger.py:157 folio/services.py:157
+msgid "To‘lov summasi musbat bo‘lishi kerak."
+msgstr "To‘lov summasi musbat bo‘lishi kerak."
+
+#: folio/city_ledger.py:160
+#, python-format
+msgid "Summa hisob-faktura qoldig‘idan oshib ketdi: %(b)s."
+msgstr "Summa hisob-faktura qoldig‘idan oshib ketdi: %(b)s."
+
+#: folio/city_ledger.py:177 folio/services.py:220
+msgid "To‘lov allaqachon bekor qilingan."
+msgstr "To‘lov allaqachon bekor qilingan."
+
+#: folio/city_ledger.py:180 folio/services.py:195 folio/services.py:225
+#: folio/views.py:240 folio/views.py:256
+msgid "Bekor qilish sababi kerak."
+msgstr "Bekor qilish sababi kerak."
+
+#: folio/forms.py:10
+msgid "Xarajat turi"
+msgstr "Xarajat turi"
+
+#: folio/forms.py:13
+msgid "Nima uchun"
+msgstr "Nima uchun"
+
+#: folio/forms.py:14
+msgid "Masalan: kechki ovqat, shikast"
+msgstr "Masalan: kechki ovqat, shikast"
+
+#: folio/forms.py:16 folio/forms.py:88 folio/forms.py:103
+#: inventory/forms.py:40 inventory/forms.py:51 inventory/forms.py:119
+#: services/forms.py:27
+msgid "Miqdor"
+msgstr "Miqdor"
+
+#: folio/forms.py:19
+msgid "Birlik narxi"
+msgstr "Birlik narxi"
+
+#: folio/forms.py:28 folio/models.py:122 folio/views.py:73 folio/views.py:140
+#: folio/views.py:176 folio/views.py:191
+#: templates/bookings/partials/board_page.html:113
+#: templates/reports/audit_log.html:20
+msgid "To‘lov"
+msgstr "To‘lov"
+
+#: folio/forms.py:29 folio/models.py:123 folio/views.py:74 folio/views.py:140
+#: templates/bookings/reservation_detail.html:47
+msgid "Depozit"
+msgstr "Depozit"
+
+#: folio/forms.py:32
+msgid "To‘lov turi"
+msgstr "To‘lov turi"
+
+#: folio/forms.py:56
+msgid "Yozuvlar"
+msgstr "Yozuvlar"
+
+#: folio/forms.py:58
+msgid "Hammasi"
+msgstr "Hammasi"
+
+#: folio/forms.py:76
+msgid "Yozuvlarni tanlang yoki hammasi belgilang."
+msgstr "Yozuvlarni tanlang yoki hammasi belgilang."
+
+#: folio/forms.py:87 folio/models.py:74 services/forms.py:26
+#: templates/services/service_form.html:3
+#: templates/services/service_form.html:6
+msgid "Xizmat"
+msgstr "Xizmat"
+
+#: folio/forms.py:102 inventory/forms.py:50 inventory/forms.py:118
+#: templates/inventory/stock_form.html:3
+msgid "Mahsulot"
+msgstr "Mahsulot"
+
+#: folio/forms.py:142
+#, python-format
+msgid "Ko‘pi bilan %(n)s ta to‘lov qatori."
+msgstr "Ko‘pi bilan %(n)s ta to‘lov qatori."
+
+#: folio/forms.py:154
+msgid "Summa noto‘g‘ri."
+msgstr "Summa noto‘g‘ri."
+
+#: folio/forms.py:172
+msgid "Kamida bitta musbat summali to‘lov qo‘shing."
+msgstr "Kamida bitta musbat summali to‘lov qo‘shing."
+
+#: folio/forms.py:181
+msgid "Boshlang‘ich kassa"
+msgstr "Boshlang‘ich kassa"
+
+#: folio/forms.py:185
+msgid "Yopilishdagi naqd"
+msgstr "Yopilishdagi naqd"
+
+#: folio/models.py:73 templates/reports/dashboard.html:246
+msgid "Yashash"
+msgstr "Yashash"
+
+#: folio/models.py:75 inventory/forms.py:33
+#: templates/inventory/minibar_form.html:3
+msgid "Minibar"
+msgstr "Minibar"
+
+#: folio/models.py:76
+msgid "Jarima"
+msgstr "Jarima"
+
+#: folio/models.py:77
+msgid "Bekor qilish to‘lovi"
+msgstr "Bekor qilish to‘lovi"
+
+#: folio/models.py:124 templates/base.html:81
+#: templates/folio/city_ledger_list.html:3
+#: templates/folio/city_ledger_list.html:5
+#: templates/folio/invoice_detail.html:7
+#: templates/guests/company_detail.html:8 templates/guests/company_list.html:8
+#: templates/includes/nav_hub.html:117
+msgid "Kompaniya hisobi"
+msgstr "Kompaniya hisobi"
+
+#: folio/models.py:196 maintenance/models.py:11
+#: templates/folio/cash_shift.html:119 templates/folio/folio_detail.html:20
+#: templates/hr/advance_list.html:11 templates/hr/advance_list.html:26
+#: templates/maintenance/ticket_list.html:10
+msgid "Ochiq"
+msgstr "Ochiq"
+
+#: folio/models.py:197
+msgid "Qisman"
+msgstr "Qisman"
+
+#: folio/models.py:199 templates/bookings/group_form.html:35
+#: templates/bookings/reservation_detail.html:95
+#: templates/bookings/reservation_form.html:56
+#: templates/finance/profit_reset.html:23
+#: templates/finance/profit_withdraw.html:17
+#: templates/folio/partials/folio_body.html:151
+#: templates/folio/partials/folio_body.html:206
+#: templates/includes/app_form.html:23
+#: templates/inventory/minibar_form.html:40
+msgid "Bekor"
+msgstr "Bekor"
+
+#: folio/services.py:29
+msgid "Mehmon hisobini ochishdan oldin joylash kerak."
+msgstr "Mehmon hisobini ochishdan oldin joylash kerak."
+
+#: folio/services.py:40
+msgid "Xona to‘lovi"
+msgstr "Xona to‘lovi"
+
+#: folio/services.py:56
+msgid "xona to‘lovi"
+msgstr "xona to‘lovi"
+
+#: folio/services.py:165
+msgid "Naqd to‘lovdan oldin kassa smenasini oching."
+msgstr "Naqd to‘lovdan oldin kassa smenasini oching."
+
+#: folio/services.py:190
+msgid "Yozuv allaqachon bekor qilingan."
+msgstr "Yozuv allaqachon bekor qilingan."
+
+#: folio/services.py:192 folio/services.py:222
+msgid "Yopilgan hisobda bekor qilib bo‘lmaydi."
+msgstr "Yopilgan hisobda bekor qilib bo‘lmaydi."
+
+#: folio/services.py:251
+msgid "Kamida bitta to‘lov qatorini qo‘shing."
+msgstr "Kamida bitta to‘lov qatorini qo‘shing."
+
+#: folio/services.py:268
+msgid "Summali kamida bitta to‘lov qatorini qo‘shing."
+msgstr "Summali kamida bitta to‘lov qatorini qo‘shing."
+
+#: folio/services.py:282
+#, python-format
+msgid "Qoldiq %(b)s bo‘lgan mehmon hisobini yopib bo‘lmaydi."
+msgstr "Qoldiq %(b)s bo‘lgan mehmon hisobini yopib bo‘lmaydi."
+
+#: folio/services.py:303
+msgid "Ochiq kassa smenasi allaqachon bor."
+msgstr "Ochiq kassa smenasi allaqachon bor."
+
+#: folio/services.py:316
+msgid "Smena allaqachon yopilgan."
+msgstr "Smena allaqachon yopilgan."
+
+#: folio/views.py:107
+msgid "Hisob yozuvi qo‘shildi."
+msgstr "Hisob yozuvi qo‘shildi."
+
+#: folio/views.py:111
+msgid "Hisob yozuvi formasi noto‘g‘ri."
+msgstr "Hisob yozuvi formasi noto‘g‘ri."
+
+#: folio/views.py:163
+msgid "To‘lov qabul qilindi."
+msgstr "To‘lov qabul qilindi."
+
+#: folio/views.py:182 folio/views.py:586
+msgid "To‘lov formasi noto‘g‘ri."
+msgstr "To‘lov formasi noto‘g‘ri."
+
+#: folio/views.py:213
+msgid "Bo‘lingan to‘lov qabul qilindi."
+msgstr "Bo‘lingan to‘lov qabul qilindi."
+
+#: folio/views.py:217
+msgid "Bo‘lingan to‘lov formasi noto‘g‘ri."
+msgstr "Bo‘lingan to‘lov formasi noto‘g‘ri."
+
+#: folio/views.py:236
+msgid "Hisob yozuvi bekor qilindi."
+msgstr "Hisob yozuvi bekor qilindi."
+
+#: folio/views.py:252
+msgid "To‘lov bekor qilindi."
+msgstr "To‘lov bekor qilindi."
+
+#: folio/views.py:277 services/views.py:65
+msgid "Xizmat mehmon hisobiga yozildi."
+msgstr "Xizmat mehmon hisobiga yozildi."
+
+#: folio/views.py:281
+msgid "Xizmat formasi noto‘g‘ri."
+msgstr "Xizmat formasi noto‘g‘ri."
+
+#: folio/views.py:301
+msgid "Minibar mehmon hisobiga yozildi."
+msgstr "Minibar mehmon hisobiga yozildi."
+
+#: folio/views.py:305
+msgid "Minibar formasi noto‘g‘ri."
+msgstr "Minibar formasi noto‘g‘ri."
+
+#: folio/views.py:320
+msgid "Depozit qabul qilindi."
+msgstr "Depozit qabul qilindi."
+
+#: folio/views.py:325
+msgid "Depozit formasi noto‘g‘ri."
+msgstr "Depozit formasi noto‘g‘ri."
+
+#: folio/views.py:335
+msgid "Mehmon hisobi yopildi."
+msgstr "Mehmon hisobi yopildi."
+
+#: folio/views.py:427
+msgid "Kassa smena ochildi."
+msgstr "Kassa smena ochildi."
+
+#: folio/views.py:431 folio/views.py:459
+msgid "Forma noto‘g‘ri."
+msgstr "Forma noto‘g‘ri."
+
+#: folio/views.py:441
+msgid "Ochiq smena yo‘q."
+msgstr "Ochiq smena yo‘q."
+
+#: folio/views.py:454
+#, python-format
+msgid "Smena yopildi. Farq: %(v)s"
+msgstr "Smena yopildi. Farq: %(v)s"
+
+#: folio/views.py:506
+msgid "Kompaniya hisobi formasi noto‘g‘ri."
+msgstr "Kompaniya hisobi formasi noto‘g‘ri."
+
+#: folio/views.py:522
+#, python-format
+msgid "Kompaniya hisobi: %(code)s · %(bal)s"
+msgstr "Kompaniya hisobi: %(code)s · %(bal)s"
+
+#: folio/views.py:582
+msgid "Kompaniya to‘lovi qabul qilindi."
+msgstr "Kompaniya to‘lovi qabul qilindi."
+
+#: guests/admin.py:29 subscriptions/models.py:68
+msgid "Asosiy"
+msgstr "Asosiy"
+
+#: guests/admin.py:32
+msgid ""
+"Tenant — qaysi mehmonxonaga tegishli ekanini bildiradi (majburiy). Bir "
+"mehmonxonada kompaniya nomi takrorlanmasligi kerak."
+msgstr ""
+"Tenant — qaysi mehmonxonaga tegishli ekanini bildiradi (majburiy). Bir "
+"mehmonxonada kompaniya nomi takrorlanmasligi kerak."
+
+#: guests/admin.py:39
+msgid "Manzil va izoh"
+msgstr "Manzil va izoh"
+
+#: guests/admin.py:43
+msgid "To‘lov shartlari"
+msgstr "To‘lov shartlari"
+
+#: guests/admin.py:46
+msgid "Bo‘sh qoldirilsa: to‘lov muddati 30 kun, kredit limiti 0."
+msgstr "Bo‘sh qoldirilsa: to‘lov muddati 30 kun, kredit limiti 0."
+
+#: guests/apps.py:8 templates/base.html:56 templates/guests/guest_list.html:3
+#: templates/guests/guest_list.html:7 templates/includes/nav_hub.html:54
+msgid "Mehmonlar"
+msgstr "Mehmonlar"
+
+#: guests/forms.py:28 guests/forms.py:87 guests/models.py:14
+#: properties/forms.py:17 templates/accounts/profile.html:11
+#: tenants/forms.py:32
+msgid "Email"
+msgstr "Email"
+
+#: guests/forms.py:29
+msgid "Fuqarolik"
+msgstr "Fuqarolik"
+
+#: guests/forms.py:31
+msgid "VIP"
+msgstr "VIP"
+
+#: guests/forms.py:32 templates/bookings/inquiry_list.html:14
+#: templates/bookings/reservation_detail.html:16
+#: templates/guests/guest_detail.html:11 templates/guests/guest_detail.html:22
+#: templates/guests/partials/guest_results.html:9
+msgid "Qora ro‘yxat"
+msgstr "Qora ro‘yxat"
+
+#: guests/forms.py:33
+msgid "Qora ro‘yxat sababi"
+msgstr "Qora ro‘yxat sababi"
+
+#: guests/forms.py:55 properties/forms.py:74 properties/forms.py:84
+msgid "Raqam"
+msgstr "Raqam"
+
+#: guests/forms.py:56
+msgid "Berilgan mamlakat"
+msgstr "Berilgan mamlakat"
+
+#: guests/forms.py:57
+msgid "Amal qilish muddati"
+msgstr "Amal qilish muddati"
+
+#: guests/forms.py:58
+msgid "Fayl"
+msgstr "Fayl"
+
+#: guests/forms.py:85 guests/forms.py:141 guests/models.py:12
+msgid "INN"
+msgstr "INN"
+
+#: guests/forms.py:88 guests/models.py:15 properties/forms.py:14
+msgid "Manzil"
+msgstr "Manzil"
+
+#: guests/forms.py:91 guests/models.py:19
+msgid "To‘lov muddati (kun)"
+msgstr "To‘lov muddati (kun)"
+
+#: guests/forms.py:92 guests/models.py:25
+msgid "Kredit limiti"
+msgstr "Kredit limiti"
+
+#: guests/forms.py:130
+msgid "Mehmonxona (tenant)"
+msgstr "Mehmonxona (tenant)"
+
+#: guests/forms.py:133
+msgid "Kompaniya qaysi mehmonxonaga tegishli — majburiy."
+msgstr "Kompaniya qaysi mehmonxonaga tegishli — majburiy."
+
+#: guests/forms.py:134
+msgid "Shu mehmonxonada takrorlanmasligi kerak."
+msgstr "Shu mehmonxonada takrorlanmasligi kerak."
+
+#: guests/models.py:22
+msgid "Bo‘sh qoldirilsa 30 kun."
+msgstr "Bo‘sh qoldirilsa 30 kun."
+
+#: guests/models.py:30
+msgid "Bo‘sh qoldirilsa 0."
+msgstr "Bo‘sh qoldirilsa 0."
+
+#: guests/models.py:35 templates/guests/company_list.html:3
+#: templates/guests/company_list.html:8 templates/guests/company_list.html:10
+#: templates/guests/guest_list.html:7
+msgid "Kompaniyalar"
+msgstr "Kompaniyalar"
+
+#: guests/models.py:42
+msgid ""
+"Bu mehmonxonada shu nomli kompaniya allaqachon mavjud. Boshqa nom tanlang "
+"yoki mavjud kompaniyani tahrirlang."
+msgstr ""
+"Bu mehmonxonada shu nomli kompaniya allaqachon mavjud. Boshqa nom tanlang "
+"yoki mavjud kompaniyani tahrirlang."
+
+#: guests/views.py:51
+msgid "Mehmon qo‘shildi."
+msgstr "Mehmon qo‘shildi."
+
+#: guests/views.py:54 guests/views.py:81 templates/guests/guest_list.html:7
+msgid "Yangi mehmon"
+msgstr "Yangi mehmon"
+
+#: guests/views.py:105
+msgid "Mehmon yangilandi."
+msgstr "Mehmon yangilandi."
+
+#: guests/views.py:108
+msgid "Mehmonni tahrirlash"
+msgstr "Mehmonni tahrirlash"
+
+#: guests/views.py:122
+msgid "Hujjat qo‘shildi."
+msgstr "Hujjat qo‘shildi."
+
+#: guests/views.py:124
+msgid "Hujjat saqlanmadi."
+msgstr "Hujjat saqlanmadi."
+
+#: guests/views.py:139
+msgid "Izoh qo‘shildi."
+msgstr "Izoh qo‘shildi."
+
+#: guests/views.py:181
+msgid "Kompaniya qo‘shildi."
+msgstr "Kompaniya qo‘shildi."
+
+#: guests/views.py:209 templates/guests/company_form.html:6
+msgid "Yangi kompaniya"
+msgstr "Yangi kompaniya"
+
+#: housekeeping/models.py:11
+msgid "Kutilmoqda"
+msgstr "Kutilmoqda"
+
+#: housekeeping/models.py:12 maintenance/models.py:12
+#: templates/housekeeping/board.html:35
+msgid "Jarayonda"
+msgstr "Jarayonda"
+
+#: housekeeping/models.py:13 maintenance/models.py:13
+msgid "Bajarilgan"
+msgstr "Bajarilgan"
+
+#: housekeeping/views.py:74
+msgid "Noto‘g‘ri status."
+msgstr "Noto‘g‘ri status."
+
+#: housekeeping/views.py:81 templates/base.html:62
+#: templates/bookings/partials/board_page.html:128
+#: templates/finance/expense_list.html:19 templates/housekeeping/board.html:3
+#: templates/housekeeping/board.html:73 templates/includes/nav_hub.html:71
+msgid "Tozalash"
+msgstr "Tozalash"
+
+#: housekeeping/views.py:85
+#, python-format
+msgid "Xona %(number)s: %(status)s"
+msgstr "Xona %(number)s: %(status)s"
+
+#: housekeeping/views.py:98
+msgid "Xodim tanlang."
+msgstr "Xodim tanlang."
+
+#: housekeeping/views.py:102
+msgid "Noto‘g‘ri xodim."
+msgstr "Noto‘g‘ri xodim."
+
+#: housekeeping/views.py:105
+#, python-format
+msgid "Biriktirildi: %(user)s"
+msgstr "Biriktirildi: %(user)s"
+
+#: housekeeping/views.py:115
+msgid "Vazifa bajarildi."
+msgstr "Vazifa bajarildi."
+
+#: housekeeping/views.py:127
+msgid "Xona nosozligi"
+msgstr "Xona nosozligi"
+
+#: housekeeping/views.py:139
+#, python-format
+msgid "Ta’mirlash arizasi yaratildi: %(room)s"
+msgstr "Ta’mirlash arizasi yaratildi: %(room)s"
+
+#: hr/forms.py:20
+msgid "F.I.Sh."
+msgstr "F.I.Sh."
+
+#: hr/forms.py:21
+msgid "Lavozim"
+msgstr "Lavozim"
+
+#: hr/forms.py:22
+msgid "Maosh turi"
+msgstr "Maosh turi"
+
+#: hr/forms.py:23
+msgid "Asosiy maosh"
+msgstr "Asosiy maosh"
+
+#: hr/forms.py:24
+msgid "Ishga kirgan sana"
+msgstr "Ishga kirgan sana"
+
+#: hr/forms.py:36
+msgid "Xodim"
+msgstr "Xodim"
+
+#: hr/models.py:12
+msgid "Oylik maosh"
+msgstr "Oylik maosh"
+
+#: hr/models.py:13 templates/reports/flash.html:10
+msgid "Kunlik"
+msgstr "Kunlik"
+
+#: hr/models.py:42
+msgid "Yakunlangan"
+msgstr "Yakunlangan"
+
+#: hr/services.py:22
+msgid "Xodim ushbu mehmonxonaga tegishli emas."
+msgstr "Xodim ushbu mehmonxonaga tegishli emas."
+
+#: hr/services.py:24
+msgid "Avans summasi musbat bo‘lishi kerak."
+msgstr "Avans summasi musbat bo‘lishi kerak."
+
+#: hr/services.py:37
+msgid "Avans allaqachon hisoblangan."
+msgstr "Avans allaqachon hisoblangan."
+
+#: hr/services.py:39
+msgid "Avans yakunlangan ish haqi davrida qulflangan."
+msgstr "Avans yakunlangan ish haqi davrida qulflangan."
+
+#: hr/services.py:59
+msgid "Davr qoralama emas."
+msgstr "Davr qoralama emas."
+
+#: hr/services.py:87
+msgid "Faqat qoralama davrlar yakunlanadi."
+msgstr "Faqat qoralama davrlar yakunlanadi."
+
+#: hr/services.py:89
+msgid "Davrda ish haqi qatorlari yo‘q."
+msgstr "Davrda ish haqi qatorlari yo‘q."
+
+#: hr/services.py:101
+msgid "To‘lashdan oldin ish haqini yakunlang."
+msgstr "To‘lashdan oldin ish haqini yakunlang."
+
+#: hr/views.py:38
+msgid "Xodim qo‘shildi."
+msgstr "Xodim qo‘shildi."
+
+#: hr/views.py:40
+msgid "Yangi xodim"
+msgstr "Yangi xodim"
+
+#: hr/views.py:51
+msgid "Xodim yangilandi."
+msgstr "Xodim yangilandi."
+
+#: hr/views.py:53 services/views.py:49 templates/finance/profit_share.html:60
+#: templates/guests/guest_detail.html:16 templates/hr/employee_list.html:19
+#: templates/services/service_list.html:20
+#: templates/tenants/staff_list.html:22
+msgid "Tahrirlash"
+msgstr "Tahrirlash"
+
+#: hr/views.py:72
+#, python-format
+msgid "Ish haqi: %(p)s"
+msgstr "Ish haqi: %(p)s"
+
+#: hr/views.py:85
+#, python-format
+msgid "Yakunlandi: %(period)s"
+msgstr "Yakunlandi: %(period)s"
+
+#: hr/views.py:98
+msgid "To‘landi."
+msgstr "To‘landi."
+
+#: hr/views.py:136
+msgid "Avans qo‘shildi."
+msgstr "Avans qo‘shildi."
+
+#: hr/views.py:143 templates/hr/advance_list.html:7
+msgid "Yangi avans"
+msgstr "Yangi avans"
+
+#: hr/views.py:154
+msgid "Avans yopildi."
+msgstr "Avans yopildi."
+
+#: inventory/forms.py:27 inventory/forms.py:111
+msgid "SKU"
+msgstr "SKU"
+
+#: inventory/forms.py:28
+msgid "Birlik"
+msgstr "Birlik"
+
+#: inventory/forms.py:29 inventory/forms.py:106
+#: templates/bookings/partials/checkout_modal.html:15
+#: templates/finance/profit_reset.html:13
+#: templates/finance/profit_share.html:65 templates/folio/folio_detail.html:25
+#: templates/folio/folio_detail.html:33 templates/folio/invoice_detail.html:27
+#: templates/folio/partials/folio_body.html:24
+#: templates/folio/partials/folio_body.html:48
+#: templates/folio/partials/payment_modal.html:12
+#: templates/folio/receipt.html:169
+msgid "Qoldiq"
+msgstr "Qoldiq"
+
+#: inventory/forms.py:30
+msgid "Minimal qoldiq"
+msgstr "Minimal qoldiq"
+
+#: inventory/forms.py:31
+msgid "Tannarx"
+msgstr "Tannarx"
+
+#: inventory/forms.py:32 inventory/forms.py:98
+msgid "Sotish narxi"
+msgstr "Sotish narxi"
+
+#: inventory/forms.py:39
+msgid "Harakat"
+msgstr "Harakat"
+
+#: inventory/forms.py:47
+msgid "Xona raqami"
+msgstr "Xona raqami"
+
+#: inventory/forms.py:48
+msgid "101"
+msgstr "101"
+
+#: inventory/forms.py:84
+msgid "Bu xonada yashovchi mehmon yo‘q."
+msgstr "Bu xonada yashovchi mehmon yo‘q."
+
+#: inventory/forms.py:112
+msgid "Bo‘sh qoldirilsa avtomatik yaratiladi."
+msgstr "Bo‘sh qoldirilsa avtomatik yaratiladi."
+
+#: inventory/forms.py:117 services/forms.py:25
+#: templates/bookings/partials/calendar_page.html:44
+#: templates/bookings/walk_in.html:16 templates/folio/folio_detail.html:38
+#: templates/widget/booking.html:7
+msgid "Bron"
+msgstr "Bron"
+
+#: inventory/models.py:36 reports/chart_data.py:128
+msgid "Kirim"
+msgstr "Kirim"
+
+#: inventory/models.py:37 reports/chart_data.py:128
+msgid "Chiqim"
+msgstr "Chiqim"
+
+#: inventory/models.py:38 templates/inventory/stock_list.html:25
+msgid "Tuzatish"
+msgstr "Tuzatish"
+
+#: inventory/services.py:25
+msgid "Miqdor musbat bo‘lishi kerak."
+msgstr "Miqdor musbat bo‘lishi kerak."
+
+#: inventory/services.py:31
+msgid "Ombor yetarli emas."
+msgstr "Ombor yetarli emas."
+
+#: inventory/services.py:36
+msgid "Noma’lum harakat turi."
+msgstr "Noma’lum harakat turi."
+
+#: inventory/services.py:51
+msgid "Mahsulot faol minibar emas."
+msgstr "Mahsulot faol minibar emas."
+
+#: inventory/views.py:55
+msgid "Mahsulot qo‘shildi."
+msgstr "Mahsulot qo‘shildi."
+
+#: inventory/views.py:74
+msgid "Ombor yangilandi."
+msgstr "Ombor yangilandi."
+
+#: inventory/views.py:93
+msgid "Bu SKU allaqachon mavjud."
+msgstr "Bu SKU allaqachon mavjud."
+
+#: inventory/views.py:118
+msgid "Yangi minibar mahsuloti"
+msgstr "Yangi minibar mahsuloti"
+
+#: inventory/views.py:138
+#, python-format
+msgid "Minibar: xona %(room)s — sotildi."
+msgstr "Minibar: xona %(room)s — sotildi."
+
+#: inventory/views.py:158
+msgid "Minibar sotildi."
+msgstr "Minibar sotildi."
+
+#: maintenance/forms.py:16 properties/forms.py:65 services/forms.py:19
+#: templates/folio/receipt.html:134
+msgid "Tavsif"
+msgstr "Tavsif"
+
+#: maintenance/forms.py:17
+msgid "Muhimlik"
+msgstr "Muhimlik"
+
+#: maintenance/forms.py:18
+msgid "Xonani nosoz qilish"
+msgstr "Xonani nosoz qilish"
+
+#: maintenance/models.py:17
+msgid "Past"
+msgstr "Past"
+
+#: maintenance/models.py:18
+msgid "O‘rtacha"
+msgstr "O‘rtacha"
+
+#: maintenance/models.py:19 templates/maintenance/ticket_list.html:27
+msgid "Yuqori"
+msgstr "Yuqori"
+
+#: maintenance/services.py:32
+msgid "Yopilgan arizaga biriktirib bo‘lmaydi."
+msgstr "Yopilgan arizaga biriktirib bo‘lmaydi."
+
+#: maintenance/services.py:48
+msgid "Ariza allaqachon yopilgan."
+msgstr "Ariza allaqachon yopilgan."
+
+#: maintenance/views.py:65
+msgid "Ariza ochildi."
+msgstr "Ariza ochildi."
+
+#: maintenance/views.py:79
+msgid "Ariza biriktirildi."
+msgstr "Ariza biriktirildi."
+
+#: maintenance/views.py:92
+msgid "Ariza yopildi."
+msgstr "Ariza yopildi."
+
+#: properties/forms.py:13 properties/models.py:17
+msgid "Filial kodi"
+msgstr "Filial kodi"
+
+#: properties/forms.py:15
+msgid "Shahar"
+msgstr "Shahar"
+
+#: properties/forms.py:36
+msgid "Soliq %"
+msgstr "Soliq %"
+
+#: properties/forms.py:37
+msgid "Erta kirish to‘lovi"
+msgstr "Erta kirish to‘lovi"
+
+#: properties/forms.py:38
+msgid "Kech chiqish to‘lovi"
+msgstr "Kech chiqish to‘lovi"
+
+#: properties/forms.py:39
+msgid "Bekor qilish %"
+msgstr "Bekor qilish %"
+
+#: properties/forms.py:40
+msgid "Kelmagan %"
+msgstr "Kelmagan %"
+
+#: properties/forms.py:41
+msgid "Kirish vaqti"
+msgstr "Kirish vaqti"
+
+#: properties/forms.py:42
+msgid "Chiqish vaqti"
+msgstr "Chiqish vaqti"
+
+#: properties/forms.py:43
+msgid "Kirishda hujjat talab qilinsin"
+msgstr "Kirishda hujjat talab qilinsin"
+
+#: properties/forms.py:61 properties/forms.py:112 services/forms.py:17
+msgid "Kod"
+msgstr "Kod"
+
+#: properties/forms.py:62
+msgid "Kattalar sig‘imi"
+msgstr "Kattalar sig‘imi"
+
+#: properties/forms.py:63
+msgid "Bolalar sig‘imi"
+msgstr "Bolalar sig‘imi"
+
+#: properties/forms.py:64
+msgid "Asosiy narx"
+msgstr "Asosiy narx"
+
+#: properties/forms.py:83 properties/views.py:199
+msgid "Qavat"
+msgstr "Qavat"
+
+#: properties/forms.py:114 properties/forms.py:134 services/forms.py:18
+msgid "Narx"
+msgstr "Narx"
+
+#: properties/forms.py:115
+msgid "Qo‘shimcha katta"
+msgstr "Qo‘shimcha katta"
+
+#: properties/forms.py:116
+msgid "Standart"
+msgstr "Standart"
+
+#: properties/models.py:18
+msgid "Bron kodi va widget URL uchun: tsh, chilanzar"
+msgstr "Bron kodi va widget URL uchun: tsh, chilanzar"
+
+#: properties/models.py:100
+msgid "Qavat mehmonxonasi mos kelishi kerak."
+msgstr "Qavat mehmonxonasi mos kelishi kerak."
+
+#: properties/models.py:123 templates/housekeeping/board.html:27
+#: templates/housekeeping/board.html:49 templates/housekeeping/board.html:68
+#: templates/housekeeping/board.html:136
+#: templates/maintenance/ticket_list.html:50
+#: templates/reports/dashboard.html:90
+msgid "Tayyor"
+msgstr "Tayyor"
+
+#: properties/models.py:124 templates/bookings/partials/board_page.html:47
+#: templates/bookings/partials/board_page.html:59
+#: templates/bookings/partials/board_page.html:78
+#: templates/bookings/partials/board_page.html:122
+#: templates/bookings/partials/walk_in_rooms.html:39
+#: templates/bookings/walk_in.html:120 templates/housekeeping/board.html:31
+#: templates/housekeeping/board.html:50 templates/housekeeping/board.html:78
+msgid "Kir"
+msgstr "Kir"
+
+#: properties/models.py:125 templates/housekeeping/board.html:51
+#: templates/reports/dashboard.html:86
+msgid "Tozalanmoqda"
+msgstr "Tozalanmoqda"
+
+#: properties/models.py:126
+msgid "Tekshirilgan"
+msgstr "Tekshirilgan"
+
+#: properties/models.py:127 templates/reports/dashboard.html:94
+msgid "Nosoz"
+msgstr "Nosoz"
+
+#: properties/models.py:148
+msgid "Xona turi shu mehmonxonaga tegishli bo‘lishi kerak."
+msgstr "Xona turi shu mehmonxonaga tegishli bo‘lishi kerak."
+
+#: properties/models.py:150
+msgid "Qavat shu mehmonxonaga tegishli bo‘lishi kerak."
+msgstr "Qavat shu mehmonxonaga tegishli bo‘lishi kerak."
+
+#: properties/models.py:186
+msgid "Boshlanish sanasi tugashdan oldin bo‘lishi kerak."
+msgstr "Boshlanish sanasi tugashdan oldin bo‘lishi kerak."
+
+#: properties/views.py:38
+msgid "Bu filialga ruxsat yo‘q."
+msgstr "Bu filialga ruxsat yo‘q."
+
+#: properties/views.py:40
+#, python-format
+msgid "Faol filial: %(n)s"
+msgstr "Faol filial: %(n)s"
+
+#: properties/views.py:51
+msgid "Barcha filiallar rejimi mavjud emas."
+msgstr "Barcha filiallar rejimi mavjud emas."
+
+#: properties/views.py:53
+msgid "Barcha filiallar (yig‘ma ko‘rinish)"
+msgstr "Barcha filiallar (yig‘ma ko‘rinish)"
+
+#: properties/views.py:75
+msgid "Tarif bo‘yicha filiallar limiti tugagan."
+msgstr "Tarif bo‘yicha filiallar limiti tugagan."
+
+#: properties/views.py:81
+msgid "Mehmonxona yaratildi."
+msgstr "Mehmonxona yaratildi."
+
+#: properties/views.py:83
+msgid "Yangi mehmonxona"
+msgstr "Yangi mehmonxona"
+
+#: properties/views.py:115
+msgid "Sozlamalar saqlandi."
+msgstr "Sozlamalar saqlandi."
+
+#: properties/views.py:134
+msgid "Xona turi qo‘shildi."
+msgstr "Xona turi qo‘shildi."
+
+#: properties/views.py:148
+msgid "Tarif bo‘yicha xonalar limiti tugagan."
+msgstr "Tarif bo‘yicha xonalar limiti tugagan."
+
+#: properties/views.py:156
+msgid "Xona qo‘shildi."
+msgstr "Xona qo‘shildi."
+
+#: properties/views.py:175
+msgid "Tarif qo‘shildi."
+msgstr "Tarif qo‘shildi."
+
+#: properties/views.py:180
+msgid "Tarif rejasi"
+msgstr "Tarif rejasi"
+
+#: properties/views.py:194
+msgid "Qavat qo‘shildi."
+msgstr "Qavat qo‘shildi."
+
+#: properties/views.py:230
+msgid "Mavsum qo‘shildi / yangilandi."
+msgstr "Mavsum qo‘shildi / yangilandi."
+
+#: properties/views.py:256
+msgid "Mavsumiy tarif Pro rejasida."
+msgstr "Mavsumiy tarif Pro rejasida."
+
+#: properties/views.py:263
+msgid "Mavsum qo‘shildi."
+msgstr "Mavsum qo‘shildi."
+
+#: properties/views.py:268
+#, python-format
+msgid "Mavsum — %(name)s"
+msgstr "Mavsum — %(name)s"
+
+#: reports/accounting.py:177
+msgid "Mehmon to‘lovlari"
+msgstr "Mehmon to‘lovlari"
+
+#: reports/accounting.py:178
+msgid "Kompaniya to‘lovlari"
+msgstr "Kompaniya to‘lovlari"
+
+#: reports/chart_data.py:67 reports/chart_data.py:98
+#: templates/finance/profit_share.html:32 templates/reports/dashboard.html:165
+#: templates/reports/flash.html:152 templates/reports/pnl.html:54
+msgid "Tushum"
+msgstr "Tushum"
+
+#: reports/chart_data.py:67 reports/chart_data.py:90 reports/chart_data.py:98
+#: templates/finance/profit_share.html:36 templates/folio/cash_shift.html:81
+#: templates/reports/dashboard.html:169 templates/reports/flash.html:59
+#: templates/reports/flash.html:156 templates/reports/pnl.html:58
+msgid "Rasxod"
+msgstr "Rasxod"
+
+#: reports/chart_data.py:67 reports/chart_data.py:98 templates/base.html:87
+#: templates/finance/profit_share.html:40 templates/folio/cash_shift.html:87
+#: templates/includes/nav_hub.html:131 templates/reports/dashboard.html:173
+#: templates/reports/flash.html:160 templates/reports/pnl.html:62
+msgid "Oylik"
+msgstr "Oylik"
+
+#: reports/chart_data.py:67 reports/chart_data.py:98
+#: templates/finance/profit_share.html:12 templates/reports/dashboard.html:177
+#: templates/reports/flash.html:164 templates/reports/pnl.html:66
+#: templates/reports/pnl.html:132
+msgid "Sof"
+msgstr "Sof"
+
+#: reports/chart_data.py:90 templates/reports/flash.html:49
+msgid "Naqd tushum"
+msgstr "Naqd tushum"
+
+#: reports/chart_data.py:90 templates/reports/flash.html:54
+#: templates/reports/pnl.html:13 templates/reports/pnl.html:45
+msgid "Hisoblangan"
+msgstr "Hisoblangan"
+
+#: reports/chart_data.py:120
+msgid "O'tkazish"
+msgstr "O'tkazish"
+
+#: reports/chart_data.py:128
+msgid "Boshlang'ich"
+msgstr "Boshlang'ich"
+
+#: reports/chart_data.py:128 templates/folio/cash_shift_detail.html:31
+msgid "Kutilgan"
+msgstr "Kutilgan"
+
+#: reports/day_lock.py:48
+#, python-format
+msgid "%(hotel)s — %(d)s kuni yopilgan. Admin ochishi mumkin."
+msgstr "%(hotel)s — %(d)s kuni yopilgan. Admin ochishi mumkin."
+
+#: reports/day_lock.py:52
+#, python-format
+msgid "Ish kuni %(d)s kun yopishdan keyin yopilgan. Admin ochishi mumkin."
+msgstr "Ish kuni %(d)s kun yopishdan keyin yopilgan. Admin ochishi mumkin."
+
+#: reports/night_audit.py:124 templates/reports/dashboard.html:325
+msgid "Qarzdor hisoblar"
+msgstr "Qarzdor hisoblar"
+
+#: reports/night_audit.py:132 templates/reports/dashboard.html:341
+msgid "Muddat o‘tib hali ichkarida"
+msgstr "Muddat o‘tib hali ichkarida"
+
+#: reports/night_audit.py:144
+#, python-format
+msgid "Kun yopish bloklangan — avval hal qiling: %(items)s"
+msgstr "Kun yopish bloklangan — avval hal qiling: %(items)s"
+
+#: reports/night_audit.py:159
+#, python-format
+msgid "%(hotel)s — %(d)s kuni allaqachon yopilgan."
+msgstr "%(hotel)s — %(d)s kuni allaqachon yopilgan."
+
+#: reports/views.py:163
+msgid "Kun yopish uchun filial tanlang (barcha filiallar rejimida emas)."
+msgstr "Kun yopish uchun filial tanlang (barcha filiallar rejimida emas)."
+
+#: reports/views.py:170
+#, python-format
+msgid ""
+"%(hotel)s · kun yopish %(day)s: %(posted)s xona · %(noshow)s kelmagan · "
+"%(overdue)s qarz · %(dirty)s kir."
+msgstr ""
+"%(hotel)s · kun yopish %(day)s: %(posted)s xona · %(noshow)s kelmagan · "
+"%(overdue)s qarz · %(dirty)s kir."
+
+#: services/services.py:16
+msgid "Xizmat faol emas."
+msgstr "Xizmat faol emas."
+
+#: services/views.py:35
+msgid "Xizmat qo‘shildi."
+msgstr "Xizmat qo‘shildi."
+
+#: services/views.py:37
+msgid "Yangi xizmat"
+msgstr "Yangi xizmat"
+
+#: services/views.py:47
+msgid "Xizmat yangilandi."
+msgstr "Xizmat yangilandi."
+
+#: subscriptions/models.py:67
+msgid "Bepul"
+msgstr "Bepul"
+
+#: subscriptions/models.py:69
+msgid "Pro"
+msgstr "Pro"
+
+#: subscriptions/models.py:93
+msgid "Sinov"
+msgstr "Sinov"
+
+#: subscriptions/models.py:95
+msgid "Muddati tugagan"
+msgstr "Muddati tugagan"
+
+#: subscriptions/models.py:99
+msgid "Har oy"
+msgstr "Har oy"
+
+#: subscriptions/models.py:100
+msgid "Har yil"
+msgstr "Har yil"
+
+#: templates/accounts/login.html:20
+msgid "Mehmonxona boshqaruvi"
+msgstr "Mehmonxona boshqaruvi"
+
+#: templates/accounts/login.html:20
+msgid "bitta platformada"
+msgstr "bitta platformada"
+
+#: templates/accounts/login.html:21
+msgid ""
+"Bron, mehmon hisobi, tozalash va moliya — resepsiya va menejerlar uchun "
+"zamonaviy ish stoli."
+msgstr ""
+"Bron, mehmon hisobi, tozalash va moliya — resepsiya va menejerlar uchun "
+"zamonaviy ish stoli."
+
+#: templates/accounts/login.html:23
+msgid "Jonli xona doskasi"
+msgstr "Jonli xona doskasi"
+
+#: templates/accounts/login.html:24
+msgid "Mehmon hisobi va kassa"
+msgstr "Mehmon hisobi va kassa"
+
+#: templates/accounts/login.html:25
+msgid "Ko‘p filial boshqaruvi"
+msgstr "Ko‘p filial boshqaruvi"
+
+#: templates/accounts/login.html:31
+msgid "Resepsiya rejimi"
+msgstr "Resepsiya rejimi"
+
+#: templates/accounts/login.html:35
+msgid "Ichki tizim"
+msgstr "Ichki tizim"
+
+#: templates/accounts/login.html:45
+msgid "Xavfsiz kirish"
+msgstr "Xavfsiz kirish"
+
+#: templates/accounts/login.html:46
+msgid "Xush kelibsiz"
+msgstr "Xush kelibsiz"
+
+#: templates/accounts/login.html:47
+msgid "Xodim hisobi bilan tizimga kiring"
+msgstr "Xodim hisobi bilan tizimga kiring"
+
+#: templates/accounts/login.html:56 tenants/forms.py:31
+msgid "Login"
+msgstr "Login"
+
+#: templates/accounts/login.html:59
+msgid "username"
+msgstr "username"
+
+#: templates/accounts/login.html:64 tenants/forms.py:33
+msgid "Parol"
+msgstr "Parol"
+
+#: templates/accounts/login.html:73
+msgid "Tizimga kirish"
+msgstr "Tizimga kirish"
+
+#: templates/accounts/login.html:78
+msgid "Rivoj Hotel PMS — faqat xodimlar uchun"
+msgstr "Rivoj Hotel PMS — faqat xodimlar uchun"
+
+#: templates/accounts/profile.html:4 templates/accounts/profile.html:7
+#: templates/base.html:99 templates/includes/nav_hub.html:168
+msgid "Profil"
+msgstr "Profil"
+
+#: templates/accounts/profile.html:13 tenants/forms.py:36 tenants/forms.py:49
+msgid "Rol"
+msgstr "Rol"
+
+#: templates/base.html:7 templates/base.html:39
+msgid "Mehmonxona PMS"
+msgstr "Mehmonxona PMS"
+
+#: templates/base.html:42
+#: templates/bookings/partials/calendar_quick_form.html:7
+#: templates/bookings/partials/checkout_modal.html:7
+#: templates/bookings/partials/checkout_success.html:15
+#: templates/folio/partials/payment_modal.html:7
+#: templates/guests/partials/quick_company_form.html:7
+#: templates/guests/partials/quick_guest_form.html:7
+#: templates/hr/advance_list.html:39
+#: templates/inventory/partials/quick_item_form.html:7
+msgid "Yopish"
+msgstr "Yopish"
+
+#: templates/base.html:46 templates/bookings/partials/board_page.html:5
+#: templates/includes/nav_hub.html:13
+msgid "Qabulxona"
+msgstr "Qabulxona"
+
+#: templates/base.html:47 templates/base.html:147
+#: templates/folio/cash_shift.html:7 templates/housekeeping/board.html:16
+#: templates/includes/page_header.html:13 templates/reports/dashboard.html:3
+#: templates/reports/flash.html:17 templates/reports/pnl.html:18
+msgid "Bosh sahifa"
+msgstr "Bosh sahifa"
+
+#: templates/base.html:48 templates/bookings/board.html:3
+#: templates/bookings/partials/board_page.html:6
+#: templates/bookings/walk_in.html:15 templates/includes/nav_hub.html:17
+#: templates/reports/dashboard.html:19
+msgid "Doska"
+msgstr "Doska"
+
+#: templates/base.html:49 templates/bookings/calendar.html:3
+#: templates/bookings/partials/calendar_page.html:6
+#: templates/includes/nav_hub.html:22 templates/reports/dashboard.html:20
+msgid "Taqvim"
+msgstr "Taqvim"
+
+#: templates/base.html:50 templates/bookings/reservation_list.html:3
+#: templates/bookings/reservation_list.html:7
+#: templates/guests/company_detail.html:44 templates/includes/nav_hub.html:27
+msgid "Bronlar"
+msgstr "Bronlar"
+
+#: templates/base.html:52 templates/bookings/partials/board_page.html:62
+#: templates/bookings/walk_in.html:3 templates/bookings/walk_in.html:9
+#: templates/includes/nav_hub.html:37 templates/reports/dashboard.html:18
+msgid "Darhol joylash"
+msgstr "Darhol joylash"
+
+#: templates/base.html:54 templates/bookings/reservation_detail.html:25
+#: templates/includes/nav_hub.html:48
+msgid "Guruh"
+msgstr "Guruh"
+
+#: templates/base.html:59 templates/includes/nav_hub.html:61
+msgid "Mehmonxona"
+msgstr "Mehmonxona"
+
+#: templates/base.html:60 templates/bookings/group_form.html:23
+#: templates/properties/property_detail.html:39
+#: templates/reports/dashboard.html:117
+msgid "Xonalar"
+msgstr "Xonalar"
+
+#: templates/base.html:65 templates/folio/receipt.html:131
+#: templates/includes/nav_hub.html:78 templates/services/service_list.html:3
+#: templates/services/service_list.html:7
+msgid "Xizmatlar"
+msgstr "Xizmatlar"
+
+#: templates/base.html:68 templates/includes/nav_hub.html:85
+#: templates/inventory/minibar_form.html:6
+#: templates/inventory/minibar_quick.html:8
+#: templates/inventory/stock_list.html:3 templates/inventory/stock_list.html:7
+msgid "Inventar"
+msgstr "Inventar"
+
+#: templates/base.html:69 templates/includes/nav_hub.html:90
+#: templates/inventory/minibar_quick.html:3
+msgid "Minibar tez"
+msgstr "Minibar tez"
+
+#: templates/base.html:72 templates/includes/nav_hub.html:97
+#: templates/maintenance/ticket_list.html:3
+msgid "Ta’mir"
+msgstr "Ta’mir"
+
+#: templates/base.html:76 templates/finance/expense_form.html:14
+#: templates/finance/expense_list.html:9 templates/finance/profit_share.html:8
+#: templates/finance/setup_list.html:10 templates/folio/cash_shift.html:7
+#: templates/folio/cash_shift_detail.html:7
+#: templates/reports/dashboard.html:159
+msgid "Moliya"
+msgstr "Moliya"
+
+#: templates/base.html:78 templates/includes/nav_hub.html:110
+msgid "Kassa"
+msgstr "Kassa"
+
+#: templates/base.html:84 templates/finance/expense_list.html:3
+#: templates/finance/expense_list.html:9
+#: templates/finance/expense_list.html:93 templates/includes/nav_hub.html:124
+msgid "Rasxodlar"
+msgstr "Rasxodlar"
+
+#: templates/base.html:90 templates/finance/profit_share.html:16
+#: templates/includes/nav_hub.html:138 templates/reports/audit_log.html:6
+#: templates/reports/dashboard.html:160 templates/reports/flash.html:16
+#: templates/reports/pnl.html:4 templates/reports/pnl.html:11
+msgid "Foyda/zarar"
+msgstr "Foyda/zarar"
+
+#: templates/base.html:91 templates/includes/nav_hub.html:148
+#: templates/reports/dashboard.html:184 templates/reports/flash.html:4
+#: templates/reports/flash.html:11 templates/reports/pnl.html:19
+msgid "Kunlik hisobot"
+msgstr "Kunlik hisobot"
+
+#: templates/base.html:94 templates/includes/nav_hub.html:155
+msgid "Nazorat"
+msgstr "Nazorat"
+
+#: templates/base.html:97 templates/hr/employee_list.html:3
+#: templates/hr/employee_list.html:8 templates/hr/payroll_list.html:7
+#: templates/includes/nav_hub.html:162 templates/tenants/staff_list.html:3
+#: templates/tenants/staff_list.html:6
+msgid "Xodimlar"
+msgstr "Xodimlar"
+
+#: templates/base.html:105 templates/bookings/reservation_detail.html:31
+#: widget/models.py:21
+msgid "Filial"
+msgstr "Filial"
+
+#: templates/base.html:110 templates/reports/dashboard.html:14
+#: templates/tenants/staff_list.html:19
+msgid "Barcha filiallar"
+msgstr "Barcha filiallar"
+
+#: templates/base.html:150
+msgid "Menyu"
+msgstr "Menyu"
+
+#: templates/base.html:160
+msgid "Bildirishnomalar"
+msgstr "Bildirishnomalar"
+
+#: templates/base.html:161
+msgid "Ogohlantirishlar"
+msgstr "Ogohlantirishlar"
+
+#: templates/base.html:172
+msgid "Yangi ogohlantirish yo‘q"
+msgstr "Yangi ogohlantirish yo‘q"
+
+#: templates/base.html:180
+msgid "Til"
+msgstr "Til"
+
+#: templates/bookings/group_detail.html:32
+#: templates/bookings/group_list.html:22
+#: templates/bookings/reservation_detail.html:112
+#: templates/folio/cash_shift.html:71 templates/folio/cash_shift.html:128
+#: templates/folio/cash_shift_detail.html:54
+#: templates/folio/city_ledger_list.html:29
+#: templates/folio/invoice_detail.html:52
+#: templates/guests/company_detail.html:39
+#: templates/guests/company_detail.html:54
+#: templates/guests/company_list.html:24 templates/guests/guest_detail.html:32
+#: templates/guests/guest_detail.html:46 templates/hr/advance_list.html:45
+#: templates/hr/employee_list.html:22
+#: templates/maintenance/ticket_list.html:56
+#: templates/properties/rate_matrix.html:39
+#: templates/reports/audit_log.html:40 templates/reports/flash.html:101
+#: templates/reports/flash.html:125 templates/reports/flash.html:141
+#: templates/reports/pnl.html:105 templates/reports/pnl.html:118
+#: templates/services/service_list.html:41
+msgid "Yo‘q"
+msgstr "Yo‘q"
+
+#: templates/bookings/group_form.html:34
+#: templates/bookings/reservation_form.html:55
+#: templates/finance/profit_withdraw.html:16
+#: templates/includes/app_form.html:21
+#: templates/properties/rate_matrix.html:45
+msgid "Saqlash"
+msgstr "Saqlash"
+
+#: templates/bookings/group_list.html:3 templates/bookings/group_list.html:6
+msgid "Guruh bronlar"
+msgstr "Guruh bronlar"
+
+#: templates/bookings/group_list.html:6
+msgid "Yangi guruh"
+msgstr "Yangi guruh"
+
+#: templates/bookings/group_list.html:17
+#: templates/properties/property_detail.html:40
+#: templates/reports/dashboard.html:27 templates/reports/dashboard.html:289
+msgid "xona"
+msgstr "xona"
+
+#: templates/bookings/inquiry_list.html:6
+msgid "Navbat"
+msgstr "Navbat"
+
+#: templates/bookings/inquiry_list.html:6 templates/guests/company_list.html:8
+#: templates/guests/company_list.html:10 templates/hr/employee_list.html:8
+#: templates/inventory/stock_list.html:7
+#: templates/maintenance/ticket_list.html:6
+#: templates/services/service_list.html:7
+msgid "Yangi"
+msgstr "Yangi"
+
+#: templates/bookings/inquiry_list.html:25
+#: templates/finance/partials/expense_row.html:35
+#: templates/includes/nav_hub.html:125
+msgid "Tasdiqlash"
+msgstr "Tasdiqlash"
+
+#: templates/bookings/inquiry_list.html:29
+msgid "So‘rov yo‘q"
+msgstr "So‘rov yo‘q"
+
+#: templates/bookings/partials/board_page.html:5
+#: templates/includes/nav_hub.html:18
+msgid "Xonalar holati"
+msgstr "Xonalar holati"
+
+#: templates/bookings/partials/board_page.html:16
+msgid "Oldingi kun"
+msgstr "Oldingi kun"
+
+#: templates/bookings/partials/board_page.html:20
+#: templates/bookings/partials/calendar_page.html:15
+msgid "Bugun"
+msgstr "Bugun"
+
+#: templates/bookings/partials/board_page.html:28
+msgid "Keyingi kun"
+msgstr "Keyingi kun"
+
+#: templates/bookings/partials/board_page.html:35
+#: templates/folio/receipt.html:146 templates/housekeeping/board.html:23
+#: templates/reports/flash.html:112 templates/reports/flash.html:133
+msgid "Jami"
+msgstr "Jami"
+
+#: templates/bookings/partials/board_page.html:39
+#: templates/bookings/partials/board_page.html:57
+#: templates/bookings/partials/board_page.html:133
+#: templates/bookings/partials/walk_in_rooms.html:41
+#: templates/bookings/walk_in.html:119 templates/inventory/stock_list.html:28
+#: templates/properties/property_detail.html:16
+#: templates/properties/property_detail.html:33
+#: templates/properties/property_detail.html:51
+#: templates/properties/property_detail.html:75
+msgid "Bo‘sh"
+msgstr "Bo‘sh"
+
+#: templates/bookings/partials/board_page.html:97
+msgid "Kirish*"
+msgstr "Kirish*"
+
+#: templates/bookings/partials/board_page.html:114
+#: templates/includes/nav_hub.html:169
+msgid "Hisob"
+msgstr "Hisob"
+
+#: templates/bookings/partials/board_page.html:139
+#: templates/bookings/walk_in.html:25 templates/reports/audit_log.html:15
+msgid "Joylash"
+msgstr "Joylash"
+
+#: templates/bookings/partials/board_page.html:145
+#: templates/bookings/partials/calendar_page.html:108
+#: templates/housekeeping/board.html:98
+msgid "Xona yo‘q"
+msgstr "Xona yo‘q"
+
+#: templates/bookings/partials/board_page.html:146
+#: templates/bookings/partials/calendar_page.html:109
+#: templates/bookings/walk_in.html:33 templates/includes/nav_hub.html:65
+#: templates/properties/property_list.html:3
+#: templates/properties/property_list.html:6 tenants/forms.py:16
+msgid "Filiallar"
+msgstr "Filiallar"
+
+#: templates/bookings/partials/calendar_page.html:5
+msgid "Bron rejasi"
+msgstr "Bron rejasi"
+
+#: templates/bookings/partials/calendar_page.html:5
+msgid "14 kun"
+msgstr "14 kun"
+
+#: templates/bookings/partials/calendar_page.html:9
+#: templates/bookings/partials/calendar_page.html:24
+#: templates/finance/profit_share.html:11
+msgid "Davr"
+msgstr "Davr"
+
+#: templates/bookings/partials/calendar_page.html:22
+msgid "Oldingi hafta"
+msgstr "Oldingi hafta"
+
+#: templates/bookings/partials/calendar_page.html:33
+msgid "Keyingi hafta"
+msgstr "Keyingi hafta"
+
+#: templates/bookings/partials/calendar_page.html:52
+msgid "Kun"
+msgstr "Kun"
+
+#: templates/bookings/partials/calendar_page.html:59
+#: templates/reports/dashboard.html:64 templates/reports/dashboard.html:247
+msgid "Mehmonxonada"
+msgstr "Mehmonxonada"
+
+#: templates/bookings/partials/calendar_page.html:61
+msgid "Bo‘sh → +"
+msgstr "Bo‘sh → +"
+
+#: templates/bookings/partials/calendar_page.html:100
+#: templates/bookings/partials/calendar_quick_form.html:3
+#: templates/bookings/partials/calendar_quick_form.html:5
+msgid "Tez bron"
+msgstr "Tez bron"
+
+#: templates/bookings/partials/calendar_quick_form.html:23
+msgid "Bron yaratish"
+msgstr "Bron yaratish"
+
+#: templates/bookings/partials/calendar_quick_form.html:26
+msgid "To‘liq forma"
+msgstr "To‘liq forma"
+
+#: templates/bookings/partials/checkout_modal.html:22
+msgid "Avval to‘lovni qabul qiling."
+msgstr "Avval to‘lovni qabul qiling."
+
+#: templates/bookings/partials/checkout_modal.html:26
+msgid "To‘lov qabul qilish"
+msgstr "To‘lov qabul qilish"
+
+#: templates/bookings/partials/checkout_modal.html:38
+msgid "Chiqishni tasdiqlash"
+msgstr "Chiqishni tasdiqlash"
+
+#: templates/bookings/partials/checkout_success.html:5
+msgid "Chiqish bajarildi"
+msgstr "Chiqish bajarildi"
+
+#: templates/bookings/partials/checkout_success.html:8
+msgid "Xona kir holatiga o‘tkazildi. HK vazifasi yaratildi."
+msgstr "Xona kir holatiga o‘tkazildi. HK vazifasi yaratildi."
+
+#: templates/bookings/partials/checkout_success.html:11
+msgid "Hisob PDF"
+msgstr "Hisob PDF"
+
+#: templates/bookings/partials/walk_in_rooms.html:23
+#: templates/bookings/walk_in.html:103
+msgid "Xona tanlash"
+msgstr "Xona tanlash"
+
+#: templates/bookings/partials/walk_in_rooms.html:48
+msgid "Bu filialda faol xona yo‘q."
+msgstr "Bu filialda faol xona yo‘q."
+
+#: templates/bookings/partials/walk_in_rooms.html:53
+#, python-format
+msgid ""
+"\n"
+"    %(counter)s ta xona band — tanlash mumkin emas.\n"
+"  "
+msgid_plural ""
+"\n"
+"    %(counter)s ta xona band — tanlash mumkin emas.\n"
+"  "
+msgstr[0] ""
+"\n"
+"    %(counter)s ta xona band — tanlash mumkin emas.\n"
+"  "
+
+#: templates/bookings/reservation_amend.html:3
+#: templates/bookings/reservation_detail.html:103
+msgid "O‘zgartirish"
+msgstr "O‘zgartirish"
+
+#: templates/bookings/reservation_amend.html:6
+msgid "Bronni o‘zgartirish"
+msgstr "Bronni o‘zgartirish"
+
+#: templates/bookings/reservation_detail.html:20
+#: templates/folio/folio_detail.html:3 templates/folio/folio_detail.html:9
+msgid "Mehmon hisobi"
+msgstr "Mehmon hisobi"
+
+#: templates/bookings/reservation_detail.html:30
+#: templates/widget/booking.html:19
+msgid "Sanalar"
+msgstr "Sanalar"
+
+#: templates/bookings/reservation_detail.html:30
+msgid "tun"
+msgstr "tun"
+
+#: templates/bookings/reservation_detail.html:32
+msgid "Biriktirilmagan"
+msgstr "Biriktirilmagan"
+
+#: templates/bookings/reservation_detail.html:39
+msgid "Qora ro‘yxatdagi mehmon"
+msgstr "Qora ro‘yxatdagi mehmon"
+
+#: templates/bookings/reservation_detail.html:56
+#: templates/bookings/reservation_detail.html:100
+#: templates/folio/partials/folio_body.html:121
+msgid "O‘tkazish"
+msgstr "O‘tkazish"
+
+#: templates/bookings/reservation_detail.html:65
+msgid "Note"
+msgstr "Note"
+
+#: templates/bookings/reservation_detail.html:69
+msgid "Depozit olish"
+msgstr "Depozit olish"
+
+#: templates/bookings/reservation_detail.html:76
+msgid "So‘rovni tasdiqlash"
+msgstr "So‘rovni tasdiqlash"
+
+#: templates/bookings/reservation_detail.html:84
+msgid "Kir xonaga kirish*"
+msgstr "Kir xonaga kirish*"
+
+#: templates/bookings/reservation_detail.html:91
+msgid "Hujjatsiz kirish*"
+msgstr "Hujjatsiz kirish*"
+
+#: templates/bookings/reservation_detail.html:93
+msgid "Pasport/ID yo‘q"
+msgstr "Pasport/ID yo‘q"
+
+#: templates/bookings/reservation_detail.html:93
+msgid "hujjat qo‘shish"
+msgstr "hujjat qo‘shish"
+
+#: templates/bookings/reservation_detail.html:108
+msgid "O‘zgarishlar"
+msgstr "O‘zgarishlar"
+
+#: templates/bookings/reservation_form.html:24
+#: templates/bookings/reservation_form.html:39
+#: templates/inventory/minibar_form.html:24
+#: templates/inventory/minibar_quick.html:33
+msgid "+ Yangi"
+msgstr "+ Yangi"
+
+#: templates/bookings/reservation_form.html:53
+msgid "Xona va sanalarni tanlang"
+msgstr "Xona va sanalarni tanlang"
+
+#: templates/bookings/reservation_list.html:11
+#: templates/finance/expense_list.html:30
+msgid "Barcha holat"
+msgstr "Barcha holat"
+
+#: templates/bookings/reservation_list.html:16
+#: templates/hr/advance_list.html:15 templates/includes/filter_panel.html:9
+#: templates/maintenance/ticket_list.html:16
+msgid "Filtrlash"
+msgstr "Filtrlash"
+
+#: templates/bookings/reservation_list.html:36
+msgid "Bron yo‘q."
+msgstr "Bron yo‘q."
+
+#: templates/bookings/transfer.html:3 templates/bookings/transfer.html:10
+msgid "Transfer"
+msgstr "Transfer"
+
+#: templates/bookings/transfer.html:6
+msgid "Xona transfer"
+msgstr "Xona transfer"
+
+#: templates/bookings/transfer.html:9
+msgid "Hozirgi"
+msgstr "Hozirgi"
+
+#: templates/bookings/walk_in.html:8
+msgid "Resepsiya"
+msgstr "Resepsiya"
+
+#: templates/bookings/walk_in.html:8 templates/includes/nav_hub.html:38
+msgid "Walk-in"
+msgstr "Walk-in"
+
+#: templates/bookings/walk_in.html:20
+msgid "Qadamlar"
+msgstr "Qadamlar"
+
+#: templates/bookings/walk_in.html:31
+msgid "Filial tanlanmagan"
+msgstr "Filial tanlanmagan"
+
+#: templates/bookings/walk_in.html:32
+msgid "Avval filial tanlang — chap menyu yoki Xonalar bo‘limi."
+msgstr "Avval filial tanlang — chap menyu yoki Xonalar bo‘limi."
+
+#: templates/bookings/walk_in.html:43
+msgid "Mehmon ma’lumotlari"
+msgstr "Mehmon ma’lumotlari"
+
+#: templates/bookings/walk_in.html:73
+msgid "Qo‘shimcha"
+msgstr "Qo‘shimcha"
+
+#: templates/bookings/walk_in.html:83
+msgid "Kir xona ruxsati"
+msgstr "Kir xona ruxsati"
+
+#: templates/bookings/walk_in.html:84
+msgid "Tozalash tugamagan xonaga kirish"
+msgstr "Tozalash tugamagan xonaga kirish"
+
+#: templates/bookings/walk_in.html:90
+msgid "Hujjat ruxsati"
+msgstr "Hujjat ruxsati"
+
+#: templates/bookings/walk_in.html:91
+msgid "Pasport/ID hali kiritilmagan"
+msgstr "Pasport/ID hali kiritilmagan"
+
+#: templates/bookings/walk_in.html:126
+msgid "Xonalar yangilanmoqda…"
+msgstr "Xonalar yangilanmoqda…"
+
+#: templates/bookings/walk_in.html:139
+msgid ""
+"\n"
+"            ta xona tanlash mumkin\n"
+"          "
+msgid_plural ""
+"\n"
+"            ta xona tanlash mumkin\n"
+"          "
+msgstr[0] ""
+"\n"
+"            ta xona tanlash mumkin\n"
+"          "
+
+#: templates/bookings/walk_in.html:145
+msgid "Bo‘sh xona yo‘q — tunlar sonini yoki filialni tekshiring"
+msgstr "Bo‘sh xona yo‘q — tunlar sonini yoki filialni tekshiring"
+
+#: templates/bookings/walk_in.html:150
+msgid "Mehmonni joylash"
+msgstr "Mehmonni joylash"
+
+#: templates/finance/expense_form.html:19
+msgid "Forma"
+msgstr "Forma"
+
+#: templates/finance/expense_list.html:9
+msgid "Filtrlash, tahrirlash, tasdiqlash va to‘lov — bir joyda."
+msgstr "Filtrlash, tahrirlash, tasdiqlash va to‘lov — bir joyda."
+
+#: templates/finance/expense_list.html:9 templates/finance/setup_list.html:10
+msgid "Kategoriya / Yetkazib beruvchi"
+msgstr "Kategoriya / Yetkazib beruvchi"
+
+#: templates/finance/expense_list.html:14
+#: templates/finance/expense_list.html:24
+msgid "Qidiruv"
+msgstr "Qidiruv"
+
+#: templates/finance/expense_list.html:15
+msgid "Filtrlar"
+msgstr "Filtrlar"
+
+#: templates/finance/expense_list.html:18
+msgid "Qo‘llash"
+msgstr "Qo‘llash"
+
+#: templates/finance/expense_list.html:25
+msgid "Sarlavha, izoh, kategoriya…"
+msgstr "Sarlavha, izoh, kategoriya…"
+
+#: templates/finance/expense_list.html:39
+#: templates/finance/expense_list.html:50
+#: templates/finance/expense_list.html:61 templates/hr/advance_list.html:13
+#: templates/maintenance/ticket_list.html:14
+msgid "Barchasi"
+msgstr "Barchasi"
+
+#: templates/finance/expense_list.html:42
+#: templates/finance/expense_list.html:53
+#: templates/services/service_list.html:16
+msgid "o‘chiq"
+msgstr "o‘chiq"
+
+#: templates/finance/expense_list.html:68
+msgid "Dan"
+msgstr "Dan"
+
+#: templates/finance/expense_list.html:72
+msgid "Gacha"
+msgstr "Gacha"
+
+#: templates/finance/expense_list.html:80
+msgid "Topildi"
+msgstr "Topildi"
+
+#: templates/finance/expense_list.html:84
+msgid "Jami summa"
+msgstr "Jami summa"
+
+#: templates/finance/expense_list.html:92
+#: templates/guests/company_detail.html:8
+#: templates/guests/company_detail.html:10
+msgid "Ro‘yxat"
+msgstr "Ro‘yxat"
+
+#: templates/finance/expense_list.html:102
+msgid "Mos rasxod yo‘q"
+msgstr "Mos rasxod yo‘q"
+
+#: templates/finance/expense_list.html:103
+msgid "Filtrni o‘zgartiring yoki yangi rasxod qo‘shing."
+msgstr "Filtrni o‘zgartiring yoki yangi rasxod qo‘shing."
+
+#: templates/finance/expense_list.html:109
+msgid "Faqat birinchi 200 ta ko‘rsatilmoqda — filtrni toraytiring."
+msgstr "Faqat birinchi 200 ta ko‘rsatilmoqda — filtrni toraytiring."
+
+#: templates/finance/partials/expense_row.html:18
+msgid "To‘lovchi"
+msgstr "To‘lovchi"
+
+#: templates/finance/partials/expense_row.html:26
+#: templates/finance/setup_list.html:38 templates/finance/setup_list.html:77
+msgid "Tahrir"
+msgstr "Tahrir"
+
+#: templates/finance/partials/expense_row.html:38
+#: templates/finance/partials/expense_row.html:68
+msgid "Yana"
+msgstr "Yana"
+
+#: templates/finance/partials/expense_row.html:45
+#: templates/finance/partials/expense_row.html:75
+msgid "Rad sababi"
+msgstr "Rad sababi"
+
+#: templates/finance/partials/expense_row.html:46
+#: templates/finance/partials/expense_row.html:76
+msgid "Rad etish"
+msgstr "Rad etish"
+
+#: templates/finance/partials/expense_row.html:52
+#: templates/finance/partials/expense_row.html:93
+msgid "O‘chirishni tasdiqlaysizmi?"
+msgstr "O‘chirishni tasdiqlaysizmi?"
+
+#: templates/finance/partials/expense_row.html:54
+#: templates/finance/partials/expense_row.html:95
+#: templates/finance/setup_list.html:42 templates/finance/setup_list.html:81
+#: templates/folio/partials/folio_body.html:285
+#: templates/folio/partials/folio_body.html:323
+msgid "O‘chirish"
+msgstr "O‘chirish"
+
+#: templates/finance/partials/expense_row.html:65
+msgid "To‘landi"
+msgstr "To‘landi"
+
+#: templates/finance/partials/expense_row.html:87
+msgid "Qayta ochish"
+msgstr "Qayta ochish"
+
+#: templates/finance/profit_reset.html:3 templates/finance/profit_reset.html:6
+msgid "0 qilib qayta hisob"
+msgstr "0 qilib qayta hisob"
+
+#: templates/finance/profit_reset.html:6 templates/finance/profit_share.html:8
+#: templates/finance/profit_withdraw.html:6
+#: templates/includes/nav_hub.html:144
+msgid "Sheriklik"
+msgstr "Sheriklik"
+
+#: templates/finance/profit_reset.html:6
+msgid "Joriy davrni yopadi va sof foydani yangidan boshlaydi."
+msgstr "Joriy davrni yopadi va sof foydani yangidan boshlaydi."
+
+#: templates/finance/profit_reset.html:10
+#| msgid "Hozirgi"
+msgid "Hozirgi davr"
+msgstr "Hozirgi"
+
+#: templates/finance/profit_reset.html:11
+#: templates/finance/profit_share.html:44
+msgid "Sof foyda"
+msgstr "Sof foyda"
+
+#: templates/finance/profit_reset.html:12
+#| msgid "Oraliq jami"
+msgid "Olingan jami"
+msgstr "Oraliq jami"
+
+#: templates/finance/profit_reset.html:16
+msgid ""
+"Yopilgandan keyin yangi davr ertasi kundan boshlanadi. Tarix saqlanadi."
+msgstr ""
+"Yopilgandan keyin yangi davr ertasi kundan boshlanadi. Tarix saqlanadi."
+
+#: templates/finance/profit_reset.html:22
+#| msgid "Smenani yopish"
+msgid "Davrni yopish"
+msgstr "Smenani yopish"
+
+#: templates/finance/profit_share.html:3 templates/finance/profit_share.html:9
+#: templates/includes/nav_hub.html:143 templates/reports/pnl.html:20
+#| msgid "Foyda/zarar xulosasi"
+msgid "Foyda ulushi"
+msgstr "Foyda/zarar xulosasi"
+
+#: templates/finance/profit_share.html:19
+msgid "0 qilib qayta"
+msgstr "0 qilib qayta"
+
+#: templates/finance/profit_share.html:25
+#| msgid "Bolalar sig‘imi"
+msgid "Faol ulushlar yig‘indisi"
+msgstr "Bolalar sig‘imi"
+
+#: templates/finance/profit_share.html:26
+#, python-format
+msgid ""
+"ideal 100%%. Hozircha foizlar shu yig‘indiga nisbatan emas, sof foydaga "
+"nisbatan."
+msgstr ""
+"ideal 100%%. Hozircha foizlar shu yig‘indiga nisbatan emas, sof foydaga "
+"nisbatan."
+
+#: templates/finance/profit_share.html:51
+#| msgid "Grafiklar"
+msgid "Sheriklar"
+msgstr "Grafiklar"
+
+#: templates/finance/profit_share.html:59 templates/tenants/staff_list.html:15
+msgid "nofaol"
+msgstr "nofaol"
+
+#: templates/finance/profit_share.html:63
+msgid "Ulush"
+msgstr "Ulush"
+
+#: templates/finance/profit_share.html:64
+msgid "Olingan"
+msgstr "Olingan"
+
+#: templates/finance/profit_share.html:67
+msgid "Olish"
+msgstr "Olish"
+
+#: templates/finance/profit_share.html:71
+#| msgid "Hali kategoriya yo‘q."
+msgid "Hali sherik yo‘q."
+msgstr "Hali kategoriya yo‘q."
+
+#: templates/finance/profit_share.html:72
+msgid "Birinchi sherikni qo‘shing"
+msgstr "Birinchi sherikni qo‘shing"
+
+#: templates/finance/profit_share.html:78
+#| msgid "Hisoblangan"
+msgid "Jami olingan"
+msgstr "Hisoblangan"
+
+#: templates/finance/profit_share.html:79
+#| msgid "Joriy qoldiq"
+msgid "Jami qoldiq"
+msgstr "Joriy qoldiq"
+
+#: templates/finance/profit_share.html:87
+#| msgid "So‘nggi buyurtmalar"
+msgid "So‘nggi olishlar"
+msgstr "So‘nggi buyurtmalar"
+
+#: templates/finance/profit_share.html:103
+#| msgid "Yopilgan"
+msgid "Yopilgan davrlar"
+msgstr "Yopilgan"
+
+#: templates/finance/profit_withdraw.html:6
+msgid "Ulushdan to‘liq yoki qisman olish."
+msgstr "Ulushdan to‘liq yoki qisman olish."
+
+#: templates/finance/profit_withdraw.html:10
+msgid "Davr sof foydasi"
+msgstr "Davr sof foydasi"
+
+#: templates/finance/profit_withdraw.html:24
+#| msgid "Joriy qoldiq"
+msgid "Joriy qoldiqlar"
+msgstr "Joriy qoldiq"
+
+#: templates/finance/setup_list.html:3
+msgid "Rasxod sozlamalari"
+msgstr "Rasxod sozlamalari"
+
+#: templates/finance/setup_list.html:10
+msgid "Faollashtirish, tahrirlash va yangi qo‘shish."
+msgstr "Faollashtirish, tahrirlash va yangi qo‘shish."
+
+#: templates/finance/setup_list.html:10
+msgid "← Rasxodlar"
+msgstr "← Rasxodlar"
+
+#: templates/finance/setup_list.html:21
+msgid "Tasnif"
+msgstr "Tasnif"
+
+#: templates/finance/setup_list.html:22
+msgid "Kategoriyalar"
+msgstr "Kategoriyalar"
+
+#: templates/finance/setup_list.html:34 templates/finance/setup_list.html:72
+msgid "O‘chirilgan"
+msgstr "O‘chirilgan"
+
+#: templates/finance/setup_list.html:42 templates/finance/setup_list.html:81
+msgid "Faollashtirish"
+msgstr "Faollashtirish"
+
+#: templates/finance/setup_list.html:49
+msgid "Hali kategoriya yo‘q."
+msgstr "Hali kategoriya yo‘q."
+
+#: templates/finance/setup_list.html:50 templates/finance/setup_list.html:89
+#: templates/guests/partials/quick_company_form.html:18
+#: templates/guests/partials/quick_guest_form.html:18
+#: templates/inventory/partials/quick_item_form.html:18
+msgid "Qo‘shish"
+msgstr "Qo‘shish"
+
+#: templates/finance/setup_list.html:59
+msgid "Hamkorlar"
+msgstr "Hamkorlar"
+
+#: templates/finance/setup_list.html:60
+msgid "Yetkazib beruvchilar"
+msgstr "Yetkazib beruvchilar"
+
+#: templates/finance/setup_list.html:88
+msgid "Hali yetkazib beruvchi yo‘q."
+msgstr "Hali yetkazib beruvchi yo‘q."
+
+#: templates/folio/cash_shift.html:3 templates/folio/cash_shift.html:7
+#: templates/folio/cash_shift_detail.html:7
+msgid "Kassa smena"
+msgstr "Kassa smena"
+
+#: templates/folio/cash_shift.html:13
+msgid "Faol smena"
+msgstr "Faol smena"
+
+#: templates/folio/cash_shift.html:14
+msgid "Ochiq smena"
+msgstr "Ochiq smena"
+
+#: templates/folio/cash_shift.html:17
+#: templates/folio/cash_shift_detail.html:15
+msgid "Boshlang‘ich"
+msgstr "Boshlang‘ich"
+
+#: templates/folio/cash_shift.html:25
+#: templates/folio/cash_shift_detail.html:19
+msgid "Naqd kirim"
+msgstr "Naqd kirim"
+
+#: templates/folio/cash_shift.html:35
+#: templates/folio/cash_shift_detail.html:27
+msgid "Naqd chiqim"
+msgstr "Naqd chiqim"
+
+#: templates/folio/cash_shift.html:40
+msgid "Kutilgan naqd"
+msgstr "Kutilgan naqd"
+
+#: templates/folio/cash_shift.html:47 templates/folio/cash_shift.html:48
+msgid "To‘lov turlari"
+msgstr "To‘lov turlari"
+
+#: templates/folio/cash_shift.html:51 templates/folio/cash_shift.html:52
+msgid "Naqd oqimi"
+msgstr "Naqd oqimi"
+
+#: templates/folio/cash_shift.html:59
+msgid "Smenani yopish"
+msgstr "Smenani yopish"
+
+#: templates/folio/cash_shift.html:64
+msgid "Naqd to‘lovlar"
+msgstr "Naqd to‘lovlar"
+
+#: templates/folio/cash_shift.html:77
+msgid "Naqd chiqimlar"
+msgstr "Naqd chiqimlar"
+
+#: templates/folio/cash_shift.html:97
+msgid "Yangi smena"
+msgstr "Yangi smena"
+
+#: templates/folio/cash_shift.html:101
+#: templates/maintenance/ticket_form.html:9
+msgid "Ochish"
+msgstr "Ochish"
+
+#: templates/folio/cash_shift.html:108
+msgid "Tarix"
+msgstr "Tarix"
+
+#: templates/folio/cash_shift.html:111
+msgid "Smena farqi (variance)"
+msgstr "Smena farqi (variance)"
+
+#: templates/folio/cash_shift.html:112
+msgid "Smena farqi"
+msgstr "Smena farqi"
+
+#: templates/folio/cash_shift.html:123
+msgid "yopish"
+msgstr "yopish"
+
+#: templates/folio/cash_shift.html:124
+msgid "farq"
+msgstr "farq"
+
+#: templates/folio/cash_shift_detail.html:3
+#: templates/includes/nav_hub.html:111
+msgid "Smena"
+msgstr "Smena"
+
+#: templates/folio/cash_shift_detail.html:7
+#: templates/properties/rate_matrix.html:15
+msgid "Orqaga"
+msgstr "Orqaga"
+
+#: templates/folio/cash_shift_detail.html:36
+#: templates/folio/folio_detail.html:22 templates/hr/advance_list.html:12
+#: templates/hr/advance_list.html:26 templates/reports/dashboard.html:276
+msgid "Yopilgan"
+msgstr "Yopilgan"
+
+#: templates/folio/cash_shift_detail.html:40
+msgid "Farq"
+msgstr "Farq"
+
+#: templates/folio/cash_shift_detail.html:47
+msgid "Tranzaksiyalar"
+msgstr "Tranzaksiyalar"
+
+#: templates/folio/city_ledger_list.html:5
+msgid "Debitor qarzdorlik"
+msgstr "Debitor qarzdorlik"
+
+#: templates/folio/city_ledger_list.html:8
+msgid "Jami debitorlik"
+msgstr "Jami debitorlik"
+
+#: templates/folio/city_ledger_list.html:15
+msgid "Ochiq hisoblar"
+msgstr "Ochiq hisoblar"
+
+#: templates/folio/city_ledger_list.html:24
+#: templates/guests/company_detail.html:35
+msgid "muddat"
+msgstr "muddat"
+
+#: templates/folio/folio_detail.html:40
+msgid "PDF"
+msgstr "PDF"
+
+#: templates/folio/invoice_detail.html:7 templates/includes/nav_hub.html:118
+msgid "Debitorlar"
+msgstr "Debitorlar"
+
+#: templates/folio/invoice_detail.html:13
+msgid "Berilgan"
+msgstr "Berilgan"
+
+#: templates/folio/invoice_detail.html:14
+msgid "Muddat"
+msgstr "Muddat"
+
+#: templates/folio/invoice_detail.html:19
+#: templates/folio/invoice_detail.html:33
+msgid "Qatorlar"
+msgstr "Qatorlar"
+
+#: templates/folio/invoice_detail.html:23
+#: templates/folio/invoice_detail.html:45
+#: templates/folio/partials/folio_body.html:16
+#: templates/folio/receipt.html:151
+msgid "To‘lovlar"
+msgstr "To‘lovlar"
+
+#: templates/folio/invoice_detail.html:58
+msgid "To‘lov qabul"
+msgstr "To‘lov qabul"
+
+#: templates/folio/partials/folio_body.html:8
+#: templates/folio/partials/folio_body.html:32
+msgid "Xarajatlar"
+msgstr "Xarajatlar"
+
+#: templates/folio/partials/folio_body.html:9
+msgid "Mehmonga yozilgan summalar — xona, xizmat, minibar va boshqalar."
+msgstr "Mehmonga yozilgan summalar — xona, xizmat, minibar va boshqalar."
+
+#: templates/folio/partials/folio_body.html:17
+msgid "Mehmon kassaga bergan pullar — naqd, karta yoki o‘tkazma."
+msgstr "Mehmon kassaga bergan pullar — naqd, karta yoki o‘tkazma."
+
+#: templates/folio/partials/folio_body.html:25
+msgid "Xarajat − to‘lov"
+msgstr "Xarajat − to‘lov"
+
+#: templates/folio/partials/folio_body.html:36
+#: templates/folio/receipt.html:144
+msgid "QQS"
+msgstr "QQS"
+
+#: templates/folio/partials/folio_body.html:40
+msgid "Jami hisob"
+msgstr "Jami hisob"
+
+#: templates/folio/partials/folio_body.html:58
+msgid "Tezkor"
+msgstr "Tezkor"
+
+#: templates/folio/partials/folio_body.html:59
+msgid "Xizmat va minibar"
+msgstr "Xizmat va minibar"
+
+#: templates/folio/partials/folio_body.html:60
+msgid "Yashovchi mehmonga qo‘shimcha xarajat yozish."
+msgstr "Yashovchi mehmonga qo‘shimcha xarajat yozish."
+
+#: templates/folio/partials/folio_body.html:67
+msgid "Xizmat qo‘shish"
+msgstr "Xizmat qo‘shish"
+
+#: templates/folio/partials/folio_body.html:77
+#: templates/folio/partials/folio_body.html:93
+msgid "Hisobga yozish"
+msgstr "Hisobga yozish"
+
+#: templates/folio/partials/folio_body.html:83
+msgid "Minibar sotish"
+msgstr "Minibar sotish"
+
+#: templates/folio/partials/folio_body.html:106
+msgid "Kompaniya hisobiga o‘tkazish"
+msgstr "Kompaniya hisobiga o‘tkazish"
+
+#: templates/folio/partials/folio_body.html:107
+msgid "Tanlangan xarajatlar"
+msgstr "Tanlangan xarajatlar"
+
+#: templates/folio/partials/folio_body.html:107
+msgid "nomiga yoziladi."
+msgstr "nomiga yoziladi."
+
+#: templates/folio/partials/folio_body.html:115
+msgid "Barcha yozuvlarni o‘tkazish"
+msgstr "Barcha yozuvlarni o‘tkazish"
+
+#: templates/folio/partials/folio_body.html:131
+msgid "1 · Xarajatlar"
+msgstr "1 · Xarajatlar"
+
+#: templates/folio/partials/folio_body.html:132
+msgid "Mehmonga yozilgan"
+msgstr "Mehmonga yozilgan"
+
+#: templates/folio/partials/folio_body.html:133
+msgid "Bu yerda mehmon nima uchun to‘lashi kerakligi ko‘rinadi."
+msgstr "Bu yerda mehmon nima uchun to‘lashi kerakligi ko‘rinadi."
+
+#: templates/folio/partials/folio_body.html:135
+msgid "Yozuvlar soni"
+msgstr "Yozuvlar soni"
+
+#: templates/folio/partials/folio_body.html:150
+#: templates/folio/partials/folio_body.html:205
+msgid "Bekor sababi"
+msgstr "Bekor sababi"
+
+#: templates/folio/partials/folio_body.html:157
+msgid "Hali xarajat yo‘q"
+msgstr "Hali xarajat yo‘q"
+
+#: templates/folio/partials/folio_body.html:158
+msgid "Pastdagi forma orqali qo‘lda yozuv qo‘shishingiz mumkin."
+msgstr "Pastdagi forma orqali qo‘lda yozuv qo‘shishingiz mumkin."
+
+#: templates/folio/partials/folio_body.html:167
+msgid "Yangi xarajat qo‘shish"
+msgstr "Yangi xarajat qo‘shish"
+
+#: templates/folio/partials/folio_body.html:168
+msgid "Masalan: jarima, qo‘shimcha xizmat yoki boshqa yozuv."
+msgstr "Masalan: jarima, qo‘shimcha xizmat yoki boshqa yozuv."
+
+#: templates/folio/partials/folio_body.html:178
+msgid "Xarajatni qo‘shish"
+msgstr "Xarajatni qo‘shish"
+
+#: templates/folio/partials/folio_body.html:186
+msgid "2 · To‘lovlar"
+msgstr "2 · To‘lovlar"
+
+#: templates/folio/partials/folio_body.html:187
+msgid "Kassaga kelgan"
+msgstr "Kassaga kelgan"
+
+#: templates/folio/partials/folio_body.html:188
+msgid "Mehmon to‘lagan pullar shu yerda qayd etiladi."
+msgstr "Mehmon to‘lagan pullar shu yerda qayd etiladi."
+
+#: templates/folio/partials/folio_body.html:190
+msgid "To‘lovlar soni"
+msgstr "To‘lovlar soni"
+
+#: templates/folio/partials/folio_body.html:212
+msgid "Hali to‘lov yo‘q"
+msgstr "Hali to‘lov yo‘q"
+
+#: templates/folio/partials/folio_body.html:213
+msgid "Qoldiqni yopish uchun oddiy yoki bo‘lingan to‘lov qo‘shing."
+msgstr "Qoldiqni yopish uchun oddiy yoki bo‘lingan to‘lov qo‘shing."
+
+#: templates/folio/partials/folio_body.html:228
+msgid "Bitta usulda to‘lash"
+msgstr "Bitta usulda to‘lash"
+
+#: templates/folio/partials/folio_body.html:229
+msgid "Faqat naqd yoki faqat karta — shu forma."
+msgstr "Faqat naqd yoki faqat karta — shu forma."
+
+#: templates/folio/partials/folio_body.html:239
+msgid "To‘lovni qabul qilish"
+msgstr "To‘lovni qabul qilish"
+
+#: templates/folio/partials/folio_body.html:245
+msgid "Bir necha usulda to‘lash"
+msgstr "Bir necha usulda to‘lash"
+
+#: templates/folio/partials/folio_body.html:246
+msgid "Masalan: bir qismi naqd, qolgani karta. Kerak bo‘lsa «+ Usul» bosing."
+msgstr "Masalan: bir qismi naqd, qolgani karta. Kerak bo‘lsa «+ Usul» bosing."
+
+#: templates/folio/partials/folio_body.html:277
+#: templates/folio/partials/folio_body.html:315
+msgid "Turi"
+msgstr "Turi"
+
+#: templates/folio/partials/folio_body.html:293
+msgid "Bo‘lingan to‘lovni saqlash"
+msgstr "Bo‘lingan to‘lovni saqlash"
+
+#: templates/folio/partials/folio_body.html:329
+#: templates/folio/partials/folio_body.html:335
+msgid "Hisobni yopish"
+msgstr "Hisobni yopish"
+
+#: templates/folio/partials/folio_body.html:330
+msgid "Faqat qoldiq 0 bo‘lganda. Keyin yangi yozuv qo‘shib bo‘lmaydi."
+msgstr "Faqat qoldiq 0 bo‘lganda. Keyin yangi yozuv qo‘shib bo‘lmaydi."
+
+#: templates/folio/partials/folio_body.html:334
+msgid "Avval qoldiqni to‘lang"
+msgstr "Avval qoldiqni to‘lang"
+
+#: templates/folio/partials/payment_modal.html:34
+msgid "Qabul qilish"
+msgstr "Qabul qilish"
+
+#: templates/folio/partials/payment_modal.html:37
+msgid "To‘liq mehmon hisobi"
+msgstr "To‘liq mehmon hisobi"
+
+#: templates/folio/receipt.html:109
+msgid "Chop etish"
+msgstr "Chop etish"
+
+#: templates/folio/receipt.html:110
+msgid "PDF yuklab olish"
+msgstr "PDF yuklab olish"
+
+#: templates/folio/receipt.html:142
+msgid "Oraliq jami"
+msgstr "Oraliq jami"
+
+#: templates/folio/receipt.html:173 templates/widget/booking.html:67
+msgid "Rahmat!"
+msgstr "Rahmat!"
+
+#: templates/guests/company_detail.html:16
+msgid "Terms"
+msgstr "Terms"
+
+#: templates/guests/company_detail.html:16
+msgid "kun"
+msgstr "kun"
+
+#: templates/guests/company_detail.html:17
+msgid "Chegara"
+msgstr "Chegara"
+
+#: templates/guests/company_detail.html:21
+msgid "Ochiq debitorlik"
+msgstr "Ochiq debitorlik"
+
+#: templates/guests/company_detail.html:22
+msgid "Hisob-fakturalar"
+msgstr "Hisob-fakturalar"
+
+#: templates/guests/company_detail.html:26
+msgid "Hisoblar"
+msgstr "Hisoblar"
+
+#: templates/guests/guest_detail.html:28
+msgid "Hujjatlar"
+msgstr "Hujjatlar"
+
+#: templates/guests/guest_detail.html:37
+msgid "Hujjat qo‘shish"
+msgstr "Hujjat qo‘shish"
+
+#: templates/guests/guest_detail.html:42
+msgid "Izohlar"
+msgstr "Izohlar"
+
+#: templates/guests/guest_list.html:14
+msgid "Qidiruv..."
+msgstr "Qidiruv..."
+
+#: templates/guests/guest_list.html:15
+msgid "Topish"
+msgstr "Topish"
+
+#: templates/guests/partials/guest_results.html:15
+msgid "Mehmon yo‘q."
+msgstr "Mehmon yo‘q."
+
+#: templates/housekeeping/board.html:10 templates/inventory/stock_list.html:7
+#: templates/maintenance/ticket_list.html:6
+#: templates/reports/dashboard.html:74
+msgid "Operatsiya"
+msgstr "Operatsiya"
+
+#: templates/housekeeping/board.html:10 templates/reports/dashboard.html:118
+#: templates/reports/dashboard.html:120 templates/reports/dashboard.html:149
+msgid "Xona holati"
+msgstr "Xona holati"
+
+#: templates/housekeeping/board.html:11 templates/reports/dashboard.html:77
+msgid "Tozalash doskasi"
+msgstr "Tozalash doskasi"
+
+#: templates/housekeeping/board.html:15
+msgid "Qabulxona doskasi"
+msgstr "Qabulxona doskasi"
+
+#: templates/housekeeping/board.html:43
+msgid "Vazifa"
+msgstr "Vazifa"
+
+#: templates/housekeeping/board.html:54
+msgid "Tez status — bitta bosish"
+msgstr "Tez status — bitta bosish"
+
+#: templates/housekeeping/board.html:83
+msgid "Nosozlik"
+msgstr "Nosozlik"
+
+#: templates/housekeeping/board.html:86
+msgid "Muammo"
+msgstr "Muammo"
+
+#: templates/housekeeping/board.html:88
+msgid "Xonani OOO qilish"
+msgstr "Xonani OOO qilish"
+
+#: templates/housekeeping/board.html:90
+msgid "Ariza yuborish"
+msgstr "Ariza yuborish"
+
+#: templates/housekeeping/board.html:99
+msgid "Avval xonalar ro‘yxatini to‘ldiring."
+msgstr "Avval xonalar ro‘yxatini to‘ldiring."
+
+#: templates/housekeeping/board.html:107
+msgid "Vazifalar"
+msgstr "Vazifalar"
+
+#: templates/housekeeping/board.html:108
+msgid "Faol vazifalar"
+msgstr "Faol vazifalar"
+
+#: templates/housekeeping/board.html:125
+msgid "Biriktirish…"
+msgstr "Biriktirish…"
+
+#: templates/housekeeping/board.html:132
+#: templates/maintenance/ticket_list.html:40
+msgid "Biriktirish"
+msgstr "Biriktirish"
+
+#: templates/housekeeping/board.html:140
+msgid "Vazifa yo‘q — barcha xonalar tartibda"
+msgstr "Vazifa yo‘q — barcha xonalar tartibda"
+
+#: templates/hr/advance_list.html:3 templates/hr/advance_list.html:7
+#: templates/hr/payroll_list.html:10
+msgid "Avanslar"
+msgstr "Avanslar"
+
+#: templates/hr/advance_list.html:7 templates/hr/employee_list.html:8
+#: templates/hr/payroll_list.html:7 templates/includes/nav_hub.html:132
+msgid "Kadrlar"
+msgstr "Kadrlar"
+
+#: templates/hr/advance_list.html:7 templates/hr/employee_list.html:8
+#: templates/hr/payroll_list.html:3 templates/hr/payroll_list.html:7
+msgid "Oyliklar"
+msgstr "Oyliklar"
+
+#: templates/hr/payroll_list.html:12
+msgid "Shu oy generatsiya"
+msgstr "Shu oy generatsiya"
+
+#: templates/hr/payroll_list.html:24
+msgid "Yakunlash"
+msgstr "Yakunlash"
+
+#: templates/hr/payroll_list.html:36
+msgid "baza"
+msgstr "baza"
+
+#: templates/hr/payroll_list.html:37
+msgid "bonus"
+msgstr "bonus"
+
+#: templates/hr/payroll_list.html:38
+msgid "avans"
+msgstr "avans"
+
+#: templates/hr/payroll_list.html:39
+msgid "ushlama"
+msgstr "ushlama"
+
+#: templates/hr/payroll_list.html:47
+msgid "To‘lash"
+msgstr "To‘lash"
+
+#: templates/hr/payroll_list.html:59
+msgid "Davr yo‘q"
+msgstr "Davr yo‘q"
+
+#: templates/includes/nav_hub.html:5
+msgid "Tez kirish"
+msgstr "Tez kirish"
+
+#: templates/includes/nav_hub.html:6
+msgid "Bo‘limlar"
+msgstr "Bo‘limlar"
+
+#: templates/includes/nav_hub.html:7
+msgid "Barcha sahifalarga bir joydan o‘ting."
+msgstr "Barcha sahifalarga bir joydan o‘ting."
+
+#: templates/includes/nav_hub.html:23
+msgid "14 kunlik reja"
+msgstr "14 kunlik reja"
+
+#: templates/includes/nav_hub.html:28
+msgid "Ro‘yxat va qidiruv"
+msgstr "Ro‘yxat va qidiruv"
+
+#: templates/includes/nav_hub.html:33
+msgid "Yangi murojaatlar"
+msgstr "Yangi murojaatlar"
+
+#: templates/includes/nav_hub.html:43
+msgid "Rezervatsiya"
+msgstr "Rezervatsiya"
+
+#: templates/includes/nav_hub.html:49
+msgid "Guruhli bronlar"
+msgstr "Guruhli bronlar"
+
+#: templates/includes/nav_hub.html:55
+msgid "Baza va profil"
+msgstr "Baza va profil"
+
+#: templates/includes/nav_hub.html:66
+msgid "Xonalar va narxlar"
+msgstr "Xonalar va narxlar"
+
+#: templates/includes/nav_hub.html:72
+msgid "HK doskasi"
+msgstr "HK doskasi"
+
+#: templates/includes/nav_hub.html:79
+msgid "Katalog va buyurtma"
+msgstr "Katalog va buyurtma"
+
+#: templates/includes/nav_hub.html:86
+msgid "Ombor va minibar"
+msgstr "Ombor va minibar"
+
+#: templates/includes/nav_hub.html:91
+#: templates/inventory/minibar_quick.html:13
+msgid "Tez sotuv"
+msgstr "Tez sotuv"
+
+#: templates/includes/nav_hub.html:98
+msgid "Arizalar"
+msgstr "Arizalar"
+
+#: templates/includes/nav_hub.html:105
+msgid "Moliya va hisobot"
+msgstr "Moliya va hisobot"
+
+#: templates/includes/nav_hub.html:149
+msgid "Flash"
+msgstr "Flash"
+
+#: templates/includes/nav_hub.html:156
+msgid "Audit jurnali"
+msgstr "Audit jurnali"
+
+#: templates/includes/nav_hub.html:163
+msgid "Ruxsatlar"
+msgstr "Ruxsatlar"
+
+#: templates/inventory/adjust_form.html:6
+msgid "Joriy qoldiq"
+msgstr "Joriy qoldiq"
+
+#: templates/inventory/minibar_form.html:6
+msgid "Minibar sotuvi"
+msgstr "Minibar sotuvi"
+
+#: templates/inventory/minibar_form.html:39
+#: templates/inventory/minibar_quick.html:49
+msgid "Sotish"
+msgstr "Sotish"
+
+#: templates/inventory/minibar_quick.html:8
+msgid "Minibar tez sotuv"
+msgstr "Minibar tez sotuv"
+
+#: templates/inventory/minibar_quick.html:8
+msgid "Xona raqamini kiriting — mehmon hisobiga avtomatik yoziladi."
+msgstr "Xona raqamini kiriting — mehmon hisobiga avtomatik yoziladi."
+
+#: templates/inventory/minibar_quick.html:8
+msgid "Mahsulot qo‘shish"
+msgstr "Mahsulot qo‘shish"
+
+#: templates/inventory/minibar_quick.html:14
+msgid "Xona + mahsulot"
+msgstr "Xona + mahsulot"
+
+#: templates/inventory/minibar_quick.html:15
+msgid "Xona raqamini kiriting — mehmon hisobiga yoziladi."
+msgstr "Xona raqamini kiriting — mehmon hisobiga yoziladi."
+
+#: templates/inventory/minibar_quick.html:37
+msgid "Ro‘yxat bo‘sh bo‘lsa — «+ Yangi» bilan qo‘shing."
+msgstr "Ro‘yxat bo‘sh bo‘lsa — «+ Yangi» bilan qo‘shing."
+
+#: templates/inventory/minibar_quick.html:53
+msgid "Bron ro‘yxati orqali sotish"
+msgstr "Bron ro‘yxati orqali sotish"
+
+#: templates/inventory/minibar_quick.html:55
+msgid "Inventar ro‘yxati"
+msgstr "Inventar ro‘yxati"
+
+#: templates/inventory/stock_form.html:6
+msgid "Yangi mahsulot"
+msgstr "Yangi mahsulot"
+
+#: templates/inventory/stock_list.html:7
+msgid "Xona bar"
+msgstr "Xona bar"
+
+#: templates/inventory/stock_list.html:8
+msgid "Kam qolgan:"
+msgstr "Kam qolgan:"
+
+#: templates/inventory/stock_list.html:17
+msgid "Kam"
+msgstr "Kam"
+
+#: templates/inventory/stock_list.html:18
+msgid "minibar"
+msgstr "minibar"
+
+#: templates/maintenance/ticket_form.html:3
+#: templates/maintenance/ticket_form.html:6
+msgid "Yangi ariza"
+msgstr "Yangi ariza"
+
+#: templates/maintenance/ticket_list.html:6
+msgid "Ta’mir arizalari"
+msgstr "Ta’mir arizalari"
+
+#: templates/properties/property_detail.html:6
+#: templates/properties/settings_form.html:3
+#: templates/properties/settings_form.html:6
+msgid "Sozlamalar"
+msgstr "Sozlamalar"
+
+#: templates/properties/property_detail.html:10
+msgid "Qavatlar"
+msgstr "Qavatlar"
+
+#: templates/properties/property_detail.html:11
+#: templates/properties/property_detail.html:49
+msgid "qavat"
+msgstr "qavat"
+
+#: templates/properties/property_detail.html:22
+msgid "Xona turlari"
+msgstr "Xona turlari"
+
+#: templates/properties/property_detail.html:23
+msgid "tur"
+msgstr "tur"
+
+#: templates/properties/property_detail.html:57
+msgid "Tariflar"
+msgstr "Tariflar"
+
+#: templates/properties/property_detail.html:58
+msgid "tarif"
+msgstr "tarif"
+
+#: templates/properties/property_detail.html:68
+msgid "Jadval"
+msgstr "Jadval"
+
+#: templates/properties/property_detail.html:69
+msgid "mavsum"
+msgstr "mavsum"
+
+#: templates/properties/property_list.html:6
+msgid "Yangi filial"
+msgstr "Yangi filial"
+
+#: templates/properties/property_list.html:20
+msgid "Hali filial yo‘q."
+msgstr "Hali filial yo‘q."
+
+#: templates/properties/rate_matrix.html:3
+#: templates/properties/rate_matrix.html:9
+msgid "Narx jadvali"
+msgstr "Narx jadvali"
+
+#: templates/properties/rate_matrix.html:10 templates/reports/pnl.html:42
+msgid "Asos"
+msgstr "Asos"
+
+#: templates/properties/rate_matrix.html:32
+msgid "Mavsumlar"
+msgstr "Mavsumlar"
+
+#: templates/properties/rate_matrix.html:33
+msgid "Mavsum qo‘shish"
+msgstr "Mavsum qo‘shish"
+
+#: templates/reports/audit_log.html:3
+msgid "Nazorat jurnali"
+msgstr "Nazorat jurnali"
+
+#: templates/reports/audit_log.html:6
+msgid "Pul harakatlari nazorati"
+msgstr "Pul harakatlari nazorati"
+
+#: templates/reports/audit_log.html:6 templates/reports/flash.html:10
+#: templates/reports/pnl.html:10
+msgid "Hisob-kitob"
+msgstr "Hisob-kitob"
+
+#: templates/reports/audit_log.html:17
+msgid "HK tayyor"
+msgstr "HK tayyor"
+
+#: templates/reports/audit_log.html:18 templates/reports/dashboard.html:385
+msgid "Kun yopish"
+msgstr "Kun yopish"
+
+#: templates/reports/audit_log.html:19
+msgid "Hisob yozuvi"
+msgstr "Hisob yozuvi"
+
+#: templates/reports/audit_log.html:21
+msgid "Yozuv bekor"
+msgstr "Yozuv bekor"
+
+#: templates/reports/audit_log.html:22
+msgid "To‘lov bekor"
+msgstr "To‘lov bekor"
+
+#: templates/reports/audit_log.html:23
+msgid "Kassa yopildi"
+msgstr "Kassa yopildi"
+
+#: templates/reports/audit_log.html:24
+msgid "Rasxod tasdiq"
+msgstr "Rasxod tasdiq"
+
+#: templates/reports/audit_log.html:25
+msgid "Rasxod to‘landi"
+msgstr "Rasxod to‘landi"
+
+#: templates/reports/dashboard.html:9
+msgid "Bugungi smena"
+msgstr "Bugungi smena"
+
+#: templates/reports/dashboard.html:16
+msgid "Bandlik, tushum va qabulxona bir qarashda."
+msgstr "Bandlik, tushum va qabulxona bir qarashda."
+
+#: templates/reports/dashboard.html:26 templates/reports/flash.html:34
+msgid "Bandlik"
+msgstr "Bandlik"
+
+#: templates/reports/dashboard.html:30
+msgid "kecha"
+msgstr "kecha"
+
+#: templates/reports/dashboard.html:54
+msgid "Bugungi tushum"
+msgstr "Bugungi tushum"
+
+#: templates/reports/dashboard.html:75
+msgid "Bugungi holat"
+msgstr "Bugungi holat"
+
+#: templates/reports/dashboard.html:82
+msgid "Kir xona"
+msgstr "Kir xona"
+
+#: templates/reports/dashboard.html:98
+msgid "HK vazifa"
+msgstr "HK vazifa"
+
+#: templates/reports/dashboard.html:102
+msgid "Ta’mirlash"
+msgstr "Ta’mirlash"
+
+#: templates/reports/dashboard.html:110
+msgid "Ochiq qarz"
+msgstr "Ochiq qarz"
+
+#: templates/reports/dashboard.html:140 templates/reports/dashboard.html:148
+msgid "Analitika"
+msgstr "Analitika"
+
+#: templates/reports/dashboard.html:141
+msgid "7 kun — tushum va bandlik"
+msgstr "7 kun — tushum va bandlik"
+
+#: templates/reports/dashboard.html:143
+msgid "7 kunlik tushum"
+msgstr "7 kunlik tushum"
+
+#: templates/reports/dashboard.html:150
+msgid "Batafsil statistika uchun admin hisobidan kiring."
+msgstr "Batafsil statistika uchun admin hisobidan kiring."
+
+#: templates/reports/dashboard.html:160
+msgid "oy"
+msgstr "oy"
+
+#: templates/reports/dashboard.html:183
+msgid "To‘liq foyda/zarar"
+msgstr "To‘liq foyda/zarar"
+
+#: templates/reports/dashboard.html:193
+msgid "Kelishlar"
+msgstr "Kelishlar"
+
+#: templates/reports/dashboard.html:194
+msgid "Bugungi kelishlar"
+msgstr "Bugungi kelishlar"
+
+#: templates/reports/dashboard.html:211
+msgid "Bugun kelish yo‘q"
+msgstr "Bugun kelish yo‘q"
+
+#: templates/reports/dashboard.html:219
+msgid "Ketishlar"
+msgstr "Ketishlar"
+
+#: templates/reports/dashboard.html:220
+msgid "Bugungi ketishlar"
+msgstr "Bugungi ketishlar"
+
+#: templates/reports/dashboard.html:237
+msgid "Bugun ketish yo‘q"
+msgstr "Bugun ketish yo‘q"
+
+#: templates/reports/dashboard.html:263
+msgid "Hozir mehmon yo‘q"
+msgstr "Hozir mehmon yo‘q"
+
+#: templates/reports/dashboard.html:272
+msgid "Kun yakuni"
+msgstr "Kun yakuni"
+
+#: templates/reports/dashboard.html:273
+msgid "Kun yopish rejasi"
+msgstr "Kun yopish rejasi"
+
+#: templates/reports/dashboard.html:278
+msgid "Blok"
+msgstr "Blok"
+
+#: templates/reports/dashboard.html:283
+msgid "Bugun yopilgan"
+msgstr "Bugun yopilgan"
+
+#: templates/reports/dashboard.html:288
+msgid "Oxirgi"
+msgstr "Oxirgi"
+
+#: templates/reports/dashboard.html:290
+msgid "kelmagan"
+msgstr "kelmagan"
+
+#: templates/reports/dashboard.html:291
+msgid "qarz"
+msgstr "qarz"
+
+#: templates/reports/dashboard.html:297
+msgid "Qarz"
+msgstr "Qarz"
+
+#: templates/reports/dashboard.html:309
+msgid "Kelmaganlar"
+msgstr "Kelmaganlar"
+
+#: templates/reports/dashboard.html:319 templates/reports/dashboard.html:335
+#: templates/reports/dashboard.html:351 templates/reports/dashboard.html:367
+msgid "Hammasi joyida"
+msgstr "Hammasi joyida"
+
+#: templates/reports/dashboard.html:357
+msgid "Kir xonalar"
+msgstr "Kir xonalar"
+
+#: templates/reports/dashboard.html:375
+msgid "Kun yopish bloklangan"
+msgstr "Kun yopish bloklangan"
+
+#: templates/reports/dashboard.html:385
+msgid "Kun yopilgan"
+msgstr "Kun yopilgan"
+
+#: templates/reports/dashboard.html:385
+msgid "Avval muammolarni hal qiling"
+msgstr "Avval muammolarni hal qiling"
+
+#: templates/reports/dashboard.html:390
+msgid "To‘lovlar CSV"
+msgstr "To‘lovlar CSV"
+
+#: templates/reports/dashboard.html:391
+msgid "Debitor CSV"
+msgstr "Debitor CSV"
+
+#: templates/reports/flash.html:28 templates/reports/pnl.html:49
+msgid "Ko‘rish"
+msgstr "Ko‘rish"
+
+#: templates/reports/flash.html:67 templates/reports/pnl.html:74
+msgid "Vizual"
+msgstr "Vizual"
+
+#: templates/reports/flash.html:68 templates/reports/pnl.html:75
+msgid "Grafiklar"
+msgstr "Grafiklar"
+
+#: templates/reports/flash.html:73 templates/reports/flash.html:74
+#: templates/reports/flash.html:89
+msgid "To‘lov usullari"
+msgstr "To‘lov usullari"
+
+#: templates/reports/flash.html:73
+msgid "kirim/chiqim"
+msgstr "kirim/chiqim"
+
+#: templates/reports/flash.html:77 templates/reports/flash.html:78
+msgid "Kun tushumi"
+msgstr "Kun tushumi"
+
+#: templates/reports/flash.html:81 templates/reports/flash.html:148
+msgid "OYD"
+msgstr "OYD"
+
+#: templates/reports/flash.html:81 templates/reports/flash.html:148
+msgid "foyda/zarar"
+msgstr "foyda/zarar"
+
+#: templates/reports/flash.html:82
+msgid "OYD foyda/zarar"
+msgstr "OYD foyda/zarar"
+
+#: templates/reports/flash.html:97
+msgid "kirim"
+msgstr "kirim"
+
+#: templates/reports/flash.html:98
+msgid "chiqim"
+msgstr "chiqim"
+
+#: templates/reports/flash.html:108 templates/reports/flash.html:116
+msgid "Mehmon A/R"
+msgstr "Mehmon A/R"
+
+#: templates/reports/flash.html:130
+msgid "Kompaniya A/R"
+msgstr "Kompaniya A/R"
+
+#: templates/reports/flash.html:138
+msgid "hisob"
+msgstr "hisob"
+
+#: templates/reports/flash.html:148
+msgid "naqd"
+msgstr "naqd"
+
+#: templates/reports/pnl.html:30
+msgid "Yil"
+msgstr "Yil"
+
+#: templates/reports/pnl.html:34
+msgid "Oy"
+msgstr "Oy"
+
+#: templates/reports/pnl.html:80
+msgid "Tushum turlari"
+msgstr "Tushum turlari"
+
+#: templates/reports/pnl.html:81 templates/reports/pnl.html:97
+msgid "Tushum tafsiloti"
+msgstr "Tushum tafsiloti"
+
+#: templates/reports/pnl.html:84 templates/reports/pnl.html:85
+#: templates/reports/pnl.html:110
+msgid "Rasxod kategoriyalari"
+msgstr "Rasxod kategoriyalari"
+
+#: templates/reports/pnl.html:88
+msgid "Oy xulosasi"
+msgstr "Oy xulosasi"
+
+#: templates/reports/pnl.html:89
+msgid "Foyda/zarar xulosasi"
+msgstr "Foyda/zarar xulosasi"
+
+#: templates/reports/pnl.html:122
+msgid "Avanslar (alohida):"
+msgstr "Avanslar (alohida):"
+
+#: templates/reports/pnl.html:130
+msgid "Operatsion xarajat"
+msgstr "Operatsion xarajat"
+
+#: templates/reports/pnl.html:130
+msgid "rasxod + oylik"
+msgstr "rasxod + oylik"
+
+#: templates/services/order_form.html:3
+msgid "Xizmat buyurtma"
+msgstr "Xizmat buyurtma"
+
+#: templates/services/order_form.html:6
+msgid "Xizmat → Mehmon hisobi"
+msgstr "Xizmat → Mehmon hisobi"
+
+#: templates/services/order_form.html:9
+msgid "Yozish"
+msgstr "Yozish"
+
+#: templates/services/service_list.html:7
+msgid "Buyurtma"
+msgstr "Buyurtma"
+
+#: templates/services/service_list.html:23
+msgid "Katalog bo‘sh"
+msgstr "Katalog bo‘sh"
+
+#: templates/services/service_list.html:30
+msgid "So‘nggi buyurtmalar"
+msgstr "So‘nggi buyurtmalar"
+
+#: templates/subscriptions/expired.html:3
+msgid "Obuna tugagan"
+msgstr "Obuna tugagan"
+
+#: templates/subscriptions/expired.html:9
+msgid "Obuna faol emas"
+msgstr "Obuna faol emas"
+
+#: templates/subscriptions/expired.html:20
+msgid "Platforma administratori bilan bog‘laning."
+msgstr "Platforma administratori bilan bog‘laning."
+
+#: templates/tenants/no_access.html:3
+msgid "Kirish mumkin emas"
+msgstr "Kirish mumkin emas"
+
+#: templates/tenants/no_access.html:8
+msgid "Mehmonxona biriktirilmagan"
+msgstr "Mehmonxona biriktirilmagan"
+
+#: templates/tenants/no_access.html:10
+msgid "Siz tizimga kirdingiz, lekin hech qanday mehmonxonaga a’zo emassiz."
+msgstr "Siz tizimga kirdingiz, lekin hech qanday mehmonxonaga a’zo emassiz."
+
+#: templates/tenants/no_access.html:13
+msgid ""
+"Demo akkaunt bilan kiring yoki administrator orqali mehmonxonaga a’zolik "
+"qo‘shing."
+msgstr ""
+"Demo akkaunt bilan kiring yoki administrator orqali mehmonxonaga a’zolik "
+"qo‘shing."
+
+#: templates/tenants/no_access.html:16
+msgid "Admin panel"
+msgstr "Admin panel"
+
+#: templates/tenants/staff_list.html:6
+msgid "Tizimga kirish huquqi va filial biriktirish"
+msgstr "Tizimga kirish huquqi va filial biriktirish"
+
+#: templates/tenants/staff_list.html:6
+msgid "Taklif qilish"
+msgstr "Taklif qilish"
+
+#: templates/tenants/staff_list.html:25
+msgid "Xodim yo‘q"
+msgstr "Xodim yo‘q"
+
+#: templates/widget/booking.html:31
+msgid "Xonalarni ko‘rish"
+msgstr "Xonalarni ko‘rish"
+
+#: templates/widget/booking.html:37
+msgid "Bu sanalarda bo‘sh xona yo‘q (band)."
+msgstr "Bu sanalarda bo‘sh xona yo‘q (band)."
+
+#: templates/widget/booking.html:41
+msgid "Ma’lumotlaringiz"
+msgstr "Ma’lumotlaringiz"
+
+#: templates/widget/booking.html:62
+msgid "Bron qilish"
+msgstr "Bron qilish"
+
+#: templates/widget/disabled.html:3 templates/widget/disabled.html:8
+msgid "Onlayn bron"
+msgstr "Onlayn bron"
+
+#: templates/widget/disabled.html:9
+msgid "Hozircha onlayn bron o‘chirilgan."
+msgstr "Hozircha onlayn bron o‘chirilgan."
+
+#: tenants/forms.py:17
+msgid "Bo‘sh qoldirilsa — barcha filiallarga ruxsat."
+msgstr "Bo‘sh qoldirilsa — barcha filiallarga ruxsat."
+
+#: tenants/models.py:63
+msgid "Admin"
+msgstr "Admin"
+
+#: tenants/models.py:64
+msgid "Ish boshqaruvchi"
+msgstr "Ish boshqaruvchi"
+
+#: tenants/models.py:110
+msgid "Filial biriktirish"
+msgstr "Filial biriktirish"
+
+#: tenants/models.py:111
+msgid "Filial biriktirishlar"
+msgstr "Filial biriktirishlar"
+
+#: tenants/views.py:56
+msgid "Tarif bo‘yicha xodimlar limiti tugagan."
+msgstr "Tarif bo‘yicha xodimlar limiti tugagan."
+
+#: tenants/views.py:85
+#, python-format
+msgid "Xodim qo‘shildi: %(username)s"
+msgstr "Xodim qo‘shildi: %(username)s"
+
+#: tenants/views.py:87
+msgid "Xodim qo‘shish"
+msgstr "Xodim qo‘shish"
+
+#: tenants/views.py:97
+msgid "Rol yangilandi."
+msgstr "Rol yangilandi."
+
+#: tenants/views.py:102
+#, python-format
+msgid "Tahrirlash: %(user)s"
+msgstr "Tahrirlash: %(user)s"
+
+#: widget/admin.py:27
+msgid "Iframe embed"
+msgstr "Iframe embed"
+
+#: widget/admin.py:36
+msgid "Script embed"
+msgstr "Script embed"
+
+#: widget/admin.py:54
+msgid "Iframe"
+msgstr "Iframe"
+
+#: widget/admin.py:61
+msgid "Script"
+msgstr "Script"
+
+#: widget/models.py:23
+msgid "Widget yoqilgan"
+msgstr "Widget yoqilgan"
+
+#: widget/models.py:26
+msgid "Ruxsat etilgan domenlar"
+msgstr "Ruxsat etilgan domenlar"
+
+#: widget/models.py:27
+msgid "Har qator: aida-hotel.uz"
+msgstr "Har qator: aida-hotel.uz"
+
+#: widget/models.py:30
+msgid "Avtomatik tasdiqlash"
+msgstr "Avtomatik tasdiqlash"
+
+#: widget/models.py:31
+msgid "Xona biriktirish"
+msgstr "Xona biriktirish"
+
+#: widget/models.py:38
+msgid "Veb-bron widget"
+msgstr "Veb-bron widget"
+
+#: widget/models.py:39
+msgid "Veb-bron widgetlar"
+msgstr "Veb-bron widgetlar"
+
+#: widget/services.py:35
+msgid "Mehmonxona topilmadi."
+msgstr "Mehmonxona topilmadi."
+
+#: widget/services.py:44 widget/services.py:53
+msgid "Onlayn bron vaqtincha o‘chirilgan."
+msgstr "Onlayn bron vaqtincha o‘chirilgan."
+
+#: widget/services.py:50
+msgid "Filial topilmadi."
+msgstr "Filial topilmadi."
+
+#: widget/services.py:55
+msgid "Tarifda onlayn bron yo‘q."
+msgstr "Tarifda onlayn bron yo‘q."
+
+#: widget/services.py:58
+msgid "Obuna faol emas."
+msgstr "Obuna faol emas."
+
+#: widget/services.py:65
+msgid "Filial sozlanmagan."
+msgstr "Filial sozlanmagan."
+
+#: widget/services.py:162
+msgid "Ism majburiy."
+msgstr "Ism majburiy."
+
+#: widget/services.py:164
+msgid "Telefon yoki email kiriting."
+msgstr "Telefon yoki email kiriting."
+
+#: widget/services.py:189
+msgid "Bron qabul qilinmaydi."
+msgstr "Bron qabul qilinmaydi."
+
+#: widget/services.py:215
+msgid "Xona turi topilmadi."
+msgstr "Xona turi topilmadi."
+
+#: widget/services.py:220
+msgid "Tanlangan sanalarda bu xona turi band (zaynit)."
+msgstr "Tanlangan sanalarda bu xona turi band (zaynit)."
+
+#: widget/services.py:240
+msgid "Onlayn bron (veb-sayt)"
+msgstr "Onlayn bron (veb-sayt)"
+
+#: widget/views.py:55
+msgid "Sanani to‘g‘ri kiriting."
+msgstr "Sanani to‘g‘ri kiriting."
+
+#: widget/views.py:93
+msgid "Bu domen ruxsat etilmagan."
+msgstr "Bu domen ruxsat etilmagan."
+
+#: widget/views.py:98
+msgid "Noto‘g‘ri JSON."
+msgstr "Noto‘g‘ri JSON."
+
+#: widget/views.py:107
+msgid "Ma’lumotlar noto‘g‘ri."
+msgstr "Ma’lumotlar noto‘g‘ri."
+
+#: widget/views.py:132
+#, python-format
+msgid "Bron qabul qilindi! Kod: %(code)s"
+msgstr "Bron qabul qilindi! Kod: %(code)s"
+
+#: widget/views.py:155
+msgid "Bu saytdan widget ochishga ruxsat yo‘q."
+msgstr "Bu saytdan widget ochishga ruxsat yo‘q."
+
+#: widget/views.py:173
+msgid "Onlayn bron — real vaqt bandligi"
+msgstr "Onlayn bron — real vaqt bandligi"
+
+#~ msgid "Yillik"
+#~ msgstr "Yillik"
+
+#~ msgid "Subtotal"
+#~ msgstr "Subtotal"
+
+#~ msgid "dirty override"
+#~ msgstr "dirty override"
+
+#~ msgid "docs override"
+#~ msgstr "docs override"
+
+#~ msgid "Split forma noto‘g‘ri."
+#~ msgstr "Split forma noto‘g‘ri."
+
+#~ msgid "Xizmat folio’ga yozildi."
+#~ msgstr "Xizmat folio’ga yozildi."
+
+#~ msgid "Service formasi noto‘g‘ri."
+#~ msgstr "Service formasi noto‘g‘ri."
+
+#~ msgid "Xodimlar ruxsati"
+#~ msgstr "Xodimlar ruxsati"
+
+#~ msgid "Pipeline"
+#~ msgstr "Pipeline"
+
+#~ msgid "Rad"
+#~ msgstr "Rad"
+
+#~ msgid "Ochiq hisob-fakturalar"
+#~ msgstr "Ochiq hisob-fakturalar"
+
+#~ msgid "PDF hisob-faktura"
+#~ msgstr "PDF hisob-faktura"
+
+#~ msgid "→ Kompaniya A/R"
+#~ msgstr "→ Kompaniya A/R"
+
+#~ msgid "Hisob yozuvlari"
+#~ msgstr "Hisob yozuvlari"
+
+#~ msgid "To‘lov / Depozit"
+#~ msgstr "To‘lov / Depozit"
+
+#~ msgid "Operations"
+#~ msgstr "Operations"
+
+#~ msgid "OK"
+#~ msgstr "OK"
+
+#~ msgid "Kun yopish / Eksport"
+#~ msgstr "Kun yopish / Eksport"
+
+#~ msgid "Kelmaganlar (→ kelmagan)"
+#~ msgstr "Kelmaganlar (→ kelmagan)"
+
+#~ msgid "Hisoblangan tushum"
+#~ msgstr "Hisoblangan tushum"
+
+#~ msgid "ta"
+#~ msgstr "ta"
+
+#~ msgid "Hisoblangan (yozuvlar bo‘yicha)"
+#~ msgstr "Hisoblangan (yozuvlar bo‘yicha)"
+
+#~ msgid "Naqd (to‘lovlar bo‘yicha)"
+#~ msgstr "Naqd (to‘lovlar bo‘yicha)"
+
+#~ msgid "Inquiry confirmed."
+#~ msgstr "Inquiry confirmed."
+
+#~ msgid "Language"
+#~ msgstr "Language"
+
+#~ msgid "14 days"
+#~ msgstr "14 days"
+
+#~ msgid "Izmenit"
+#~ msgstr "Izmenit"
+
+#~ msgid "Jami A/R"
+#~ msgstr "Jami A/R"
+
+#~ msgid "A/R ro‘yxat"
+#~ msgstr "A/R ro‘yxat"
+
+#~ msgid "Check-out qilindi."
+#~ msgstr "Check-out qilindi."
+
+#~ msgid "No-show belgilandi."
+#~ msgstr "No-show belgilandi."
+
+#~ msgid "Staff access"
+#~ msgstr "Staff access"
+
+#~ msgid "Front office"
+#~ msgstr "Front office"
+
+#~ msgid "Dashboard"
+#~ msgstr "Dashboard"
+
+#~ msgid "Board"
+#~ msgstr "Board"
+
+#~ msgid "Property"
+#~ msgstr "Property"
+
+#~ msgid "HK"
+#~ msgstr "HK"
+
+#~ msgid "Finance"
+#~ msgstr "Finance"
+
+#~ msgid "Staff"
+#~ msgstr "Staff"
+
+#~ msgid "Alerts"
+#~ msgstr "Alerts"
+
+#~ msgid "Live rooms"
+#~ msgstr "Live rooms"
+
+#~ msgid "Dirty"
+#~ msgstr "Dirty"
+
+#~ msgid "Method"
+#~ msgstr "Method"
+
+#~ msgid "Cash"
+#~ msgstr "Cash"
+
+#~ msgid "Card"
+#~ msgstr "Card"
+
+#~ msgid "Amount"
+#~ msgstr "Amount"
+
+#~ msgid "Check-in"
+#~ msgstr "Check-in"
+
+#~ msgid "No-show"
+#~ msgstr "No-show"
+
+#~ msgid "Check-out"
+#~ msgstr "Check-out"
+
+#~ msgid "Folio"
+#~ msgstr "Folio"
+
+#~ msgid "PDF invoice"
+#~ msgstr "PDF invoice"
+
+#~ msgid "VAT"
+#~ msgstr "VAT"
+
+#~ msgid "Balance"
+#~ msgstr "Balance"
+
+#~ msgid "Open"
+#~ msgstr "Open"
+
+#~ msgid "Closed"
+#~ msgstr "Closed"
+
+#~ msgid "Charges"
+#~ msgstr "Charges"
+
+#~ msgid "Charge"
+#~ msgstr "Charge"
+
+#~ msgid "Payments"
+#~ msgstr "Payments"
+
+#~ msgid "Split saqlash"
+#~ msgstr "Split saqlash"
+
+#~ msgid "Housekeeping"
+#~ msgstr "Housekeeping"
+
+#~ msgid "Tasks"
+#~ msgstr "Tasks"
+
+#~ msgid "Done"
+#~ msgstr "Done"
+
+#~ msgid "Occupancy"
+#~ msgstr "Occupancy"
+
+#~ msgid "In-house"
+#~ msgstr "In-house"
+
+#~ msgid "Arrivals"
+#~ msgstr "Arrivals"
+
+#~ msgid "Departures"
+#~ msgstr "Departures"
+
+#~ msgid "Close of day"
+#~ msgstr "Close of day"
+
+#~ msgid "Night audit / Export"
+#~ msgstr "Night audit / Export"
+
+#~ msgid "Night audit"
+#~ msgstr "Night audit"
+
+#~ msgid "Payments CSV"
+#~ msgstr "Payments CSV"

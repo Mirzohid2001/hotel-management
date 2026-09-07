@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Obuna tugagan" %}{% endblock %}
+{% block content %}
+<div class="app-page" style="max-width:560px;margin:0 auto">
+<header class="app-hero page-head">
+  <div class="app-hero-text">
+    <p class="eyebrow">Rivoj PMS</p>
+    <h1>{% trans "Obuna faol emas" %}</h1>
+    {% if tenant %}<p class="app-hero-sub">{{ tenant.name }}</p>{% endif %}
+  </div>
+</header>
+<section class="section-panel">
+  {% if subscription %}
+  <p class="muted report-section-meta">
+    {{ subscription.plan.name }} · {{ subscription.get_status_display }}
+    · {{ subscription.period_end }}
+  </p>
+  {% endif %}
+  <p>{% trans "Platforma administratori bilan bog‘laning." %}</p>
+</section>
+</div>
+{% endblock %}

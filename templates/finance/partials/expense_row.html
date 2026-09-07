@@ -1,0 +1,103 @@
+{% load i18n money_fmt %}
+<li class="expense-card status-{{ e.status }}" id="expense-row-{{ e.pk }}">
+  <div class="expense-card-main">
+    <div class="expense-card-top">
+      <h3 class="expense-card-title">{{ e.title }}</h3>
+      <span class="status-pill status-{{ e.status }}">{{ e.get_status_display }}</span>
+    </div>
+    <div class="expense-card-meta">
+      <span class="expense-chip">{{ e.expense_date|date:"d.m.Y" }}</span>
+      <span class="expense-chip">{{ e.category.name }}</span>
+      <span class="expense-chip">{{ e.get_payment_method_display }}</span>
+      {% if e.vendor %}<span class="expense-chip">{{ e.vendor.name }}</span>{% endif %}
+    </div>
+    {% if e.status == 'rejected' and e.rejection_reason %}
+    <p class="expense-reject-note">{% trans "Sabab" %}: {{ e.rejection_reason }}</p>
+    {% endif %}
+    {% if e.status == 'paid' and e.paid_by %}
+    <p class="expense-paid-note muted">{% trans "To‘lovchi" %}: {{ e.paid_by.get_username }}</p>
+    {% endif %}
+  </div>
+
+  <div class="expense-card-side">
+    <strong class="expense-card-amount money">{{ e.amount|money }} {{ e.currency }}</strong>
+    {% if e.currency != current_tenant.currency %}
+    <span class="muted">≈ {{ e.amount_base|money }} {{ current_tenant.currency }}</span>
+    {% endif %}
+    <div class="expense-card-actions">
+      {% if e.status == 'draft' or e.status == 'approved' %}
+      <a class="btn-ghost btn-sm" href="{% url 'finance:edit' e.pk %}">{% trans "Tahrir" %}</a>
+      {% endif %}
+
+      {% if e.status == 'draft' %}
+      <form method="post" action="{% url 'finance:approve' e.pk %}"
+            hx-post="{% url 'finance:approve' e.pk %}"
+            hx-target="#expense-row-{{ e.pk }}"
+            hx-swap="outerHTML">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm">{% trans "Tasdiqlash" %}</button>
+      </form>
+      <details class="expense-more">
+        <summary class="btn-ghost btn-sm">{% trans "Yana" %}</summary>
+        <div class="expense-more-panel">
+          <form method="post" action="{% url 'finance:reject' e.pk %}" class="expense-reject-form"
+                hx-post="{% url 'finance:reject' e.pk %}"
+                hx-target="#expense-row-{{ e.pk }}"
+                hx-swap="outerHTML">
+            {% csrf_token %}
+            <input type="text" name="reason" placeholder="{% trans 'Rad sababi' %}" required minlength="3">
+            <button type="submit" class="btn-ghost btn-sm">{% trans "Rad etish" %}</button>
+          </form>
+          <form method="post" action="{% url 'finance:delete' e.pk %}"
+                hx-post="{% url 'finance:delete' e.pk %}"
+                hx-target="#expense-row-{{ e.pk }}"
+                hx-swap="outerHTML"
+                onsubmit="return confirm('{% trans "O‘chirishni tasdiqlaysizmi?" %}');">
+            {% csrf_token %}
+            <button type="submit" class="btn-ghost btn-sm expense-danger">{% trans "O‘chirish" %}</button>
+          </form>
+        </div>
+      </details>
+
+      {% elif e.status == 'approved' %}
+      <form method="post" action="{% url 'finance:pay' e.pk %}"
+            hx-post="{% url 'finance:pay' e.pk %}"
+            hx-target="#expense-row-{{ e.pk }}"
+            hx-swap="outerHTML">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm">{% trans "To‘landi" %}</button>
+      </form>
+      <details class="expense-more">
+        <summary class="btn-ghost btn-sm">{% trans "Yana" %}</summary>
+        <div class="expense-more-panel">
+          <form method="post" action="{% url 'finance:reject' e.pk %}" class="expense-reject-form"
+                hx-post="{% url 'finance:reject' e.pk %}"
+                hx-target="#expense-row-{{ e.pk }}"
+                hx-swap="outerHTML">
+            {% csrf_token %}
+            <input type="text" name="reason" placeholder="{% trans 'Rad sababi' %}" required minlength="3">
+            <button type="submit" class="btn-ghost btn-sm">{% trans "Rad etish" %}</button>
+          </form>
+        </div>
+      </details>
+
+      {% elif e.status == 'rejected' %}
+      <form method="post" action="{% url 'finance:reopen' e.pk %}"
+            hx-post="{% url 'finance:reopen' e.pk %}"
+            hx-target="#expense-row-{{ e.pk }}"
+            hx-swap="outerHTML">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm">{% trans "Qayta ochish" %}</button>
+      </form>
+      <form method="post" action="{% url 'finance:delete' e.pk %}"
+            hx-post="{% url 'finance:delete' e.pk %}"
+            hx-target="#expense-row-{{ e.pk }}"
+            hx-swap="outerHTML"
+            onsubmit="return confirm('{% trans "O‘chirishni tasdiqlaysizmi?" %}');">
+        {% csrf_token %}
+        <button type="submit" class="btn-ghost btn-sm expense-danger">{% trans "O‘chirish" %}</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</li>

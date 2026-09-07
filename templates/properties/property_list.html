@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Filiallar" %}{% endblock %}
+{% block content %}
+{% url 'properties:create' as create_url %}
+{% include "includes/page_header.html" with title=_("Filiallar") primary_url=create_url primary_label=_("Yangi filial") %}
+
+<section class="section-panel">
+<ul class="list entity-list">
+  {% for p in properties %}
+  <li class="entity-row guest-chip">
+    <span>
+      <span class="entity-row-main">
+        <a href="{% url 'properties:detail' p.pk %}" class="entity-title">{{ p.display_label }}</a>
+      </span>
+      {% if p.city %}<span class="entity-meta">{{ p.city }}{% if p.address %} · {{ p.address }}{% endif %}</span>{% endif %}
+    </span>
+  </li>
+  {% empty %}
+  <li class="muted empty-row">{% trans "Hali filial yo‘q." %}</li>
+  {% endfor %}
+</ul>
+</section>
+{% endblock %}

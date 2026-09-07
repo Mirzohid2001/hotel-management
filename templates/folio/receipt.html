@@ -1,0 +1,176 @@
+{% load money_fmt i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "Chek" %} {{ folio.reservation.code }}</title>
+  <style>
+    :root {
+      --brand: #c04a00;
+      --ink: #1a1410;
+      --muted: #7a7168;
+      --line: #ddd4c8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      max-width: 420px;
+      margin: 2rem auto;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    .receipt-head {
+      border-bottom: 2px solid var(--brand);
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 1.35rem;
+      color: var(--brand);
+      margin: 0 0 0.25rem;
+    }
+    .brand-sub {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin: 0;
+    }
+    .meta-block {
+      margin: 0 0 1rem;
+      font-size: 0.95rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0.5rem;
+    }
+    th, td {
+      padding: 0.35rem 0;
+      border-bottom: 1px solid var(--line);
+      font-variant-numeric: tabular-nums;
+      vertical-align: top;
+    }
+    th {
+      text-align: left;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom-width: 2px;
+    }
+    td:last-child, th:last-child { text-align: right; }
+    .section-title {
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 1rem 0 0.35rem;
+    }
+    .total { font-weight: bold; }
+    .num { white-space: nowrap; letter-spacing: 0.02em; }
+    .muted { color: var(--muted); font-size: 0.9rem; }
+    .receipt-foot {
+      margin-top: 1.25rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed var(--line);
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .toolbar button, .toolbar a {
+      font: inherit;
+      font-size: 0.85rem;
+      padding: 0.4rem 0.75rem;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .toolbar .primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+    }
+    @media print {
+      body { margin: 0; max-width: none; }
+      .no-print { display: none !important; }
+      .receipt-head { border-color: #000; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar no-print">
+    <button type="button" class="primary" onclick="window.print()">{% trans "Chop etish" %}</button>
+    <a href="{% url 'folio:pdf' folio.pk %}">{% trans "PDF yuklab olish" %}</a>
+  </div>
+
+  <header class="receipt-head">
+    <h1>{{ folio.reservation.hotel.name }}</h1>
+    {% if tenant %}<p class="brand-sub">{{ tenant.name }}</p>{% endif %}
+    {% if folio.reservation.hotel.address %}
+    <p class="brand-sub">{{ folio.reservation.hotel.address }}{% if folio.reservation.hotel.city %}, {{ folio.reservation.hotel.city }}{% endif %}</p>
+    {% endif %}
+  </header>
+
+  <div class="meta-block">
+    <strong>{{ folio.reservation.code }}</strong>
+    · {{ folio.reservation.guest.full_name }}
+    {% if folio.reservation.room %}
+    · {% trans "Xona" %} {{ folio.reservation.room.number }}
+    {% endif %}
+    <br>
+    <span class="muted">{{ folio.reservation.check_in }} → {{ folio.reservation.check_out }}</span>
+  </div>
+
+  <p class="section-title">{% trans "Xizmatlar" %}</p>
+  <table>
+    <thead>
+      <tr><th>{% trans "Tavsif" %}</th><th>{% trans "Summa" %}</th></tr>
+    </thead>
+    <tbody>
+      {% for c in folio.charges.all %}
+      <tr><td>{{ c.description }}</td><td class="num">{{ c.amount|money }}</td></tr>
+      {% empty %}
+      <tr><td colspan="2" class="muted">—</td></tr>
+      {% endfor %}
+      <tr><td>{% trans "Oraliq jami" %}</td><td class="num">{{ folio.charges_total|money }}</td></tr>
+      {% if folio.tax_percent %}
+      <tr><td>{% trans "QQS" %} ({{ folio.tax_percent }}%)</td><td class="num">{{ folio.tax_amount|money }}</td></tr>
+      {% endif %}
+      <tr class="total"><td>{% trans "Jami" %}</td><td class="num">{{ folio.grand_total|money }}</td></tr>
+    </tbody>
+  </table>
+
+  {% if folio.payments.all %}
+  <p class="section-title">{% trans "To‘lovlar" %}</p>
+  <table>
+    <thead>
+      <tr><th>{% trans "Usul" %}</th><th>{% trans "Summa" %}</th></tr>
+    </thead>
+    <tbody>
+      {% for p in folio.payments.all %}
+      <tr>
+        <td>{{ p.get_method_display }} · {{ p.get_kind_display }}{% if p.note %} · {{ p.note }}{% endif %}</td>
+        <td class="num">{{ p.amount|money }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="total"><td>{% trans "To‘langan" %}</td><td class="num">{{ folio.payments_total|money }}</td></tr>
+    </tbody>
+  </table>
+  {% endif %}
+
+  <table>
+    <tr class="total"><td>{% trans "Qoldiq" %}</td><td class="num">{{ folio.balance|money }}</td></tr>
+  </table>
+
+  <footer class="receipt-foot">
+    {% trans "Rahmat!" %} · {{ tenant.currency|default:"UZS" }}
+  </footer>
+</body>
+</html>

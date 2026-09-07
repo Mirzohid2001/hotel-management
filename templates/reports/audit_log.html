@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Nazorat jurnali" %}{% endblock %}
+{% block content %}
+{% url 'reports:pnl' as pnl_url %}
+{% include "includes/page_header.html" with title=_("Pul harakatlari nazorati") eyebrow=_("Hisob-kitob") secondary_url=pnl_url secondary_label=_("Foyda/zarar") %}
+
+<section class="section-panel">
+  <ul class="list entity-list">
+    {% for log in logs %}
+    <li class="guest-chip entity-row">
+      <span>
+        <span class="entity-row-main">
+          <strong class="entity-title">
+            {% if log.action == "guest_check_in" %}{% trans "Joylash" %}
+            {% elif log.action == "guest_check_out" %}{% trans "Chiqish" %}
+            {% elif log.action == "hk_task_done" %}{% trans "HK tayyor" %}
+            {% elif log.action == "night_audit_run" %}{% trans "Kun yopish" %}
+            {% elif log.action == "charge_posted" %}{% trans "Hisob yozuvi" %}
+            {% elif log.action == "payment_received" %}{% trans "To‘lov" %}
+            {% elif log.action == "charge_voided" %}{% trans "Yozuv bekor" %}
+            {% elif log.action == "payment_voided" %}{% trans "To‘lov bekor" %}
+            {% elif log.action == "cash_shift_closed" %}{% trans "Kassa yopildi" %}
+            {% elif log.action == "expense_approved" %}{% trans "Rasxod tasdiq" %}
+            {% elif log.action == "expense_paid" %}{% trans "Rasxod to‘landi" %}
+            {% else %}{{ log.action }}
+            {% endif %}
+          </strong>
+        </span>
+        <span class="entity-meta">
+          {{ log.created_at|date:"Y-m-d H:i" }}
+          {% if log.user %} · {{ log.user }}{% endif %}
+          {% if log.payload.code %} · {{ log.payload.code }}{% endif %}
+          {% if log.payload.room %} · {% trans "Xona" %} {{ log.payload.room }}{% endif %}
+        </span>
+      </span>
+      {% if log.payload.amount %}<span class="money">{{ log.payload.amount }}</span>{% endif %}
+    </li>
+    {% empty %}
+    <li class="muted empty-row">{% trans "Yo‘q" %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

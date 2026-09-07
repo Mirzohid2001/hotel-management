@@ -1,0 +1,18 @@
+{% load i18n %}
+<ul class="list entity-list">
+  {% for g in guests %}
+  <li class="guest-chip entity-row">
+    <span>
+      <span class="entity-row-main">
+        <a href="{% url 'guests:detail' g.pk %}" class="entity-title">{{ g.full_name }}</a>
+        {% if g.is_vip %}<span class="badge badge-vip">VIP</span>{% endif %}
+        {% if g.is_blacklisted %}<span class="badge badge-blacklist" title="{{ g.blacklist_reason }}">{% trans "Qora ro‘yxat" %}</span>{% endif %}
+      </span>
+      <span class="entity-meta">{{ g.phone }}{% if g.email %} · {{ g.email }}{% endif %}</span>
+    </span>
+  </li>
+  {% empty %}
+  {% url 'guests:create' as guest_create %}
+  {% include "includes/empty_state.html" with as_li=1 title=_("Mehmon yo‘q") hint=_("Yangi mehmon profilini qo‘shing — bron va hisob uchun.") cta_url=guest_create cta_label=_("Mehmon qo‘shish") %}
+  {% endfor %}
+</ul>

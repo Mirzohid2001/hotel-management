@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Guruh bronlar" %}{% endblock %}
+{% block content %}
+{% url 'bookings:group_create' as create_url %}
+{% include "includes/page_header.html" with title=_("Guruh bronlar") primary_url=create_url primary_label=_("Yangi guruh") %}
+
+<ul class="list entity-list">
+  {% for g in groups %}
+  <li class="entity-row guest-chip">
+    <span>
+      <span class="entity-row-main">
+        <a href="{% url 'bookings:group_detail' g.pk %}" class="entity-title">{{ g.code }}</a>
+      </span>
+      <span class="entity-meta">
+        {{ g.name }} · {{ g.check_in }} → {{ g.check_out }}
+        · {{ g.reservations.count }} {% trans "xona" %}
+      </span>
+    </span>
+  </li>
+  {% empty %}
+  {% include "includes/empty_state.html" with as_li=1 title=_("Guruh yo‘q") hint=_("Bir nechta xonali korporativ bron uchun guruh yarating.") cta_url=create_url cta_label=_("Yangi guruh") %}
+  {% endfor %}
+</ul>
+{% endblock %}

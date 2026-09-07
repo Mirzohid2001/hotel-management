@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% url 'bookings:list' as cancel_url %}
+{% include "includes/page_header.html" with title=title subtitle=hotel.name|default:"" %}
+
+<section class="section-panel">
+<form method="post" class="app-form panel" id="reservation-form" hx-boost="false">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="form-grid app-form-grid">
+    {% for field in form %}
+      {% if field.name == "guest" %}
+      <div class="form-field field-with-add field-span-2">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        <div class="field-row">
+          {{ field }}
+          <button type="button" class="btn-ghost"
+                  hx-get="{% url 'guests:quick_guest' %}"
+                  hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
+                  hx-target="#modal-root" hx-select="unset"
+                  hx-swap="innerHTML">
+            {% trans "+ Yangi" %}
+          </button>
+        </div>
+        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+      </div>
+      {% elif field.name == "company" %}
+      <div class="form-field field-with-add">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        <div class="field-row">
+          {{ field }}
+          <button type="button" class="btn-ghost"
+                  hx-get="{% url 'guests:quick_company' %}"
+                  hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
+                  hx-target="#modal-root" hx-select="unset"
+                  hx-swap="innerHTML">
+            {% trans "+ Yangi" %}
+          </button>
+        </div>
+        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+      </div>
+      {% elif field.name == "referrer" %}
+      <div class="form-field field-with-add">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        <div class="field-row">
+          {{ field }}
+          <button type="button" class="btn-ghost"
+                  hx-get="{% url 'bookings:referrer_quick' %}"
+                  hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
+                  hx-target="#modal-root" hx-select="unset"
+                  hx-swap="innerHTML">
+            {% trans "+ Yangi" %}
+          </button>
+        </div>
+        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+      </div>
+      {% elif field.name == "collect_emehmon" or field.name == "emehmon_amount" or field.name == "emehmon_method" %}
+      {# E-mehmon bloki pastda #}
+      {% else %}
+      <p class="form-field {% if field.field.widget.input_type == 'textarea' %}field-span-2{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {{ field }}
+        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+      </p>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div id="availability-box" class="availability muted panel" style="margin:0.85rem 0;padding:0.75rem 1rem">{% trans "Xona va sanalarni tanlang" %}</div>
+
+  <fieldset class="emehmon-box panel is-embedded" id="emehmon-box">
+    <legend>{% trans "E-mehmon to‘lovi" %}</legend>
+    <p class="muted" style="margin:0 0 0.75rem">{% trans "Ixtiyoriy. Ayrim mehmonlardan olinadi — belgilanganda: tarif × kechalar × mehmonlar (odatda 9000 so‘m)." %}</p>
+    <div class="form-grid app-form-grid">
+      <p class="form-field field-span-2">
+        <label class="checkbox-row">
+          {{ form.collect_emehmon }}
+          <span>{{ form.collect_emehmon.label }}</span>
+        </label>
+        {% if form.collect_emehmon.help_text %}<span class="muted">{{ form.collect_emehmon.help_text }}</span>{% endif %}
+      </p>
+      <p class="form-field emehmon-fields">
+        <label for="{{ form.emehmon_amount.id_for_label }}">{{ form.emehmon_amount.label }}</label>
+        {{ form.emehmon_amount }}
+        {% if form.emehmon_amount.errors %}<span class="field-error">{{ form.emehmon_amount.errors }}</span>{% endif %}
+      </p>
+      <p class="form-field emehmon-fields">
+        <label for="{{ form.emehmon_method.id_for_label }}">{{ form.emehmon_method.label }}</label>
+        {{ form.emehmon_method }}
+      </p>
+    </div>
+  </fieldset>
+
+  <div class="form-actions">
+    <button type="submit" class="btn">{% trans "Saqlash" %}</button>
+    <a class="btn-ghost" href="{{ cancel_url }}">{% trans "Bekor" %}</a>
+  </div>
+</form>
+</section>
+<script>
+(function () {
+  var form = document.getElementById("reservation-form");
+  if (!form) return;
+  var ref = form.querySelector('[name="referrer"]');
+  var pct = form.querySelector('[name="commission_percent"]');
+  if (ref && pct) {
+    var defaults = {
+      {% for r in form.fields.referrer.queryset %}
+      "{{ r.pk }}": "{{ r.default_commission_percent }}"{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    };
+    ref.addEventListener("change", function () {
+      var v = defaults[ref.value];
+      if (v !== undefined) pct.value = v;
+      else pct.value = "";
+    });
+  }
+  var amount = form.querySelector('[name="emehmon_amount"]');
+  var collect = form.querySelector('[name="collect_emehmon"]');
+  function toggleEmehmon() {
+    var on = collect && collect.checked;
+    form.querySelectorAll(".emehmon-fields").forEach(function (el) {
+      el.style.display = on ? "" : "none";
+    });
+  }
+  if (collect) {
+    collect.addEventListener("change", toggleEmehmon);
+    toggleEmehmon();
+  }
+  if (amount) {
+    var unit = parseFloat(amount.getAttribute("data-emehmon-unit") || "0") || 0;
+    function recalc() {
+      if (!unit || (collect && !collect.checked)) return;
+      var cin = form.querySelector('[name="check_in"]');
+      var cout = form.querySelector('[name="check_out"]');
+      var adults = form.querySelector('[name="adults"]');
+      var children = form.querySelector('[name="children"]');
+      var nights = 1;
+      if (cin && cout && cin.value && cout.value) {
+        var a = new Date(cin.value + "T00:00:00");
+        var b = new Date(cout.value + "T00:00:00");
+        var d = Math.round((b - a) / 86400000);
+        if (d > 0) nights = d;
+      }
+      var g = Math.max(1, (parseInt(adults && adults.value, 10) || 1) + (parseInt(children && children.value, 10) || 0));
+      amount.value = (unit * nights * g).toFixed(2);
+    }
+    ["check_in", "check_out", "adults", "children"].forEach(function (name) {
+      var el = form.querySelector('[name="' + name + '"]');
+      if (el) el.addEventListener("change", recalc);
+    });
+    if (collect) collect.addEventListener("change", function () { if (collect.checked) recalc(); });
+  }
+})();
+</script>
+{% endblock %}

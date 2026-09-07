@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Kompaniyalar" %}{% endblock %}
+{% block content %}
+{% url 'guests:company_create' as create_url %}
+{% if "company_group" in plan_features %}
+{% url 'folio:city_ledger' as ledger_url %}
+{% include "includes/page_header.html" with title=_("Kompaniyalar") secondary_url=ledger_url secondary_label=_("Kompaniya hisobi") primary_url=create_url primary_label=_("Yangi") %}
+{% else %}
+{% include "includes/page_header.html" with title=_("Kompaniyalar") primary_url=create_url primary_label=_("Yangi") %}
+{% endif %}
+
+<ul class="list entity-list">
+  {% for c in companies %}
+  <li class="guest-chip entity-row">
+    <span>
+      <span class="entity-row-main">
+        <a href="{% url 'guests:company_detail' c.pk %}" class="entity-title">{{ c.name }}</a>
+      </span>
+      <span class="entity-meta">{{ c.inn }}{% if c.phone %} · {{ c.phone }}{% endif %}</span>
+    </span>
+  </li>
+  {% empty %}
+  {% include "includes/empty_state.html" with as_li=1 title=_("Kompaniya yo‘q") hint=_("Korporativ mehmonlar uchun kompaniya profilini qo‘shing.") cta_url=create_url cta_label=_("Kompaniya qo‘shish") %}
+  {% endfor %}
+</ul>
+{% endblock %}

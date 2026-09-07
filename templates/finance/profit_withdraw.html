@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Foyda olish" %}{% endblock %}
+{% block content %}
+{% url 'finance:profit_share' as cancel_url %}
+{% include "includes/page_header.html" with title=_("Foyda olish") eyebrow=_("Sheriklik") subtitle=_("Ulushdan to‘liq yoki qisman olish.") %}
+
+<div class="panel form-narrow">
+  <p class="muted">
+    {% trans "Davr sof foydasi" %}: <strong class="money">{{ ledger.net|money }}</strong>
+    {% if selected_remaining is not None %}
+    · {% trans "Tanlangan qoldiq" %}: <strong class="money">{{ selected_remaining|money }}</strong>
+    {% endif %}
+  </p>
+  <form method="post" class="app-form is-embedded">
+    {% csrf_token %}
+    <div class="app-form-grid">
+      {% include "includes/form_fields.html" with form=form %}
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn">{% trans "Saqlash" %}</button>
+      <a class="btn-ghost" href="{{ cancel_url }}">{% trans "Bekor" %}</a>
+    </div>
+  </form>
+</div>
+
+{% if ledger.rows %}
+<section class="section-panel stack-gap form-narrow" style="max-width:40rem">
+  <h2>{% trans "Joriy qoldiqlar" %}</h2>
+  <ul class="list report-breakdown">
+    {% for row in ledger.rows %}
+    <li class="guest-chip">
+      <span>{{ row.partner.name }} ({{ row.share_percent }}%)</span>
+      <span class="money">{{ row.remaining|money }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

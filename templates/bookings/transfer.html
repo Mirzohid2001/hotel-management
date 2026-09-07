@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Xona / tur almashtirish" %} {{ reservation.code }}{% endblock %}
+{% block content %}
+{% url 'bookings:detail' reservation.pk as cancel_url %}
+{% include "includes/page_header.html" with title=_("Xona / tur almashtirish") subtitle=reservation.code %}
+
+<section class="section-panel transfer-page">
+  <div class="transfer-current">
+    <p class="eyebrow">{% trans "Hozirgi" %}</p>
+    <p class="transfer-current-main">
+      {% if reservation.room %}
+      <strong>{% trans "Xona" %} {{ reservation.room.number }}</strong>
+      {% else %}
+      <strong>—</strong>
+      {% endif %}
+      <span class="status-pill">{{ reservation.room_type.name }}</span>
+    </p>
+    <p class="muted entity-meta">
+      {{ reservation.guest.full_name }}
+      · {{ reservation.check_in|date:"d.m" }} — {{ reservation.check_out|date:"d.m.Y" }}
+    </p>
+  </div>
+
+  <p class="transfer-hint muted">
+    {% trans "Mehmon Twin, Double yoki boshqa turni so‘rasa — avval turini tanlang, keyin bo‘sh xonani." %}
+  </p>
+
+  <form method="post" class="app-form panel is-embedded" id="transfer-form" hx-boost="false">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+    <div class="form-grid app-form-grid">
+      <p class="form-field">
+        <label for="{{ form.room_type.id_for_label }}">{{ form.room_type.label }}</label>
+        {{ form.room_type }}
+        {% if form.room_type.help_text %}<span class="field-help">{{ form.room_type.help_text }}</span>{% endif %}
+        {% if form.room_type.errors %}<span class="field-error">{{ form.room_type.errors }}</span>{% endif %}
+      </p>
+      <p class="form-field">
+        <label for="{{ form.room.id_for_label }}">{{ form.room.label }} *</label>
+        <select name="{{ form.room.html_name }}" id="{{ form.room.id_for_label }}" required
+                data-room-select>
+          <option value="">---------</option>
+          {% for opt in room_options %}
+          <option value="{{ opt.id }}"
+                  data-type="{{ opt.type_id }}"
+                  {% if form.room.value|stringformat:"s" == opt.id|stringformat:"s" %}selected{% endif %}>
+            {{ opt.number }} · {{ opt.type_name }} · {{ opt.status }}
+          </option>
+          {% endfor %}
+        </select>
+        {% if form.room.errors %}<span class="field-error">{{ form.room.errors }}</span>{% endif %}
+      </p>
+      <p class="form-field field-span-2 field-check">
+        <label class="check-label">{{ form.update_rate }} {{ form.update_rate.label }}</label>
+      </p>
+      <p class="form-field field-span-2">
+        <label for="{{ form.reason.id_for_label }}">{{ form.reason.label }}</label>
+        {{ form.reason }}
+      </p>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn">{% trans "Almashtirish" %}</button>
+      <a class="btn-ghost" href="{{ cancel_url }}">{% trans "Bekor" %}</a>
+    </div>
+  </form>
+</section>
+
+<script>
+(function () {
+  var typeSel = document.getElementById("{{ form.room_type.id_for_label }}");
+  var roomSel = document.querySelector("[data-room-select]");
+  if (!typeSel || !roomSel) return;
+  function filterRooms() {
+    var typeId = typeSel.value;
+    var keep = roomSel.value;
+    Array.prototype.forEach.call(roomSel.options, function (opt, i) {
+      if (i === 0) return;
+      var show = !typeId || opt.getAttribute("data-type") === typeId;
+      opt.hidden = !show;
+      opt.disabled = !show;
+    });
+    var selected = roomSel.options[roomSel.selectedIndex];
+    if (selected && selected.disabled) roomSel.value = "";
+    else if (keep) roomSel.value = keep;
+  }
+  typeSel.addEventListener("change", filterRooms);
+  filterRooms();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% load i18n %}
+<header class="app-hero page-head">
+  <div class="app-hero-text page-head-text">
+    {% if eyebrow %}<p class="eyebrow">{{ eyebrow }}</p>{% endif %}
+    <h1>{{ title }}</h1>
+    {% if subtitle %}<p class="app-hero-sub page-subtitle">{{ subtitle }}</p>{% endif %}
+    {% if badge %}<p class="app-hero-badge">{{ badge }}</p>{% endif %}
+  </div>
+  <div class="app-hero-actions page-actions">
+    {% if secondary_url %}
+    <a class="btn-ghost" href="{{ secondary_url }}">{{ secondary_label }}</a>
+    {% endif %}
+    {% if primary_href or primary_url %}
+    <a class="btn" href="{% if primary_href %}{{ primary_href }}{% else %}{{ primary_url }}{% endif %}">{{ primary_label }}</a>
+    {% endif %}
+  </div>
+</header>

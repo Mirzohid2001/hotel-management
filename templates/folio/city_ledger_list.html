@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Kompaniya hisobi" %}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with title=_("Kompaniya hisobi") eyebrow=_("Debitor qarzdorlik") %}
+
+<div class="stats-grid">
+  <div class="stat"><span>{% trans "Jami debitorlik" %}</span><strong class="money">{{ aging.grand_total|money }}</strong></div>
+  {% for key, bucket in aging.buckets.items %}
+  <div class="stat"><span>{{ bucket.label }}</span><strong class="money">{{ bucket.total|money }}</strong></div>
+  {% endfor %}
+</div>
+
+<section class="section-panel">
+  <h2>{% trans "Ochiq hisoblar" %}</h2>
+  <ul class="list entity-list">
+    {% for inv in open_invoices %}
+    <li class="guest-chip entity-row">
+      <span>
+        <span class="entity-row-main">
+          <a class="entity-title code" href="{% url 'folio:invoice_detail' inv.pk %}">{{ inv.code }}</a>
+          <span class="status-pill">{{ inv.get_status_display }}</span>
+        </span>
+        <span class="entity-meta">{{ inv.company.name }}{% if inv.due_date %} · {% trans "muddat" %} {{ inv.due_date }}{% endif %}</span>
+      </span>
+      <span class="money">{{ inv.balance|money }}</span>
+    </li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Ochiq hisob yo‘q") hint=_("Kompaniyaga o‘tkazilgan mehmon hisoblari shu yerda ko‘rinadi.") compact=1 %}
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

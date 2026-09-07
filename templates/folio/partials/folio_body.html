@@ -1,0 +1,365 @@
+{% load i18n money_fmt %}
+<div class="folio-body">
+
+<div class="folio-guide">
+  <div class="folio-guide-step">
+    <span class="folio-guide-num">1</span>
+    <div>
+      <strong>{% trans "Xarajatlar" %}</strong>
+      <p>{% trans "Mehmonga yozilgan summalar — xona, xizmat, minibar va boshqalar." %}</p>
+    </div>
+  </div>
+  <div class="folio-guide-arrow" aria-hidden="true">→</div>
+  <div class="folio-guide-step">
+    <span class="folio-guide-num">2</span>
+    <div>
+      <strong>{% trans "To‘lovlar" %}</strong>
+      <p>{% trans "Mehmon kassaga bergan pullar — naqd, karta yoki o‘tkazma." %}</p>
+    </div>
+  </div>
+  <div class="folio-guide-arrow" aria-hidden="true">→</div>
+  <div class="folio-guide-step folio-guide-balance {% if folio.balance > 0 %}is-due{% else %}is-ok{% endif %}">
+    <span class="folio-guide-num">3</span>
+    <div>
+      <strong>{% trans "Qoldiq" %}</strong>
+      <p>{% trans "Xarajat − to‘lov" %} = <strong class="money">{{ folio.balance|money }} {{ current_tenant.currency }}</strong></p>
+    </div>
+  </div>
+</div>
+
+<div class="folio-summary folio-summary-premium">
+  <div class="stat folio-stat">
+    <span class="dash-stat-lbl">{% trans "Xarajatlar" %}</span>
+    <strong class="money">{{ folio.charges_total|money }}</strong>
+  </div>
+  <div class="stat folio-stat">
+    <span class="dash-stat-lbl">{% trans "QQS" %}{% if folio.tax_percent %} ({{ folio.tax_percent }}%){% endif %}</span>
+    <strong class="money">{{ folio.tax_amount|money }}</strong>
+  </div>
+  <div class="stat folio-stat">
+    <span class="dash-stat-lbl">{% trans "Jami hisob" %}</span>
+    <strong class="money">{{ folio.grand_total|money }}</strong>
+  </div>
+  <div class="stat folio-stat">
+    <span class="dash-stat-lbl">{% trans "To‘langan" %}</span>
+    <strong class="money">{{ folio.payments_total|money }}</strong>
+  </div>
+  <div class="stat folio-stat {% if folio.balance > 0 %}warn{% endif %}">
+    <span class="dash-stat-lbl">{% trans "Qoldiq" %}</span>
+    <strong class="money">{{ folio.balance|money }}</strong>
+  </div>
+</div>
+
+{% if folio.is_open and reservation.status == 'checked_in' %}
+{% if can_post_service or can_post_minibar %}
+<section class="section-panel folio-panel">
+  <div class="folio-panel-head">
+    <div>
+      <p class="eyebrow">{% trans "Tezkor" %}</p>
+      <h2>{% trans "Xizmat va minibar" %}</h2>
+      <p class="folio-panel-sub">{% trans "Yashovchi mehmonga qo‘shimcha xarajat yozish." %}</p>
+    </div>
+  </div>
+  <div class="folio-ops-grid">
+    {% if can_post_service %}
+    <form method="post" action="{% url 'folio:post_service' folio.pk %}" class="folio-mini-form">
+      {% csrf_token %}
+      <h3 class="folio-mini-title">{% trans "Xizmat qo‘shish" %}</h3>
+      <div class="folio-fields">
+        {% for field in service_form %}
+        <label class="folio-field {% if forloop.last %}folio-field-wide{% endif %}">
+          <span>{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+          {{ field }}
+          {% if field.errors %}<em class="field-error">{{ field.errors }}</em>{% endif %}
+        </label>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn">{% trans "Hisobga yozish" %}</button>
+    </form>
+    {% endif %}
+    {% if can_post_minibar %}
+    <form method="post" action="{% url 'folio:post_minibar' folio.pk %}" class="folio-mini-form">
+      {% csrf_token %}
+      <h3 class="folio-mini-title">{% trans "Minibar sotish" %}</h3>
+      <div class="folio-fields">
+        {% for field in minibar_form %}
+        <label class="folio-field {% if forloop.last %}folio-field-wide{% endif %}">
+          <span>{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+          {{ field }}
+          {% if field.errors %}<em class="field-error">{{ field.errors }}</em>{% endif %}
+        </label>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn">{% trans "Hisobga yozish" %}</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+{% endif %}
+
+{% if can_city_ledger and folio.is_open %}
+<section class="section-panel folio-panel">
+  <div class="folio-panel-head">
+    <div>
+      <p class="eyebrow">{% trans "Kompaniya" %}</p>
+      <h2>{% trans "Kompaniya hisobiga o‘tkazish" %}</h2>
+      <p class="folio-panel-sub">{% trans "Tanlangan xarajatlar" %} · {{ billing_company.name }} {% trans "nomiga yoziladi." %}</p>
+    </div>
+  </div>
+  <form method="post" action="{% url 'folio:to_company' folio.pk %}" class="folio-mini-form folio-mini-form-wide">
+    {% csrf_token %}
+    <div class="folio-ledger-checks">{{ city_ledger_form.charge_ids }}</div>
+    <label class="folio-check">
+      {{ city_ledger_form.transfer_all }}
+      <span>{% trans "Barcha yozuvlarni o‘tkazish" %}</span>
+    </label>
+    <label class="folio-field folio-field-wide">
+      <span>{% trans "Izoh" %}</span>
+      {{ city_ledger_form.notes }}
+    </label>
+    <button type="submit" class="btn">{% trans "O‘tkazish" %}</button>
+  </form>
+</section>
+{% endif %}
+
+<div class="folio-columns">
+
+<section class="section-panel folio-panel folio-panel-charges">
+  <div class="folio-panel-head">
+    <div>
+      <p class="eyebrow">{% trans "1 · Xarajatlar" %}</p>
+      <h2>{% trans "Mehmonga yozilgan" %}</h2>
+      <p class="folio-panel-sub">{% trans "Bu yerda mehmon nima uchun to‘lashi kerakligi ko‘rinadi." %}</p>
+    </div>
+    <span class="folio-count" title="{% trans 'Yozuvlar soni' %}">{{ folio.charges.count }}</span>
+  </div>
+
+  <ul class="folio-entry-list">
+    {% for c in folio.charges.all %}
+    <li class="folio-entry {% if c.is_void %}is-void{% endif %}">
+      <div class="folio-entry-main">
+        <strong>{{ c.get_charge_type_display }}</strong>
+        <span>{{ c.description }}{% if c.quantity and c.quantity != 1 %} · ×{{ c.quantity }}{% endif %}</span>
+        {% if c.is_void %}<em class="folio-void-note">{% trans "Bekor qilingan" %}: {{ c.void_reason }}</em>{% endif %}
+      </div>
+      <strong class="money folio-entry-amount">{{ c.amount|money }} {{ c.currency }}</strong>
+      {% if c.currency != current_tenant.currency %}
+      <span class="muted folio-fx">≈ {{ c.amount_base|money }} {{ current_tenant.currency }}</span>
+      {% endif %}
+      {% if folio.is_open and not c.is_void %}
+      <form method="post" action="{% url 'folio:void_charge' c.pk %}" class="folio-void-form">
+        {% csrf_token %}
+        <input type="text" name="reason" placeholder="{% trans 'Bekor sababi' %}" required minlength="3">
+        <button type="submit" class="btn-ghost folio-void-btn">{% trans "Bekor" %}</button>
+      </form>
+      {% endif %}
+    </li>
+    {% empty %}
+    <li class="folio-empty-card">
+      <strong>{% trans "Hali xarajat yo‘q" %}</strong>
+      <span>{% trans "Pastdagi forma orqali qo‘lda yozuv qo‘shishingiz mumkin." %}</span>
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% if folio.is_open %}
+  <form method="post" action="{% url 'folio:add_charge' folio.pk %}" class="folio-mini-form folio-add-block">
+    {% csrf_token %}
+    <div class="folio-form-intro">
+      <h3 class="folio-mini-title">{% trans "Yangi xarajat qo‘shish" %}</h3>
+      <p class="folio-panel-sub">{% trans "Masalan: jarima, qo‘shimcha xizmat yoki boshqa yozuv." %}</p>
+    </div>
+    <div class="folio-fields folio-fields-4">
+      {% for field in charge_form %}
+      <label class="folio-field {% if field.name == 'description' %}folio-field-wide{% endif %}">
+        <span>{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+        {{ field }}
+      </label>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn">{% trans "Xarajatni qo‘shish" %}</button>
+  </form>
+  {% endif %}
+</section>
+
+<section class="section-panel folio-panel folio-panel-payments">
+  <div class="folio-panel-head">
+    <div>
+      <p class="eyebrow">{% trans "2 · To‘lovlar" %}</p>
+      <h2>{% trans "Kassaga kelgan" %}</h2>
+      <p class="folio-panel-sub">{% trans "Mehmon to‘lagan pullar shu yerda qayd etiladi." %}</p>
+    </div>
+    <span class="folio-count" title="{% trans 'To‘lovlar soni' %}">{{ folio.payments.count }}</span>
+  </div>
+
+  <ul class="folio-entry-list">
+    {% for p in folio.payments.all %}
+    <li class="folio-entry folio-entry-pay {% if p.is_void %}is-void{% endif %}">
+      <div class="folio-entry-main">
+        <strong>{{ p.get_kind_display }}</strong>
+        <span>{{ p.get_method_display }}{% if p.note %} · {{ p.note }}{% endif %}</span>
+        {% if p.is_void %}<em class="folio-void-note">{% trans "Bekor qilingan" %}: {{ p.void_reason }}</em>{% endif %}
+      </div>
+      <strong class="money folio-entry-amount">{{ p.amount|money }} {{ p.currency }}</strong>
+      {% if p.currency != current_tenant.currency %}
+      <span class="muted folio-fx">≈ {{ p.amount_base|money }} {{ current_tenant.currency }}</span>
+      {% endif %}
+      {% if folio.is_open and not p.is_void %}
+      <form method="post" action="{% url 'folio:void_payment' p.pk %}" class="folio-void-form">
+        {% csrf_token %}
+        <input type="text" name="reason" placeholder="{% trans 'Bekor sababi' %}" required minlength="3">
+        <button type="submit" class="btn-ghost folio-void-btn">{% trans "Bekor" %}</button>
+      </form>
+      {% endif %}
+    </li>
+    {% empty %}
+    <li class="folio-empty-card">
+      <strong>{% trans "Hali to‘lov yo‘q" %}</strong>
+      <span>{% trans "Qoldiqni yopish uchun oddiy yoki bo‘lingan to‘lov qo‘shing." %}</span>
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% if folio.is_open %}
+  <form method="post"
+        action="{% url 'folio:add_payment' folio.pk %}"
+        class="folio-mini-form folio-add-block"
+        hx-post="{% url 'folio:add_payment' folio.pk %}"
+        hx-target="#folio-body"
+        hx-swap="innerHTML"
+        hx-select="unset">
+    {% csrf_token %}
+    <div class="folio-form-intro">
+      <h3 class="folio-mini-title">{% trans "Bitta usulda to‘lash" %}</h3>
+      <p class="folio-panel-sub">{% trans "Faqat naqd yoki faqat karta — shu forma." %}</p>
+    </div>
+    <div class="folio-fields folio-fields-4">
+      {% for field in payment_form %}
+      <label class="folio-field {% if field.name == 'note' or field.name == 'amount' %}folio-field-wide{% endif %}">
+        <span>{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+        {{ field }}
+      </label>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn">{% trans "To‘lovni qabul qilish" %}</button>
+  </form>
+
+  <div class="folio-split-block">
+    <div class="folio-split-head">
+      <div>
+        <h3 class="folio-mini-title">{% trans "Bir necha usulda to‘lash" %}</h3>
+        <p class="folio-panel-sub">{% trans "Masalan: bir qismi naqd, qolgani karta. Kerak bo‘lsa «+ Usul» bosing." %}</p>
+      </div>
+      <button type="button" class="btn-ghost" id="split-line-add">+ {% trans "Usul" %}</button>
+    </div>
+    <form method="post"
+          action="{% url 'folio:add_split' folio.pk %}"
+          class="folio-mini-form split-payment-form"
+          id="split-payment-form"
+          hx-post="{% url 'folio:add_split' folio.pk %}"
+          hx-target="#folio-body"
+          hx-swap="innerHTML"
+          hx-select="unset">
+      {% csrf_token %}
+      {% if split_form.non_field_errors %}<div class="form-errors">{{ split_form.non_field_errors }}</div>{% endif %}
+      <div class="split-lines" id="split-lines" data-max="{{ split_form.MAX_LINES }}">
+        <div class="split-line">
+          <span class="split-line-idx" aria-hidden="true">1</span>
+          <div class="split-line-fields">
+            <label class="folio-field">
+              <span>{% trans "Usul" %}</span>
+              <select name="method">
+                {% for value, label in payment_method_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label class="folio-field">
+              <span>{% trans "Valyuta" %}</span>
+              <select name="currency">
+                <option value="UZS" {% if current_tenant.currency == "UZS" %}selected{% endif %}>UZS</option>
+                <option value="USD" {% if current_tenant.currency == "USD" %}selected{% endif %}>USD</option>
+                <option value="EUR" {% if current_tenant.currency == "EUR" %}selected{% endif %}>EUR</option>
+              </select>
+            </label>
+            <label class="folio-field">
+              <span>{% trans "Summa" %}</span>
+              <input type="number" name="amount" min="0" step="0.01" value="{% if folio.balance > 0 %}{{ folio.balance }}{% endif %}" placeholder="0">
+            </label>
+            <label class="folio-field">
+              <span>{% trans "Turi" %}</span>
+              <select name="kind">
+                {% for value, label in payment_kind_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+          <button type="button" class="btn-ghost split-line-remove" hidden aria-label="{% trans 'O‘chirish' %}">×</button>
+        </div>
+      </div>
+      <label class="folio-field folio-field-wide">
+        <span>{% trans "Izoh" %}</span>
+        {{ split_form.note }}
+      </label>
+      <div class="folio-form-actions">
+        <button type="submit" class="btn">{% trans "Bo‘lingan to‘lovni saqlash" %}</button>
+      </div>
+    </form>
+  </div>
+
+  <template id="split-line-template">
+    <div class="split-line">
+      <span class="split-line-idx" aria-hidden="true"></span>
+      <div class="split-line-fields">
+        <label class="folio-field">
+          <span>{% trans "Usul" %}</span>
+          <select name="method">
+            {% for value, label in payment_method_choices %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="folio-field">
+          <span>{% trans "Valyuta" %}</span>
+          <select name="currency">
+            <option value="UZS">UZS</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </label>
+        <label class="folio-field">
+          <span>{% trans "Summa" %}</span>
+          <input type="number" name="amount" min="0" step="0.01" value="" placeholder="0">
+        </label>
+        <label class="folio-field">
+          <span>{% trans "Turi" %}</span>
+          <select name="kind">
+            {% for value, label in payment_kind_choices %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <button type="button" class="btn-ghost split-line-remove" aria-label="{% trans 'O‘chirish' %}">×</button>
+    </div>
+  </template>
+
+  <div class="folio-close-bar">
+    <div>
+      <strong>{% trans "Hisobni yopish" %}</strong>
+      <p class="folio-panel-sub">{% trans "Faqat qoldiq 0 bo‘lganda. Keyin yangi yozuv qo‘shib bo‘lmaydi." %}</p>
+    </div>
+    <form method="post" action="{% url 'folio:close' folio.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-lg" {% if folio.balance != 0 %}disabled title="{% trans 'Avval qoldiqni to‘lang' %}"{% endif %}>
+        {% trans "Hisobni yopish" %}
+      </button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+
+</div>
+</div>

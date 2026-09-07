@@ -1,0 +1,192 @@
+/**
+ * Shared UI components — forms, empty states, data tables.
+ * Loaded after app/premium/hero-pages so one place owns these patterns.
+ */
+
+/* —— Forms: as_p / stack-form → same rhythm as app-form-grid —— */
+.app-form .app-form-grid,
+.stack-form .app-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem 1rem;
+  margin: 0 0 0.85rem;
+}
+.app-form .app-form-grid .form-field,
+.stack-form .app-form-grid .form-field {
+  margin: 0;
+}
+.app-form .app-form-grid .field-span-2,
+.stack-form .app-form-grid .field-span-2 {
+  grid-column: 1 / -1;
+}
+.app-form.is-embedded,
+.stack-form.is-embedded,
+.cash-shift-card .app-form {
+  max-width: none;
+  width: 100%;
+  box-shadow: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.cash-shift-open-form {
+  max-width: none;
+}
+.app-form .field-help,
+.stack-form .field-help {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.app-form .field-error,
+.stack-form .field-error {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--danger);
+}
+@media (max-width: 720px) {
+  .app-form .app-form-grid,
+  .stack-form .app-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* —— Empty states —— */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  padding: 1.75rem 1.35rem;
+  border-radius: 18px;
+  border: 1px dashed rgba(26, 20, 16, 0.14);
+  background:
+    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(232, 106, 12, 0.06), transparent 55%),
+    rgba(255, 255, 255, 0.55);
+  text-align: left;
+}
+.empty-state.is-compact {
+  padding: 1rem;
+}
+.empty-state-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.empty-state-hint {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+  max-width: 36rem;
+  line-height: 1.45;
+}
+.empty-state .btn {
+  margin-top: 0.35rem;
+}
+.empty-state-li,
+li.empty-state-li {
+  list-style: none;
+  display: block;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.section-panel > .empty-state,
+.entity-list + .empty-state {
+  margin-top: 0.25rem;
+}
+
+/* —— Data tables (calendar / payroll / generic) —— */
+table.data-table,
+table.data {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.88rem;
+  background: var(--panel-strong);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+table.data-table th,
+table.data th {
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0.65rem 0.85rem;
+  background: rgba(240, 235, 229, 0.65);
+  border-bottom: 1px solid var(--line-soft);
+}
+table.data-table td,
+table.data td {
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: middle;
+}
+table.data-table tr:last-child td,
+table.data tbody tr:last-child td {
+  border-bottom: 0;
+}
+table.data-table tbody tr:hover td,
+table.data tbody tr:hover td {
+  background: rgba(232, 106, 12, 0.04);
+}
+table.data-table .num,
+table.data .num,
+table.data-table .money,
+table.data .money {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-lg);
+}
+.table-scroll > table.data-table,
+.table-scroll > table.data {
+  box-shadow: none;
+  border-radius: 0;
+  min-width: 640px;
+}
+
+/* Calendar keeps specialty cells but shares chrome */
+.calendar-wrap .calendar-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--panel-strong);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.calendar-wrap .calendar-table thead th {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(240, 235, 229, 0.65);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+/* Payroll / HR tables */
+.payroll-table .expense-actions,
+.payroll-table .row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}

@@ -1,0 +1,21 @@
+{% load i18n %}
+<div class="modal-overlay" role="presentation" onclick="if(event.target===this){this.closest('#modal-root').innerHTML='';document.body.classList.remove('modal-open');}">
+  <div class="modal-dialog" role="dialog" aria-modal="true" aria-label="{{ title }}">
+    <div class="quick-add-head">
+      <strong>{{ title }}</strong>
+      <button type="button" class="btn-ghost" onclick="document.getElementById('modal-root').innerHTML='';document.body.classList.remove('modal-open');">
+        {% trans "Yopish" %}
+      </button>
+    </div>
+    <form class="stack-form quick-add-form"
+          hx-post="{% url 'properties:floor_quick' property_obj.pk %}"
+          hx-target="#modal-root" hx-select="unset"
+          hx-swap="innerHTML">
+      {% csrf_token %}
+      <input type="hidden" name="select_id" value="{{ select_id }}">
+      <input type="hidden" name="field_name" value="{{ field_name }}">
+      {{ form.as_p }}
+      <button type="submit">{% trans "Qo‘shish" %}</button>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% url 'hr:payroll_list' as cancel_url %}
+{% include "includes/page_header.html" with title=title eyebrow=_("Kadrlar") subtitle=item.period|stringformat:"s" %}
+
+<p class="muted">
+  {% trans "Baza" %}: <span class="money">{{ item.base_amount|money }}</span>
+  · {% trans "Avans" %}: <span class="money">−{{ item.advance|money }}</span>
+  · {% trans "Hozirgi sof" %}: <strong class="money">{{ item.net_amount|money }}</strong>
+</p>
+
+<section class="section-panel">
+{% include "includes/app_form.html" with form=form cancel_url=cancel_url submit_label=_("Saqlash") %}
+</section>
+{% endblock %}

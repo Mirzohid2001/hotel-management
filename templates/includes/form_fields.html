@@ -1,0 +1,11 @@
+{% comment %}Render a Django form as app-form-grid fields (label + widget + help/errors).{% endcomment %}
+{% for field in form %}
+<p class="form-field{% if field.field.widget.input_type == 'textarea' or field.name == 'notes' or field.name == 'note' or field.name == 'address' or field.name == 'reason' %} field-span-2{% endif %}">
+  <label for="{{ field.id_for_label }}">
+    {{ field.label }}{% if field.field.required and field.label %} *{% endif %}
+  </label>
+  {{ field }}
+  {% if field.help_text %}<span class="field-help">{{ field.help_text }}</span>{% endif %}
+  {% if field.errors %}<span class="field-error">{{ field.errors|striptags }}</span>{% endif %}
+</p>
+{% endfor %}

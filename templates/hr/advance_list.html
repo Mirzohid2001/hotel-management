@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Avanslar" %}{% endblock %}
+{% block content %}
+{% url 'hr:advance_create' as create_url %}
+{% url 'hr:payroll_list' as payroll_url %}
+{% include "includes/page_header.html" with title=_("Avanslar") eyebrow=_("Kadrlar") primary_url=create_url primary_label=_("Yangi avans") secondary_url=payroll_url secondary_label=_("Oyliklar") %}
+
+<form method="get" class="search-form">
+  <select name="status">
+    <option value="open" {% if status == 'open' %}selected{% endif %}>{% trans "Ochiq" %}</option>
+    <option value="settled" {% if status == 'settled' %}selected{% endif %}>{% trans "Yopilgan" %}</option>
+    <option value="all" {% if status == 'all' %}selected{% endif %}>{% trans "Barchasi" %}</option>
+  </select>
+  <button type="submit" class="btn btn-sm">{% trans "Filtrlash" %}</button>
+</form>
+
+<section class="section-panel">
+  <ul class="list entity-list">
+    {% for a in advances %}
+    <li class="guest-chip entity-row">
+      <span>
+        <span class="entity-row-main">
+          <strong class="entity-title">{{ a.employee.full_name }}</strong>
+          <span class="status-pill {% if a.is_settled %}status-checked_out{% else %}status-inquiry{% endif %}">
+            {% if a.is_settled %}{% trans "Yopilgan" %}{% else %}{% trans "Ochiq" %}{% endif %}
+          </span>
+        </span>
+        <span class="entity-meta">
+          {{ a.advance_date }}
+          {% if a.note %} · {{ a.note }}{% endif %}
+          {% if a.applied_to_period %} · {{ a.applied_to_period }}{% endif %}
+        </span>
+      </span>
+      <span class="expense-actions">
+        <span class="money">{{ a.amount|money }}</span>
+        {% if not a.is_settled %}
+        <form method="post" action="{% url 'hr:advance_settle' a.pk %}">
+          {% csrf_token %}<button type="submit" class="btn-ghost btn-sm">{% trans "Yopish" %}</button>
+        </form>
+        {% endif %}
+      </span>
+    </li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Avans yo‘q") hint=_("Xodimga oldindan to‘lov yozing — oylikdan ushlanadi.") cta_url=create_url cta_label=_("Yangi avans") %}
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

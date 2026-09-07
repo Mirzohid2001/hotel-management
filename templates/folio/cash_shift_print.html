@@ -1,0 +1,140 @@
+{% load money_fmt i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "Kassa smena" %} {{ shift.opened_at|date:"Y-m-d H:i" }}</title>
+  <style>
+    :root {
+      --brand: #c04a00;
+      --ink: #1a1410;
+      --muted: #7a7168;
+      --line: #ddd4c8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      max-width: 720px;
+      margin: 1.5rem auto;
+      padding: 0 1rem 2rem;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    h1 { font-size: 1.4rem; color: var(--brand); margin: 0 0 0.25rem; }
+    h2 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; border-bottom: 1px solid var(--line); padding-bottom: 0.25rem; }
+    .muted { color: var(--muted); }
+    .meta { margin: 0 0 1rem; font-size: 0.95rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.65rem;
+      margin: 1rem 0;
+    }
+    .cell {
+      border: 1px solid var(--line);
+      padding: 0.55rem 0.65rem;
+      border-radius: 6px;
+    }
+    .cell span { display: block; font-size: 0.78rem; color: var(--muted); }
+    .cell strong { font-size: 1.05rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    th, td { text-align: left; padding: 0.35rem 0.25rem; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .actions { margin: 1rem 0; }
+    .actions button {
+      background: var(--brand);
+      color: #fff;
+      border: 0;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+    }
+    @media print {
+      .actions { display: none; }
+      body { margin: 0; max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button type="button" onclick="window.print()">{% trans "Chop etish" %}</button>
+  </div>
+
+  <header>
+    <h1>{{ tenant.name }} — {% trans "Kassa smena hisoboti" %}</h1>
+    <p class="meta muted">
+      {{ shift.opened_at|date:"d.m.Y H:i" }}
+      {% if shift.closed_at %}→ {{ shift.closed_at|date:"d.m.Y H:i" }}{% else %}· {% trans "Ochiq" %}{% endif %}
+      · {{ shift.opened_by }}{% if shift.closed_by %} → {{ shift.closed_by }}{% endif %}
+    </p>
+    {% if shift.notes %}<p class="meta">{% trans "Izoh" %}: {{ shift.notes }}</p>{% endif %}
+    <p class="muted" style="font-size:0.85rem">{{ report.formula_label }}</p>
+  </header>
+
+  <div class="grid">
+    <div class="cell"><span>{% trans "Boshlang‘ich" %}</span><strong>{{ shift.opening_float|money }}</strong></div>
+    <div class="cell"><span>{% trans "Naqd kirim" %}</span><strong>{{ report.payments.cash_in|money }}</strong></div>
+    <div class="cell"><span>{% trans "Kassa kirim" %}</span><strong>{{ report.movements.pay_in|money }}</strong></div>
+    <div class="cell"><span>{% trans "Kassa chiqim" %}</span><strong>−{{ report.movements.pay_out|money }}</strong></div>
+    <div class="cell"><span>{% trans "Rasxod / oylik" %}</span><strong>−{{ report.cash_out.total|money }}</strong></div>
+    <div class="cell"><span>{% trans "Karta" %}</span><strong>{{ report.payments.card_total|money }}</strong></div>
+    <div class="cell"><span>{% trans "O‘tkazma" %}</span><strong>{{ report.payments.transfer_total|money }}</strong></div>
+    <div class="cell"><span>{% trans "Kutilgan" %}</span><strong>{{ report.expected_cash|money }}</strong></div>
+    {% if shift.closed_at %}
+    <div class="cell"><span>{% trans "Sanangan" %}</span><strong>{{ shift.closing_cash|money }}</strong></div>
+    <div class="cell"><span>{% trans "Farq" %}</span><strong>{{ shift.variance|money }}</strong></div>
+    {% endif %}
+  </div>
+
+  {% if report.movements.rows %}
+  <h2>{% trans "Kassa harakatlari" %}</h2>
+  <table>
+    <thead><tr><th>{% trans "Vaqt" %}</th><th>{% trans "Turi" %}</th><th>{% trans "Izoh" %}</th><th class="num">{% trans "Summa" %}</th></tr></thead>
+    <tbody>
+      {% for m in report.movements.rows %}
+      <tr>
+        <td>{{ m.created_at|date:"H:i" }}</td>
+        <td>{{ m.get_kind_display }}</td>
+        <td>{{ m.note|default:"—" }}</td>
+        <td class="num">{% if m.kind == "pay_out" %}−{% endif %}{{ m.amount|money }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h2>{% trans "Naqd to‘lovlar" %}</h2>
+  <table>
+    <thead><tr><th>{% trans "Vaqt" %}</th><th>{% trans "Bron" %}</th><th>{% trans "Usul" %}</th><th class="num">{% trans "Summa" %}</th></tr></thead>
+    <tbody>
+      {% for p in report.payments.rows %}
+      <tr>
+        <td>{{ p.created_at|date:"H:i" }}</td>
+        <td>{{ p.folio.reservation.code }}</td>
+        <td>{{ p.get_method_display }}</td>
+        <td class="num">{{ p.amount|money }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="muted">{% trans "Yo‘q" %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if report.cash_out.expense_rows or report.cash_out.payroll_rows %}
+  <h2>{% trans "Naqd chiqimlar" %}</h2>
+  <table>
+    <thead><tr><th>{% trans "Turi" %}</th><th>{% trans "Izoh" %}</th><th class="num">{% trans "Summa" %}</th></tr></thead>
+    <tbody>
+      {% for e in report.cash_out.expense_rows %}
+      <tr><td>{% trans "Rasxod" %}</td><td>{{ e.title }}</td><td class="num">−{{ e.amount|money }}</td></tr>
+      {% endfor %}
+      {% for p in report.cash_out.payroll_rows %}
+      <tr><td>{% trans "Oylik" %}</td><td>{{ p.item.employee.full_name }}</td><td class="num">−{{ p.amount|money }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</body>
+</html>

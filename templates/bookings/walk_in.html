@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Darhol joylash" %}{% endblock %}
+{% block content %}
+<div class="walkin-page">
+  <header class="walkin-hero">
+    <div class="walkin-hero-text">
+      <p class="eyebrow">{% trans "Resepsiya" %} · {% trans "Darhol kirish" %}</p>
+      <h1>{% trans "Darhol joylash" %}</h1>
+      {% if hotel %}
+      <p class="walkin-hero-sub">{{ hotel.display_label }}</p>
+      {% endif %}
+    </div>
+    <div class="walkin-hero-actions">
+      <a class="btn-ghost" href="{% url 'bookings:board' %}">{% trans "Doska" %}</a>
+      <a class="btn-ghost" href="{% url 'bookings:create' %}">{% trans "Bron" %}</a>
+    </div>
+  </header>
+
+  <div class="walkin-steps" aria-label="{% trans 'Qadamlar' %}">
+    <span class="walkin-step is-active"><span class="walkin-step-num">1</span>{% trans "Mehmon" %}</span>
+    <span class="walkin-step-line"></span>
+    <span class="walkin-step is-active"><span class="walkin-step-num">2</span>{% trans "Xona" %}</span>
+    <span class="walkin-step-line"></span>
+    <span class="walkin-step"><span class="walkin-step-num">3</span>{% trans "Joylash" %}</span>
+  </div>
+
+{% if not hotel %}
+<div class="walkin-empty walkin-empty-premium panel">
+  <div class="walkin-empty-icon" aria-hidden="true"></div>
+  <h2>{% trans "Filial tanlanmagan" %}</h2>
+  <p>{% trans "Avval filial tanlang — chap menyu yoki Xonalar bo‘limi." %}</p>
+  <a class="btn" href="{% url 'properties:list' %}">{% trans "Filiallar" %}</a>
+</div>
+{% else %}
+<form method="post" class="walkin-layout" id="walkin-form" hx-boost="false">
+  {% csrf_token %}
+
+  <div class="walkin-col walkin-col-guest">
+    <section class="walkin-section panel walkin-panel">
+      <div class="walkin-panel-head">
+        <span class="walkin-panel-icon is-guest" aria-hidden="true"></span>
+        <h2 class="walkin-section-title">{% trans "Mehmon ma’lumotlari" %}</h2>
+      </div>
+      <div class="form-grid walkin-fields">
+        <p class="field-span-2">
+          <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }} *</label>
+          {{ form.first_name }}
+          {{ form.first_name.errors }}
+        </p>
+        <p>
+          <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+          {{ form.last_name }}
+        </p>
+        <p>
+          <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+          {{ form.phone }}
+        </p>
+        <p>
+          <label for="{{ form.doc_type.id_for_label }}">{{ form.doc_type.label }}</label>
+          {{ form.doc_type }}
+        </p>
+        <p>
+          <label for="{{ form.doc_number.id_for_label }}">{{ form.doc_number.label }}</label>
+          {{ form.doc_number }}
+        </p>
+        <p>
+          <label for="{{ form.referrer.id_for_label }}">{{ form.referrer.label }}</label>
+          <span class="field-row">
+            {{ form.referrer }}
+            <button type="button" class="btn-ghost btn-sm"
+                    hx-get="{% url 'bookings:referrer_quick' %}"
+                    hx-vals='{"select_id":"{{ form.referrer.id_for_label }}","field_name":"{{ form.referrer.html_name }}"}'
+                    hx-target="#modal-root" hx-select="unset"
+                    hx-swap="innerHTML">
+              {% trans "+ Yangi" %}
+            </button>
+          </span>
+          {{ form.referrer.errors }}
+        </p>
+        <p>
+          <label for="{{ form.commission_percent.id_for_label }}">{{ form.commission_percent.label }}</label>
+          {{ form.commission_percent }}
+          {{ form.commission_percent.errors }}
+        </p>
+      </div>
+    </section>
+
+    <section class="walkin-section panel walkin-panel">
+      <div class="walkin-panel-head">
+        <span class="walkin-panel-icon is-extra" aria-hidden="true"></span>
+        <h2 class="walkin-section-title">{% trans "Qo‘shimcha" %}</h2>
+      </div>
+      <p>
+        <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+        {{ form.notes }}
+      </p>
+      <div class="emehmon-box" style="margin-top:1rem;padding-top:0.85rem;border-top:1px solid var(--border, #e5e7eb)" id="emehmon-box">
+        <h3 class="walkin-section-title" style="font-size:1rem;margin-bottom:0.5rem">{% trans "E-mehmon to‘lovi" %}</h3>
+        <p class="muted" style="margin:0 0 0.65rem;font-size:0.9rem">{% trans "Ixtiyoriy. Belgilanmasa olinmaydi; belgilansa: tarif × tunlar × mehmonlar." %}</p>
+        <div class="form-grid walkin-fields">
+          <p class="field-span-2">
+            <label class="checkbox-row">
+              {{ form.collect_emehmon }}
+              <span>{{ form.collect_emehmon.label }}</span>
+            </label>
+          </p>
+          <p class="emehmon-fields">
+            <label for="{{ form.emehmon_amount.id_for_label }}">{{ form.emehmon_amount.label }}</label>
+            {{ form.emehmon_amount }}
+            {{ form.emehmon_amount.errors }}
+          </p>
+          <p class="emehmon-fields">
+            <label for="{{ form.emehmon_method.id_for_label }}">{{ form.emehmon_method.label }}</label>
+            {{ form.emehmon_method }}
+          </p>
+        </div>
+      </div>
+      <div class="walkin-toggles">
+        <label class="walkin-toggle">
+          <input type="checkbox" name="allow_dirty" value="1">
+          <span class="walkin-toggle-box">
+            <strong>{% trans "Kir xona ruxsati" %}</strong>
+            <small>{% trans "Tozalash tugamagan xonaga kirish" %}</small>
+          </span>
+        </label>
+        <label class="walkin-toggle">
+          <input type="checkbox" name="allow_no_docs" value="1">
+          <span class="walkin-toggle-box">
+            <strong>{% trans "Hujjat ruxsati" %}</strong>
+            <small>{% trans "Pasport/ID hali kiritilmagan" %}</small>
+          </span>
+        </label>
+      </div>
+    </section>
+  </div>
+
+  <div class="walkin-col walkin-col-stay">
+    <section class="walkin-section panel walkin-stay-panel walkin-panel">
+      <div class="walkin-stay-head">
+        <div class="walkin-panel-head">
+          <span class="walkin-panel-icon is-room" aria-hidden="true"></span>
+          <h2 class="walkin-section-title">{% trans "Xona tanlash" %}</h2>
+        </div>
+        <div class="walkin-date-strip">
+          <span class="walkin-date-chip">
+            <small>{% trans "Kirish" %}</small>
+            <strong>{{ form.stay_check_in|date:"d.m.Y" }}</strong>
+          </span>
+          <span class="walkin-date-arrow">→</span>
+          <span class="walkin-date-chip">
+            <small>{% trans "Chiqish" %}</small>
+            <strong>{{ form.stay_check_out|date:"d.m.Y" }}</strong>
+          </span>
+        </div>
+      </div>
+
+      <div class="board-legend walkin-legend board-legend-pills">
+        <span class="board-pill leg-vacant">{% trans "Bo‘sh" %}</span>
+        <span class="board-pill leg-dirty">{% trans "Kir" %}</span>
+        <span class="board-pill leg-occupied">{% trans "Band" %}</span>
+      </div>
+
+      <div id="walkin-room-loading" class="walkin-loading htmx-indicator">
+        <span class="walkin-spinner"></span>
+        {% trans "Xonalar yangilanmoqda…" %}
+      </div>
+
+      <div id="walkin-room-fields">
+        {% include "bookings/partials/walk_in_rooms.html" %}
+      </div>
+    </section>
+
+    <div class="walkin-submit-bar panel walkin-submit-premium">
+      <div class="walkin-submit-meta">
+        <p class="walkin-submit-hint">
+          {% if form.available_count %}
+          <span class="walkin-available-count">{{ form.available_count }}</span>
+          {% blocktrans count counter=form.available_count %}
+            ta xona tanlash mumkin
+          {% plural %}
+            ta xona tanlash mumkin
+          {% endblocktrans %}
+          {% else %}
+          {% trans "Bo‘sh xona yo‘q — tunlar sonini yoki filialni tekshiring" %}
+          {% endif %}
+        </p>
+      </div>
+      <button type="submit" class="btn walkin-submit-btn" {% if not form.available_count %}disabled{% endif %}>
+        {% trans "Mehmonni joylash" %}
+      </button>
+    </div>
+  </div>
+</form>
+
+<script>
+(function () {
+  var form = document.getElementById("walkin-form");
+  if (!form) return;
+
+  function syncRoomCards() {
+    var hidden = form.querySelector('input[name="room"]');
+    var selected = hidden ? hidden.value : "";
+    form.querySelectorAll(".walkin-room-card.is-selectable").forEach(function (card) {
+      var val = card.getAttribute("data-room-id");
+      card.classList.toggle("is-selected", selected && val === selected);
+    });
+    var step3 = document.querySelector(".walkin-step:last-child");
+    if (step3) step3.classList.toggle("is-active", !!selected);
+  }
+
+  form.addEventListener("click", function (e) {
+    var card = e.target.closest(".walkin-room-card.is-selectable");
+    if (!card) return;
+    var hidden = form.querySelector('input[name="room"]');
+    if (!hidden) return;
+    hidden.value = card.getAttribute("data-room-id");
+    var rateInput = form.querySelector('[name="nightly_rate"]');
+    var base = card.getAttribute("data-base-price");
+    if (rateInput && base) {
+      rateInput.value = base;
+    }
+    syncRoomCards();
+  });
+
+  form.addEventListener("htmx:afterSwap", function (e) {
+    if (e.target && e.target.id === "walkin-room-fields") {
+      syncRoomCards();
+    }
+  });
+
+  form._walkinSync = syncRoomCards;
+  syncRoomCards();
+
+  var ref = form.querySelector('[name="referrer"]');
+  var pct = form.querySelector('[name="commission_percent"]');
+  if (ref && pct) {
+    var defaults = {
+      {% for r in form.fields.referrer.queryset %}
+      "{{ r.pk }}": "{{ r.default_commission_percent }}"{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    };
+    ref.addEventListener("change", function () {
+      var v = defaults[ref.value];
+      if (v !== undefined) pct.value = v;
+      else pct.value = "";
+    });
+  }
+
+  var amount = form.querySelector('[name="emehmon_amount"]');
+  var collect = form.querySelector('[name="collect_emehmon"]');
+  function toggleEmehmon() {
+    var on = collect && collect.checked;
+    form.querySelectorAll(".emehmon-fields").forEach(function (el) {
+      el.style.display = on ? "" : "none";
+    });
+  }
+  if (collect) {
+    collect.addEventListener("change", toggleEmehmon);
+    toggleEmehmon();
+  }
+  if (amount) {
+    var unit = parseFloat(amount.getAttribute("data-emehmon-unit") || "0") || 0;
+    function recalcEmehmon() {
+      if (!unit || (collect && !collect.checked)) return;
+      var nightsEl = form.querySelector('[name="nights"]');
+      var adultsEl = form.querySelector('[name="adults"]');
+      var nights = Math.max(1, parseInt(nightsEl && nightsEl.value, 10) || 1);
+      var guests = Math.max(1, parseInt(adultsEl && adultsEl.value, 10) || 1);
+      amount.value = (unit * nights * guests).toFixed(2);
+    }
+    ["nights", "adults"].forEach(function (name) {
+      var el = form.querySelector('[name="' + name + '"]');
+      if (el) el.addEventListener("change", recalcEmehmon);
+    });
+    if (collect) collect.addEventListener("change", function () { if (collect.checked) recalcEmehmon(); });
+  }
+})();
+</script>
+{% endif %}
+</div>
+{% endblock %}

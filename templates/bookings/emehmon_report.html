@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "E-mehmon komissiya" %}{% endblock %}
+{% block content %}
+<div class="report-page">
+  <header class="report-hero pnl-hero">
+    <div class="report-hero-text">
+      <p class="eyebrow">{% trans "Moliya" %} · E-mehmon</p>
+      <h1>{% trans "Oylik E-mehmon komissiyasi" %}</h1>
+      <p class="report-hero-sub">
+        {{ report.start|date:"d.m.Y" }} → {{ report.end|date:"d.m.Y" }}
+        · {% trans "1 mehmon × 1 kecha" %}
+      </p>
+    </div>
+    <div class="report-hero-actions">
+      <a class="btn-ghost" href="{% url 'bookings:commission_report' %}">{% trans "Yo‘naltiruvchi komissiya" %}</a>
+    </div>
+  </header>
+
+  <form method="get" class="filter-panel report-filter" role="search">
+    <div class="filter-panel-grid">
+      <label class="filter-field">
+        <span class="filter-field-label">{% trans "Oy" %}</span>
+        <select name="month" id="id_month">
+          {% for m, label in months %}
+          <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="filter-field">
+        <span class="filter-field-label">{% trans "Yil" %}</span>
+        <select name="year" id="id_year">
+          {% for y in years %}
+          <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="filter-field filter-field-action">
+        <span class="filter-field-label" aria-hidden="true">&nbsp;</span>
+        <button type="submit" class="btn">{% trans "Ko‘rsatish" %}</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="dash-pnl-row pnl-summary-row">
+    <div class="dash-pnl-item">
+      <span class="muted">{% trans "Mehmon-kechalar" %}</span>
+      <strong>{{ report.total_guest_nights }}</strong>
+    </div>
+    <div class="dash-pnl-item">
+      <span class="muted">{% trans "E-mehmonga berilishi kerak" %}</span>
+      <strong class="money">{{ report.total_expected|money }}</strong>
+    </div>
+    <div class="dash-pnl-item">
+      <span class="muted">{% trans "Mehmondan olingan" %}</span>
+      <strong class="money">{{ report.total_collected|money }}</strong>
+    </div>
+    <div class="dash-pnl-item dash-pnl-net">
+      <span class="muted">{% trans "Farq" %}</span>
+      <strong class="money">{{ report.total_gap|money }}</strong>
+    </div>
+  </div>
+
+  <p class="muted" style="margin:0.5rem 0 1rem">
+    {% trans "Hisob: mehmanxonadagi tarif × oy ichidagi kechalar × mehmonlar soni. Olingan summa kechalar ulushiga bo‘linadi. Farq > 0 — mehmondan to‘liq olinmagan; P&L da shu farq (faqat boshlangan bronlar) rasxod." %}
+  </p>
+
+  <section class="section-panel">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{% trans "Mehmon" %}</th>
+            <th>{% trans "Sanalar" %}</th>
+            <th>{% trans "Mehmon" %}</th>
+            <th>{% trans "Oy kechalari" %}</th>
+            <th>{% trans "Mehmon-kecha" %}</th>
+            <th>{% trans "Tarif" %}</th>
+            <th>{% trans "Hisoblangan" %}</th>
+            <th>{% trans "Olingan" %}</th>
+            <th>{% trans "Holat" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in report.rows %}
+          <tr>
+            <td>
+              <a href="{% url 'bookings:detail' row.reservation.pk %}">{{ row.guest_name }}</a>
+              <span class="muted">· {{ row.hotel_name }}</span>
+            </td>
+            <td>{{ row.check_in|date:"d.m" }} → {{ row.check_out|date:"d.m" }}</td>
+            <td>{{ row.guests }}</td>
+            <td>{{ row.nights_in_month }}</td>
+            <td>{{ row.guest_nights }}</td>
+            <td class="money">{{ row.unit|money }}</td>
+            <td class="money">{{ row.expected|money }}</td>
+            <td class="money">{{ row.collected|money }}</td>
+            <td>
+              {% if row.posted %}
+              <span class="badge">{% trans "Olingan" %}</span>
+              {% else %}
+              <span class="badge badge-warn">{% trans "Yo‘q" %}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="muted empty-row">{% trans "Bu oyda yashash yo‘q." %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

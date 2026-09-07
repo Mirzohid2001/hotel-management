@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Kassa smena" %}{% endblock %}
+{% block content %}
+<div class="app-page cash-shift-page">
+{% include "includes/page_header.html" with title=_("Kassa smena") eyebrow=_("Moliya") subtitle=_("Naqd quti: ochish, harakatlar, yopish va farq nazorati") %}
+
+{% if open_shift and report %}
+<section class="section-panel cash-shift-live">
+  <div class="dash-section-head cash-shift-live-head">
+    <div>
+      <p class="eyebrow cash-shift-status-pill">{% trans "Faol smena" %}</p>
+      <h2>{% trans "Ochiq smena" %}</h2>
+      <p class="muted report-section-meta">
+        {{ open_shift.opened_at }} · {{ open_shift.opened_by }}
+        · {% trans "Boshlang‘ich" %}: <span class="money">{{ open_shift.opening_float|money }}</span>
+      </p>
+    </div>
+    <div class="cash-shift-expected" data-expected="{{ report.expected_cash }}">
+      <span class="cash-shift-expected-lbl">{% trans "Kutilgan naqd" %}</span>
+      <strong class="money cash-shift-expected-val">{{ report.expected_cash|money }}</strong>
+      <span class="muted cash-shift-formula">{{ report.formula_label }}</span>
+    </div>
+  </div>
+
+  <div class="stats-grid dash-stats cash-shift-stats">
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-in" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "Naqd kirim" %}</span>
+      <strong class="money">{{ report.payments.cash_in|money }}</strong>
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-card" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "Karta" %}</span>
+      <strong class="money">{{ report.payments.card_total|money }}</strong>
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-transfer" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "O‘tkazma" %}</span>
+      <strong class="money">{{ report.payments.transfer_total|money }}</strong>
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-in" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "Kassa kirim" %}</span>
+      <strong class="money">{{ report.movements.pay_in|money }}</strong>
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-out" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "Kassa chiqim" %}</span>
+      <strong class="money">{{ report.movements.pay_out|money }}</strong>
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-up" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "Rasxod / oylik" %}</span>
+      <strong class="money">{{ report.cash_out.total|money }}</strong>
+    </div>
+  </div>
+
+  <div class="pnl-charts-grid cash-shift-charts">
+    <div class="chart-wrap chart-wrap-donut">
+      <p class="chart-caption">{% trans "To‘lov turlari" %}</p>
+      <canvas id="chart-shift-mix" aria-label="{% trans 'To‘lov turlari' %}"></canvas>
+    </div>
+    <div class="chart-wrap chart-wrap-bar">
+      <p class="chart-caption">{% trans "Naqd oqimi" %}</p>
+      <canvas id="chart-shift-flow" aria-label="{% trans 'Naqd oqimi' %}"></canvas>
+    </div>
+  </div>
+
+  <div class="cash-shift-grid">
+    <section class="cash-shift-card">
+      <h3>{% trans "Kassa harakati" %}</h3>
+      <p class="muted cash-shift-card-hint">
+        {% trans "Mehmon to‘lovidan tashqari: qutiga qo‘shimcha naqd yoki mayda chiqim." %}
+      </p>
+      <form method="post" action="{% url 'folio:cash_shift_movement' %}" class="app-form is-embedded">
+        {% csrf_token %}
+        <div class="app-form-grid">
+          {% include "includes/form_fields.html" with form=movement_form %}
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">{% trans "Yozish" %}</button>
+        </div>
+      </form>
+      {% if report.movements.rows %}
+      <ul class="list entity-list cash-shift-mini-list">
+        {% for m in report.movements.rows %}
+        <li class="guest-chip entity-row">
+          <span>
+            <span class="cash-shift-kind cash-shift-kind-{{ m.kind }}">{{ m.get_kind_display }}</span>
+            {% if m.note %}<span class="muted"> · {{ m.note }}</span>{% endif %}
+            <span class="muted"> · {{ m.created_at|date:"H:i" }}</span>
+          </span>
+          <span class="money">{% if m.kind == "pay_out" %}−{% endif %}{{ m.amount|money }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </section>
+
+    <section class="cash-shift-card cash-shift-close-card">
+      <h3>{% trans "Smenani yopish" %}</h3>
+      <p class="muted cash-shift-card-hint">
+        {% trans "Kassani sanang. Farq = sanangan − kutilgan." %}
+      </p>
+      <div class="cash-shift-variance-live" id="cash-shift-variance-live" hidden>
+        <span>{% trans "Farq" %}:</span>
+        <strong class="money" id="cash-shift-variance-val">0</strong>
+      </div>
+      <form method="post" action="{% url 'folio:cash_shift_close' %}" class="app-form is-embedded" id="cash-shift-close-form">
+        {% csrf_token %}
+        <div class="app-form-grid">
+          {% include "includes/form_fields.html" with form=close_form %}
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-danger-soft" data-confirm="{% trans 'Smenani yopishni tasdiqlaysizmi?' %}">
+            {% trans "Smenani yopish" %}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+</section>
+
+<section class="section-panel">
+  <div class="dash-section-head">
+    <h2>{% trans "Naqd to‘lovlar" %}</h2>
+  </div>
+  <ul class="list entity-list">
+    {% for p in report.payments.rows %}
+    <li class="guest-chip entity-row">
+      <span>
+        {{ p.folio.reservation.code }}
+        {% if p.folio.reservation.guest %} · {{ p.folio.reservation.guest }}{% endif %}
+        · {{ p.get_method_display }}
+        · {{ p.created_at|date:"H:i" }}
+      </span>
+      <span class="money">{{ p.amount|money }}</span>
+    </li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Naqd to‘lov yo‘q") hint=_("Smena davomida qabul qilingan naqd to‘lovlar shu yerda ko‘rinadi.") compact=1 %}
+    {% endfor %}
+  </ul>
+</section>
+
+{% if report.payments.card_rows or report.payments.transfer_rows %}
+<section class="section-panel">
+  <div class="dash-section-head">
+    <h2>{% trans "Naqd bo‘lmagan to‘lovlar" %}</h2>
+  </div>
+  <ul class="list entity-list">
+    {% for p in report.payments.card_rows %}
+    <li class="guest-chip entity-row">
+      <span>{{ p.folio.reservation.code }} · {% trans "Karta" %} · {{ p.created_at|date:"H:i" }}</span>
+      <span class="money">{{ p.amount|money }}</span>
+    </li>
+    {% endfor %}
+    {% for p in report.payments.transfer_rows %}
+    <li class="guest-chip entity-row">
+      <span>{{ p.folio.reservation.code }} · {% trans "O‘tkazma" %} · {{ p.created_at|date:"H:i" }}</span>
+      <span class="money">{{ p.amount|money }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if report.cash_out.expense_rows or report.cash_out.payroll_rows %}
+<section class="section-panel">
+  <div class="dash-section-head">
+    <h2>{% trans "Naqd chiqimlar (rasxod / oylik)" %}</h2>
+  </div>
+  <ul class="list entity-list">
+    {% for e in report.cash_out.expense_rows %}
+    <li class="guest-chip entity-row">
+      <span>{% trans "Rasxod" %}: {{ e.title }}</span>
+      <span class="money">−{{ e.amount|money }}</span>
+    </li>
+    {% endfor %}
+    {% for p in report.cash_out.payroll_rows %}
+    <li class="guest-chip entity-row">
+      <span>{% trans "Oylik" %}: {{ p.item.employee.full_name }}</span>
+      <span class="money">−{{ p.amount|money }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% elif not open_shift %}
+<section class="section-panel cash-shift-open-panel">
+  <div class="cash-shift-open-layout">
+    <div>
+      <p class="eyebrow">{% trans "Boshlash" %}</p>
+      <h2>{% trans "Yangi smena" %}</h2>
+      <p class="muted">
+        {% trans "Naqd to‘lovlar faqat ochiq smenada qabul qilinadi. Qutidagi boshlang‘ich summani kiriting." %}
+      </p>
+      <ul class="cash-shift-checklist muted">
+        <li>{% trans "Oldingi smena yopilganini tekshiring" %}</li>
+        <li>{% trans "Naqdni sanab, boshlang‘ichni kiriting" %}</li>
+        <li>{% trans "Smena davomida harakat va yopishni shu yerda kuzating" %}</li>
+      </ul>
+    </div>
+    <form method="post" action="{% url 'folio:cash_shift_open' %}" class="app-form cash-shift-open-form">
+      {% csrf_token %}
+      <div class="app-form-grid">
+        {% include "includes/form_fields.html" with form=open_form %}
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn">{% trans "Smenani ochish" %}</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+<section class="section-panel">
+  <div class="dash-section-head">
+    <div>
+      <h2>{% trans "Tarix" %}</h2>
+      <p class="muted report-section-meta">{% trans "Oxirgi 20 smena · farq grafigi" %}</p>
+    </div>
+  </div>
+  {% if chart_data.varianceHistory %}
+  <div class="chart-wrap chart-wrap-bar chart-wrap-wide cash-shift-history-chart">
+    <p class="chart-caption">{% trans "Smena farqi (variance)" %}</p>
+    <canvas id="chart-shift-variance" aria-label="{% trans 'Smena farqi' %}"></canvas>
+  </div>
+  {% endif %}
+  <ul class="list entity-list">
+    {% for s in history %}
+    <li class="guest-chip entity-row cash-shift-history-row">
+      <span>
+        <a href="{% url 'folio:cash_shift_detail' s.pk %}" class="entity-title">{{ s.opened_at|date:"d.m.Y H:i" }}</a>
+        {% if s.closed_at %}
+        → {{ s.closed_at|date:"H:i" }}
+        · {{ s.opened_by }}{% if s.closed_by %} → {{ s.closed_by }}{% endif %}
+        {% else %}
+        · <span class="cash-shift-status-pill">{% trans "Ochiq" %}</span>
+        {% endif %}
+      </span>
+      <span class="cash-shift-history-meta">
+        {% if s.closed_at %}
+        <span class="muted">{% trans "yopish" %}</span>
+        <span class="money">{{ s.closing_cash|money }}</span>
+        <span class="cash-shift-var {% if s.variance > 0 %}is-plus{% elif s.variance < 0 %}is-minus{% else %}is-zero{% endif %}">
+          {% if s.variance > 0 %}+{% endif %}{{ s.variance|money }}
+        </span>
+        <a class="btn-ghost btn-sm" href="{% url 'folio:cash_shift_print' s.pk %}" target="_blank" rel="noopener">{% trans "Chop etish" %}</a>
+        {% endif %}
+      </span>
+    </li>
+    {% empty %}
+    {% url 'folio:cash_shift' as shift_url %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Hali smena yo‘q") hint=_("Birinchi smenani oching — naqd to‘lovlar shundan keyin qabul qilinadi.") cta_url=shift_url cta_label=_("Smenani ochish") compact=1 %}
+    {% endfor %}
+  </ul>
+</section>
+</div>
+{{ chart_data|json_script:"chart-data-cash-shift" }}
+<script>
+(function () {
+  var box = document.querySelector("[data-expected]");
+  var input = document.querySelector("[data-close-cash]");
+  var live = document.getElementById("cash-shift-variance-live");
+  var valEl = document.getElementById("cash-shift-variance-val");
+  if (!box || !input || !live || !valEl) return;
+  var expected = parseFloat(box.getAttribute("data-expected") || "0");
+  function fmt(n) {
+    try {
+      return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(n);
+    } catch (e) {
+      return String(n);
+    }
+  }
+  function refresh() {
+    var raw = (input.value || "").replace(",", ".");
+    var closing = parseFloat(raw);
+    if (isNaN(closing)) {
+      live.hidden = true;
+      return;
+    }
+    var v = closing - expected;
+    live.hidden = false;
+    live.classList.toggle("is-plus", v > 0);
+    live.classList.toggle("is-minus", v < 0);
+    live.classList.toggle("is-zero", v === 0);
+    valEl.textContent = (v > 0 ? "+" : "") + fmt(v);
+  }
+  input.addEventListener("input", refresh);
+  refresh();
+  var form = document.getElementById("cash-shift-close-form");
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      var btn = form.querySelector("[data-confirm]");
+      var msg = btn && btn.getAttribute("data-confirm");
+      if (msg && !window.confirm(msg)) e.preventDefault();
+    });
+  }
+})();
+</script>
+{% endblock %}

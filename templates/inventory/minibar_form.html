@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Minibar" %}{% endblock %}
+{% block content %}
+{% url 'inventory:list' as cancel_url %}
+{% include "includes/page_header.html" with title=_("Minibar sotuvi") eyebrow=_("Inventar") %}
+
+<section class="section-panel">
+<form method="post" class="app-form panel" id="minibar-sale-form">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="form-grid app-form-grid">
+    {% for field in form %}
+      {% if field.name == "item" %}
+      <div class="form-field field-with-add">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        <div class="field-row">
+          {{ field }}
+          <button type="button" class="btn-ghost"
+                  hx-get="{% url 'inventory:quick_item' %}"
+                  hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
+                  hx-target="#modal-root" hx-select="unset"
+                  hx-swap="innerHTML">
+            {% trans "+ Yangi" %}
+          </button>
+        </div>
+        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+      </div>
+      {% else %}
+      <p class="form-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {{ field }}
+        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+      </p>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn">{% trans "Sotish" %}</button>
+    <a class="btn-ghost" href="{{ cancel_url }}">{% trans "Bekor" %}</a>
+  </div>
+</form>
+</section>
+{% endblock %}

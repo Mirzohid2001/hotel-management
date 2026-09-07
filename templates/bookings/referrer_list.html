@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Yo‘naltiruvchilar" %}{% endblock %}
+{% block content %}
+{% url 'bookings:referrer_create' as create_url %}
+{% url 'bookings:commission_report' as report_url %}
+{% include "includes/page_header.html" with title=_("Yo‘naltiruvchilar") primary_url=create_url primary_label=_("Yangi") secondary_url=report_url secondary_label=_("Oylik komissiya") %}
+
+<section class="section-panel">
+{% if referrers %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>{% trans "Ism" %}</th>
+      <th>{% trans "Telefon" %}</th>
+      <th>{% trans "Standart %" %}</th>
+      <th>{% trans "Holat" %}</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in referrers %}
+    <tr>
+      <td><strong>{{ r.name }}</strong>{% if r.notes %}<br><span class="muted">{{ r.notes }}</span>{% endif %}</td>
+      <td>{{ r.phone|default:"—" }}</td>
+      <td>{{ r.default_commission_percent }}%</td>
+      <td>{% if r.is_active %}{% trans "Faol" %}{% else %}<span class="muted">{% trans "Nofaol" %}</span>{% endif %}</td>
+      <td><a class="btn-ghost btn-sm" href="{% url 'bookings:referrer_edit' r.pk %}">{% trans "Tahrirlash" %}</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+{% include "includes/empty_state.html" with title=_("Hali yo‘naltiruvchi yo‘q") hint=_("Bron qilganda «kim orqali» kelganini tanlash uchun avval Vali kabi odamlarni qo‘shing.") cta_url=create_url cta_label=_("Yo‘naltiruvchi qo‘shish") %}
+{% endif %}
+</section>
+{% endblock %}

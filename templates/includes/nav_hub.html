@@ -1,0 +1,200 @@
+{% load i18n %}
+<details class="section-panel nav-hub" id="nav-hub" open>
+  <summary class="nav-hub-toggle dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Tez kirish" %}</p>
+      <h2>{% trans "Bo‘limlar" %}</h2>
+      <p class="muted nav-hub-desc">{% trans "Kerakli modulga bir bosishda o‘ting." %}</p>
+    </div>
+  </summary>
+
+  <div class="nav-hub-groups">
+    {% if nav_perms.front_office %}
+    <div class="nav-hub-group">
+      <h3 class="nav-hub-group-title">{% trans "Qabulxona" %}</h3>
+      <div class="nav-hub-grid">
+        <a class="nav-hub-tile" href="{% url 'bookings:board' %}" data-nav="board">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Doska" %}</span>
+          <span class="nav-hub-meta">{% trans "Bugungi xonalar" %}</span>
+        </a>
+        <a class="nav-hub-tile" href="{% url 'bookings:calendar' %}" data-nav="calendar">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Taqvim" %}</span>
+          <span class="nav-hub-meta">{% trans "Shaxmatka · 14 kun" %}</span>
+        </a>
+        <a class="nav-hub-tile" href="{% url 'bookings:list' %}" data-nav="list">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Bronlar" %}</span>
+          <span class="nav-hub-meta">{% trans "Ro‘yxat va qidiruv" %}</span>
+        </a>
+        <a class="nav-hub-tile" href="{% url 'bookings:inquiries' %}" data-nav="inquiries">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "So‘rov" %}</span>
+          <span class="nav-hub-meta">{% trans "Yangi murojaatlar" %}</span>
+        </a>
+        <a class="nav-hub-tile nav-hub-tile-accent" href="{% url 'bookings:walk_in' %}" data-nav="walk_in">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Darhol joylash" %}</span>
+          <span class="nav-hub-meta">{% trans "Darhol kirish" %}</span>
+        </a>
+        <a class="nav-hub-tile" href="{% url 'bookings:create' %}" data-nav="list">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Yangi bron" %}</span>
+          <span class="nav-hub-meta">{% trans "Rezervatsiya" %}</span>
+        </a>
+        {% if "company_group" in plan_features %}
+        <a class="nav-hub-tile" href="{% url 'bookings:group_list' %}" data-nav="group">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Guruh" %}</span>
+          <span class="nav-hub-meta">{% trans "Guruhli bronlar" %}</span>
+        </a>
+        {% endif %}
+        <a class="nav-hub-tile" href="{% url 'guests:list' %}" data-nav="guests">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Mehmonlar" %}</span>
+          <span class="nav-hub-meta">{% trans "Baza va profil" %}</span>
+        </a>
+        <a class="nav-hub-tile" href="{% url 'bookings:referrer_list' %}" data-nav="referrers">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Yo‘naltiruvchilar" %}</span>
+          <span class="nav-hub-meta">{% trans "Komissiya foizi" %}</span>
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="nav-hub-group">
+      <h3 class="nav-hub-group-title">{% trans "Mehmonxona" %}</h3>
+      <div class="nav-hub-grid">
+        {% if nav_perms.properties %}
+        <a class="nav-hub-tile" href="{% url 'properties:list' %}" data-nav="properties">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Filiallar" %}</span>
+          <span class="nav-hub-meta">{% trans "Xonalar va narxlar" %}</span>
+        </a>
+        {% endif %}
+        {% if "housekeeping" in plan_features and nav_perms.housekeeping %}
+        <a class="nav-hub-tile" href="{% url 'housekeeping:board' %}" data-nav="housekeeping">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Tozalash" %}</span>
+          <span class="nav-hub-meta">{% trans "HK doskasi" %}</span>
+        </a>
+        {% endif %}
+        {% if "services" in plan_features and nav_perms.services %}
+        <a class="nav-hub-tile" href="{% url 'services:list' %}" data-nav="services">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Xizmatlar" %}</span>
+          <span class="nav-hub-meta">{% trans "Katalog va buyurtma" %}</span>
+        </a>
+        {% endif %}
+        {% if "inventory" in plan_features and nav_perms.inventory %}
+        <a class="nav-hub-tile" href="{% url 'inventory:list' %}" data-nav="inventory">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Inventar" %}</span>
+          <span class="nav-hub-meta">{% trans "Ombor va minibar" %}</span>
+        </a>
+        <a class="nav-hub-tile" href="{% url 'inventory:minibar_quick' %}" data-nav="minibar_quick">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Minibar tez" %}</span>
+          <span class="nav-hub-meta">{% trans "Tez sotuv" %}</span>
+        </a>
+        {% endif %}
+        {% if "maintenance" in plan_features and nav_perms.maintenance %}
+        <a class="nav-hub-tile" href="{% url 'maintenance:list' %}" data-nav="maintenance">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Ta’mir" %}</span>
+          <span class="nav-hub-meta">{% trans "Arizalar" %}</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="nav-hub-group">
+      <h3 class="nav-hub-group-title">{% trans "Moliya va hisobot" %}</h3>
+      <div class="nav-hub-grid">
+        {% if "cash_shift" in plan_features and nav_perms.cash %}
+        <a class="nav-hub-tile" href="{% url 'folio:cash_shift' %}" data-nav="cash_shift">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Kassa" %}</span>
+          <span class="nav-hub-meta">{% trans "Smena" %}</span>
+        </a>
+        {% endif %}
+        {% if "company_group" in plan_features and nav_perms.city_ledger %}
+        <a class="nav-hub-tile" href="{% url 'folio:city_ledger' %}" data-nav="city_ledger">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Kompaniya hisobi" %}</span>
+          <span class="nav-hub-meta">{% trans "Debitorlar" %}</span>
+        </a>
+        {% endif %}
+        {% if nav_perms.expenses %}
+        <a class="nav-hub-tile" href="{% url 'finance:exchange_rates' %}" data-nav="currencies">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Valyutalar" %}</span>
+          <span class="nav-hub-meta">USD · EUR</span>
+        </a>
+        {% endif %}
+        {% if "expenses" in plan_features and nav_perms.expenses %}
+        <a class="nav-hub-tile" href="{% url 'finance:list' %}" data-nav="finance">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Rasxodlar" %}</span>
+          <span class="nav-hub-meta">{% trans "Tasdiqlash" %}</span>
+        </a>
+        {% endif %}
+        {% if "payroll" in plan_features and nav_perms.hr %}
+        <a class="nav-hub-tile" href="{% url 'hr:employees' %}" data-nav="hr">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Oylik" %}</span>
+          <span class="nav-hub-meta">{% trans "Kadrlar" %}</span>
+        </a>
+        {% endif %}
+        {% if "pnl" in plan_features and nav_perms.pnl %}
+        <a class="nav-hub-tile" href="{% url 'reports:pnl' %}" data-nav="pnl">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Foyda/zarar" %}</span>
+          <span class="nav-hub-meta">P&amp;L</span>
+        </a>
+        <a class="nav-hub-tile" href="{% url 'finance:profit_share' %}" data-nav="profit_share">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Foyda ulushi" %}</span>
+          <span class="nav-hub-meta">{% trans "Sheriklik" %}</span>
+        </a>
+        <a class="nav-hub-tile" href="{% url 'bookings:commission_report' %}" data-nav="commission">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Komissiya" %}</span>
+          <span class="nav-hub-meta">{% trans "Oylik hisobot" %}</span>
+        </a>
+        <a class="nav-hub-tile" href="{% url 'bookings:emehmon_report' %}" data-nav="emehmon">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "E-mehmon" %}</span>
+          <span class="nav-hub-meta">{% trans "Oylik komissiya" %}</span>
+        </a>
+        <a class="nav-hub-tile" href="{% url 'reports:flash' %}" data-nav="flash">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Kunlik hisobot" %}</span>
+          <span class="nav-hub-meta">{% trans "Flash" %}</span>
+        </a>
+        {% endif %}
+        {% if "reports_advanced" in plan_features and nav_perms.audit %}
+        <a class="nav-hub-tile" href="{% url 'reports:audit_log' %}" data-nav="audit_log">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Nazorat" %}</span>
+          <span class="nav-hub-meta">{% trans "Audit jurnali" %}</span>
+        </a>
+        {% endif %}
+        {% if nav_perms.staff %}
+        <a class="nav-hub-tile" href="{% url 'tenants:staff_list' %}" data-nav="staff">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Xodimlar" %}</span>
+          <span class="nav-hub-meta">{% trans "Ruxsatlar" %}</span>
+        </a>
+        {% endif %}
+        <a class="nav-hub-tile" href="{% url 'accounts:profile' %}" data-nav="profile">
+          <span class="nav-hub-icon" aria-hidden="true"></span>
+          <span class="nav-hub-label">{% trans "Profil" %}</span>
+          <span class="nav-hub-meta">{% trans "Hisob" %}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</details>

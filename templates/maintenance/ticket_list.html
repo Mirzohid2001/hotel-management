@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Ta’mir" %}{% endblock %}
+{% block content %}
+{% url 'maintenance:create' as create_url %}
+{% include "includes/page_header.html" with title=_("Ta’mir arizalari") eyebrow=_("Operatsiya") primary_url=create_url primary_label=_("Yangi") %}
+
+<form method="get" class="search-form">
+  <select name="status">
+    <option value="open" {% if status == 'open' %}selected{% endif %}>{% trans "Ochiq" %}</option>
+    {% for val, label in statuses %}
+    <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+    <option value="" {% if status == '' %}selected{% endif %}>{% trans "Barchasi" %}</option>
+  </select>
+  <button type="submit" class="btn btn-sm">{% trans "Filtrlash" %}</button>
+</form>
+
+<section class="section-panel">
+  <ul class="list entity-list">
+    {% for t in tickets %}
+    <li class="guest-chip entity-row">
+      <span>
+        <span class="entity-row-main">
+          <strong class="entity-title">{{ t.title }}</strong>
+          <span class="status-pill status-{{ t.status }}">{{ t.get_status_display }}</span>
+          {% if t.priority == 'high' %}<span class="badge badge-blacklist">{% trans "Yuqori" %}</span>{% endif %}
+        </span>
+        <span class="entity-meta">
+          {% if t.room %} · {% trans "Xona" %} {{ t.room.number }}{% endif %}
+          · {{ t.get_priority_display }}
+          {% if t.assignee %} · {{ t.assignee.get_full_name|default:t.assignee.username }}{% endif %}
+        </span>
+      </span>
+      <span class="hk-task-actions">
+        {% if t.status == 'open' or t.status == 'in_progress' %}
+        <form method="post" action="{% url 'maintenance:assign' t.pk %}" class="hk-assign">
+          {% csrf_token %}
+          <select name="assignee_id" required>
+            <option value="">{% trans "Biriktirish" %}</option>
+            {% for u in staff %}
+            <option value="{{ u.pk }}" {% if t.assignee_id == u.pk %}selected{% endif %}>
+              {{ u.get_full_name|default:u.username }}
+            </option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn-ghost btn-sm">→</button>
+        </form>
+        <form method="post" action="{% url 'maintenance:complete' t.pk %}">
+          {% csrf_token %}<button type="submit" class="btn btn-sm">{% trans "Tayyor" %}</button>
+        </form>
+        {% endif %}
+      </span>
+    </li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Ariza yo‘q") hint=_("Nosoz xona yoki jihoz uchun yangi ta’mir arizasi oching.") cta_url=create_url cta_label=_("Ariza ochish") %}
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

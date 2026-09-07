@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{{ reservation.code }}{% endblock %}
+{% block content %}
+{% if request.GET.prompt_deposit %}
+<div hx-get="{% url 'folio:payment_modal' reservation.pk %}?kind=deposit" hx-trigger="load" hx-target="#modal-root" hx-select="unset" hx-swap="innerHTML"></div>
+{% endif %}
+{% if request.GET.prompt_emehmon and not emehmon_paid and emehmon_required %}
+<div class="alert-banner" style="margin-bottom:1rem">
+  <strong>{% trans "E-mehmon to‘lovi" %}</strong>
+  — {% trans "pastdagi formadan qabul qiling." %}
+</div>
+{% endif %}
+
+<div class="detail-hero">
+  <div class="page-head-text">
+    <p class="eyebrow">{% trans "Bron" %}</p>
+    <h1>{{ reservation.code }}</h1>
+    <p class="page-subtitle muted">
+      <span class="status-pill status-{{ reservation.status }}">{{ reservation.get_status_display }}</span>
+      · {{ reservation.guest.full_name }}
+      {% if reservation.guest.is_vip %}<span class="badge badge-vip">VIP</span>{% endif %}
+      {% if reservation.guest.is_blacklisted %}<span class="badge badge-blacklist">{% trans "Qora ro‘yxat" %}</span>{% endif %}
+    </p>
+  </div>
+  <div class="detail-actions">
+    <a class="btn" href="{% url 'folio:detail' reservation.pk %}">{% trans "Mehmon hisobi" %}</a>
+  </div>
+</div>
+
+{% if reservation.group %}
+<p class="entity-meta"><a href="{% url 'bookings:group_detail' reservation.group_id %}">{% trans "Guruh" %}: {{ reservation.group.code }}</a></p>
+{% endif %}
+
+<section class="section-panel detail-grid">
+  <ul class="kv-list">
+    <li><span>{% trans "Sanalar" %}</span><span>{{ reservation.check_in }} → {{ reservation.check_out }} ({{ reservation.nights }} {% trans "tun" %})</span></li>
+    <li><span>{% trans "Filial" %}</span><span>{{ reservation.hotel.name }}</span></li>
+    <li><span>{% trans "Xona" %}</span><span>{% if reservation.room %}{{ reservation.room.number }} · {{ reservation.room.get_status_display }}{% else %}{% trans "Biriktirilmagan" %}{% endif %}</span></li>
+    <li><span>{% trans "1 kecha" %}</span><span class="money">{% if reservation.nightly_rate %}{{ reservation.nightly_rate|money }}{% elif reservation.rate_plan %}{{ reservation.rate_plan.price|money }}{% else %}—{% endif %} {{ reservation.currency|default:current_tenant.currency }}</span></li>
+    <li><span>{% trans "Summa" %}</span><span class="money">{{ reservation.total_amount|money }} {{ reservation.currency|default:current_tenant.currency }}</span></li>
+    {% if reservation.referrer %}
+    <li><span>{% trans "Kim orqali" %}</span><span>{{ reservation.referrer.name }}{% if reservation.commission_percent %} · {{ reservation.commission_percent }}%{% endif %}</span></li>
+    {% endif %}
+  </ul>
+</section>
+
+{% if reservation.guest.is_blacklisted %}
+<div class="alert-banner blacklist">
+  <strong>{% trans "Qora ro‘yxatdagi mehmon" %}</strong>
+  — {{ reservation.guest.blacklist_reason|default:"bron/kirish bloklangan" }}
+  · <a href="{% url 'guests:detail' reservation.guest_id %}">{% trans "Mehmon" %}</a>
+</div>
+{% endif %}
+
+{% if reservation.status == 'confirmed' or reservation.status == 'inquiry' or reservation.status == 'checked_in' %}
+{% if emehmon_paid %}
+<section class="section-panel">
+  <p class="muted">{% trans "E-mehmon to‘lovi allaqachon qabul qilingan." %} · <a href="{% url 'folio:detail' reservation.pk %}">{% trans "Mehmon hisobi" %}</a></p>
+</section>
+{% elif emehmon_required %}
+<section class="section-panel">
+  <h2>{% trans "E-mehmon to‘lovi" %}</h2>
+  <p class="muted">{% trans "Bu mehmondan E-mehmon olinadi. Jami = tarif × kechalar × mehmonlar." %}</p>
+  <form method="post" action="{% url 'folio:emehmon' reservation.pk %}" class="app-form panel is-embedded">
+    {% csrf_token %}
+    <div class="form-grid app-form-grid">
+      <p class="form-field">
+        <label>{% trans "Usul" %}</label>
+        <select name="method">
+          <option value="cash">{% trans "Naqd" %}</option>
+          <option value="card">{% trans "Karta" %}</option>
+          <option value="transfer">{% trans "O‘tkazish" %}</option>
+        </select>
+      </p>
+      <p class="form-field">
+        <label>{% trans "Valyuta" %}</label>
+        <select name="currency">
+          <option value="UZS" {% if current_tenant.currency == "UZS" %}selected{% endif %}>UZS</option>
+          <option value="USD" {% if current_tenant.currency == "USD" %}selected{% endif %}>USD</option>
+          <option value="EUR" {% if current_tenant.currency == "EUR" %}selected{% endif %}>EUR</option>
+        </select>
+      </p>
+      <p class="form-field">
+        <label>{% trans "Summa" %}</label>
+        <input type="number" name="amount" step="0.01" min="0.01" required
+               value="{% if emehmon_default %}{{ emehmon_default }}{% endif %}">
+      </p>
+      <input type="hidden" name="kind" value="payment">
+      <p class="form-field field-span-2">
+        <label>{% trans "Izoh" %}</label>
+        <input type="text" name="note" value="{% trans 'E-mehmon to‘lovi' %}">
+      </p>
+    </div>
+    <div class="form-actions"><button type="submit" class="btn">{% trans "E-mehmon to‘lovini olish" %}</button></div>
+  </form>
+</section>
+{% else %}
+<section class="section-panel">
+  <h2>{% trans "E-mehmon to‘lovi" %}</h2>
+  <p class="muted">{% trans "Ixtiyoriy — bu mehmondan hozircha olinmaydi. Kerak bo‘lsa, pastdan olishingiz mumkin." %}</p>
+  <form method="post" action="{% url 'folio:emehmon' reservation.pk %}" class="app-form panel is-embedded">
+    {% csrf_token %}
+    <div class="form-grid app-form-grid">
+      <p class="form-field">
+        <label>{% trans "Usul" %}</label>
+        <select name="method">
+          <option value="cash">{% trans "Naqd" %}</option>
+          <option value="card">{% trans "Karta" %}</option>
+          <option value="transfer">{% trans "O‘tkazish" %}</option>
+        </select>
+      </p>
+      <p class="form-field">
+        <label>{% trans "Valyuta" %}</label>
+        <select name="currency">
+          <option value="UZS" {% if current_tenant.currency == "UZS" %}selected{% endif %}>UZS</option>
+          <option value="USD" {% if current_tenant.currency == "USD" %}selected{% endif %}>USD</option>
+          <option value="EUR" {% if current_tenant.currency == "EUR" %}selected{% endif %}>EUR</option>
+        </select>
+      </p>
+      <p class="form-field">
+        <label>{% trans "Summa" %}</label>
+        <input type="number" name="amount" step="0.01" min="0.01" required
+               value="{% if emehmon_default %}{{ emehmon_default }}{% endif %}">
+      </p>
+      <input type="hidden" name="kind" value="payment">
+      <p class="form-field field-span-2">
+        <label>{% trans "Izoh" %}</label>
+        <input type="text" name="note" value="{% trans 'E-mehmon to‘lovi' %}">
+      </p>
+    </div>
+    <div class="form-actions"><button type="submit" class="btn">{% trans "E-mehmonni belgilash va olish" %}</button></div>
+  </form>
+</section>
+{% endif %}
+{% endif %}
+
+{% if reservation.status == 'confirmed' or reservation.status == 'inquiry' %}
+<section class="section-panel">
+  <h2>{% trans "Depozit" %}</h2>
+  <form method="post" action="{% url 'folio:deposit' reservation.pk %}" class="app-form panel is-embedded">
+    {% csrf_token %}
+    <div class="form-grid app-form-grid">
+      <p class="form-field">
+        <label>{% trans "Usul" %}</label>
+        <select name="method">
+          <option value="cash">{% trans "Naqd" %}</option>
+          <option value="card">{% trans "Karta" %}</option>
+          <option value="transfer">{% trans "O‘tkazish" %}</option>
+        </select>
+      </p>
+      <p class="form-field">
+        <label>{% trans "Valyuta" %}</label>
+        <select name="currency">
+          <option value="UZS" {% if current_tenant.currency == "UZS" %}selected{% endif %}>UZS</option>
+          <option value="USD" {% if current_tenant.currency == "USD" %}selected{% endif %}>USD</option>
+          <option value="EUR" {% if current_tenant.currency == "EUR" %}selected{% endif %}>EUR</option>
+        </select>
+      </p>
+      <p class="form-field">
+        <label>{% trans "Summa" %}</label>
+        <input type="number" name="amount" step="0.01" min="0.01" required>
+      </p>
+      <input type="hidden" name="kind" value="deposit">
+      <p class="form-field field-span-2">
+        <label>{% trans "Izoh" %}</label>
+        <input type="text" name="note">
+      </p>
+    </div>
+    <div class="form-actions"><button type="submit" class="btn">{% trans "Depozit olish" %}</button></div>
+  </form>
+</section>
+{% endif %}
+
+<div class="detail-actions actions">
+  {% if reservation.status == 'inquiry' %}
+  <form method="post" action="{% url 'bookings:confirm' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn">{% trans "So‘rovni tasdiqlash" %}</button></form>
+  {% endif %}
+  {% if reservation.status == 'confirmed' or reservation.status == 'inquiry' %}
+  <form method="post" action="{% url 'bookings:check_in' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn">{% trans "Kirish" %}</button></form>
+  {% if reservation.room and reservation.room.status == 'dirty' or reservation.room and reservation.room.status == 'cleaning' %}
+  <form method="post" action="{% url 'bookings:check_in' reservation.pk %}">
+    {% csrf_token %}
+    <input type="hidden" name="allow_dirty" value="1">
+    <button type="submit" class="btn-warn">{% trans "Kir xonaga kirish*" %}</button>
+  </form>
+  {% endif %}
+  {% if require_id and not guest_has_id %}
+  <form method="post" action="{% url 'bookings:check_in' reservation.pk %}">
+    {% csrf_token %}
+    <input type="hidden" name="allow_no_docs" value="1">
+    <button type="submit" class="btn-warn">{% trans "Hujjatsiz kirish*" %}</button>
+  </form>
+  <p class="muted">{% trans "Pasport/ID yo‘q" %} — <a href="{% url 'guests:detail' reservation.guest_id %}">{% trans "hujjat qo‘shish" %}</a></p>
+  {% endif %}
+  <form method="post" action="{% url 'bookings:cancel' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn-ghost">{% trans "Bekor" %}</button></form>
+  <form method="post" action="{% url 'bookings:no_show' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn-ghost">{% trans "Kelmagan" %}</button></form>
+  {% endif %}
+  {% if reservation.status == 'checked_in' %}
+  <form method="post" action="{% url 'bookings:check_out' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn">{% trans "Chiqish" %}</button></form>
+  <a class="btn" href="{% url 'bookings:transfer' reservation.pk %}">{% trans "Xona / tur almashtirish" %}</a>
+  {% endif %}
+  {% if reservation.status != 'cancelled' and reservation.status != 'checked_out' and reservation.status != 'no_show' %}
+  <a class="btn-ghost" href="{% url 'bookings:amend' reservation.pk %}">{% trans "O‘zgartirish" %}</a>
+  {% endif %}
+</div>
+
+<section class="section-panel">
+  <h2>{% trans "O‘zgarishlar" %}</h2>
+  <ul class="list entity-list">
+    {% for log in logs %}
+    <li class="entity-row"><span class="entity-meta">{{ log.field }}: {{ log.old_value }} → {{ log.new_value }} · {{ log.created_at }}</span></li>
+    {% empty %}<li class="muted empty-row">{% trans "Yo‘q" %}</li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

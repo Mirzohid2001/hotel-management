@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Kunlik hisobot" %}{% endblock %}
+{% block content %}
+<div class="report-page flash-page">
+
+  <header class="report-hero flash-hero">
+    <div class="report-hero-text">
+      <p class="eyebrow">{% trans "Hisob-kitob" %} · {% trans "Kunlik" %}</p>
+      <h1>{% trans "Kunlik hisobot" %}</h1>
+      <p class="report-hero-sub">{{ day|date:"d F Y" }}</p>
+      {% if active_hotel %}<p class="report-hero-badge">{{ active_hotel.display_label }}</p>{% endif %}
+    </div>
+    <div class="report-hero-actions">
+      <a class="btn-ghost" href="{% url 'reports:pnl' %}">{% trans "Foyda/zarar" %}</a>
+    </div>
+  </header>
+
+  <form method="get" class="filter-panel report-filter" role="search" aria-label="{% trans 'Sana filtri' %}">
+    <div class="filter-panel-grid">
+      <label class="filter-field">
+        <span class="filter-field-label">{% trans "Sana" %}</span>
+        <input type="date" name="day" value="{{ day|date:'Y-m-d' }}">
+      </label>
+      <div class="filter-field filter-field-action">
+        <span class="filter-field-label" aria-hidden="true">&nbsp;</span>
+        <button type="submit" class="btn">{% trans "Ko‘rish" %}</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="stats-grid dash-stats flash-stats">
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-occ" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "Bandlik" %}</span>
+      <strong>{{ flash.stats.occupancy_percent }}%</strong>
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-money" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">ADR</span>
+      <strong class="money">{{ flash.stats.adr|money }}</strong>
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-rev" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">RevPAR</span>
+      <strong class="money">{{ flash.stats.revpar|money }}</strong>
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-in" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "Naqd tushum" %}</span>
+      <strong class="money">{{ flash.revenue_cash|money }}</strong>
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-card" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "Hisoblangan" %}</span>
+      <strong class="money">{{ flash.revenue_accrual|money }}</strong>
+    </div>
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-out" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "Rasxod" %}</span>
+      <strong class="money">{{ flash.expenses_today|money }}</strong>
+    </div>
+  </div>
+
+  <section class="section-panel pnl-charts-panel">
+    <div class="dash-section-head">
+      <div>
+        <p class="eyebrow">{% trans "Vizual" %}</p>
+        <h2>{% trans "Grafiklar" %}</h2>
+      </div>
+    </div>
+    <div class="pnl-charts-grid">
+      <div class="chart-wrap chart-wrap-bar">
+        <p class="chart-caption">{% trans "To‘lov usullari" %} · {% trans "kirim/chiqim" %}</p>
+        <canvas id="chart-flash-payments" aria-label="{% trans 'To‘lov usullari' %}"></canvas>
+      </div>
+      <div class="chart-wrap chart-wrap-bar">
+        <p class="chart-caption">{% trans "Kun tushumi" %}</p>
+        <canvas id="chart-flash-revenue" aria-label="{% trans 'Kun tushumi' %}"></canvas>
+      </div>
+      <div class="chart-wrap chart-wrap-bar chart-wrap-wide">
+        <p class="chart-caption">{% trans "OYD" %} {% trans "foyda/zarar" %}</p>
+        <canvas id="chart-flash-mtd" aria-label="{% trans 'OYD foyda/zarar' %}"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-panel">
+    <div class="dash-section-head">
+      <h2>{% trans "To‘lov usullari" %} · {{ day|date:"d.m.Y" }}</h2>
+      <span class="money flash-net-badge">{{ flash.payments.net|money }}</span>
+    </div>
+    <ul class="list report-breakdown">
+      {% for row in flash.payments.rows %}
+      <li class="guest-chip">
+        <span>{{ row.label }}</span>
+        <span>
+          <span class="muted">{% trans "kirim" %}</span> <span class="money">{{ row.in|money }}</span>
+          · <span class="muted">{% trans "chiqim" %}</span> <span class="money">{{ row.out|money }}</span>
+        </span>
+      </li>
+      {% empty %}<li class="muted">{% trans "Yo‘q" %}</li>{% endfor %}
+    </ul>
+  </section>
+
+  <div class="dash-columns report-columns">
+    <section class="section-panel">
+      <div class="dash-section-head">
+        <h2>{% trans "Mehmon A/R" %}</h2>
+        <span class="dash-count-badge warn">{{ flash.guest_ar.count }}</span>
+      </div>
+      <p class="muted report-section-meta">
+        {% trans "Jami" %}: <span class="money">{{ flash.guest_ar.total|money }}</span>
+      </p>
+      {% if flash.guest_ar.rows %}
+      <div class="chart-wrap chart-wrap-bar" style="height:180px;margin-bottom:0.75rem">
+        <canvas id="chart-flash-guest-ar" aria-label="{% trans 'Mehmon A/R' %}"></canvas>
+      </div>
+      {% endif %}
+      <ul class="list report-breakdown">
+        {% for row in flash.guest_ar.rows|slice:":8" %}
+        <li class="guest-chip">
+          <span><a href="{% url 'folio:detail' row.pk %}">{{ row.code }}</a> · {{ row.guest }}</span>
+          <span class="money">{{ row.balance|money }}</span>
+        </li>
+        {% empty %}<li class="muted">{% trans "Yo‘q" %}</li>{% endfor %}
+      </ul>
+    </section>
+    <section class="section-panel">
+      <div class="dash-section-head">
+        <h2>{% trans "Kompaniya A/R" %}</h2>
+      </div>
+      <p class="muted report-section-meta">
+        {% trans "Jami" %}: <span class="money">{{ flash.company_ar.grand_total|money }}</span>
+      </p>
+      <ul class="list report-breakdown">
+        {% for key, bucket in flash.company_ar.buckets.items %}
+        <li class="guest-chip">
+          <span>{{ bucket.label }} · {{ bucket.invoices|length }} {% trans "hisob" %}</span>
+          <span class="money">{{ bucket.total|money }}</span>
+        </li>
+        {% empty %}<li class="muted">{% trans "Yo‘q" %}</li>{% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  <section class="section-panel flash-mtd">
+    <div class="dash-section-head">
+      <h2>{% trans "OYD" %} {% trans "foyda/zarar" %} ({% trans "naqd" %})</h2>
+    </div>
+    <div class="dash-pnl-row flash-mtd-row">
+      <div class="dash-pnl-item">
+        <span>{% trans "Tushum" %}</span>
+        <strong class="money">{{ flash.mtd.revenue|money }}</strong>
+      </div>
+      <div class="dash-pnl-item">
+        <span>{% trans "Xarajat" %}</span>
+        <strong class="money">{{ flash.mtd.operating_costs|money }}</strong>
+      </div>
+      <div class="dash-pnl-item">
+        <span>{% trans "Mehnat" %}</span>
+        <strong class="money">{{ flash.mtd.labor_total|money }}</strong>
+      </div>
+      <div class="dash-pnl-item dash-pnl-net">
+        <span>{% trans "Sof" %}</span>
+        <strong class="money">{{ flash.mtd.net|money }}</strong>
+      </div>
+    </div>
+  </section>
+</div>
+{{ chart_data|json_script:"chart-data-flash" }}
+{% endblock %}

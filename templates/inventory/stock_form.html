@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ title|default:_("Mahsulot") }}{% endblock %}
+{% block content %}
+{% url 'inventory:list' as cancel_url %}
+{% include "includes/page_header.html" with title=title|default:_("Yangi mahsulot") %}
+
+<section class="section-panel">
+{% include "includes/app_form.html" with form=form cancel_url=cancel_url %}
+</section>
+{% endblock %}

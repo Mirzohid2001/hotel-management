@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Kirish" %} · Rivoj Hotel PMS{% endblock %}
+{% block body_class %}auth{% endblock %}
+
+{% block auth_content %}
+<div class="auth-stage auth-stage-premium">
+  <div class="auth-hero auth-hero-premium">
+    <div class="auth-hero-glow" aria-hidden="true"></div>
+    <div class="auth-hero-grid" aria-hidden="true"></div>
+    <div class="auth-hero-content">
+      <div class="auth-brand-lockup">
+        <img class="auth-logo" src="{% static 'img/rivoj-logo.png' %}" width="72" height="72" alt="Rivoj">
+        <div>
+          <p class="brand-mark">Rivoj Group</p>
+          <p class="auth-hero-tagline">Hotel PMS</p>
+        </div>
+      </div>
+      <h1 class="auth-brand">{% trans "Mehmonxona boshqaruvi" %}<br><em>{% trans "bitta platformada" %}</em></h1>
+      <p class="auth-hero-desc">{% trans "Bron, mehmon hisobi, tozalash va moliya — resepsiya va menejerlar uchun zamonaviy ish stoli." %}</p>
+      <ul class="auth-features">
+        <li><span class="auth-feature-icon">◆</span>{% trans "Jonli xona doskasi" %}</li>
+        <li><span class="auth-feature-icon">◆</span>{% trans "Mehmon hisobi va kassa" %}</li>
+        <li><span class="auth-feature-icon">◆</span>{% trans "Ko‘p filial boshqaruvi" %}</li>
+      </ul>
+    </div>
+  </div>
+
+  <section class="auth-card auth-card-premium">
+    <div class="auth-card-inner">
+      <div class="auth-card-logo">
+        <img src="{% static 'img/rivoj-logo.png' %}" width="52" height="52" alt="Rivoj">
+      </div>
+      <p class="eyebrow">{% trans "Xavfsiz kirish" %}</p>
+      <h2>{% trans "Xush kelibsiz" %}</h2>
+      <p class="auth-card-lead">{% trans "Xodim hisobi bilan tizimga kiring" %}</p>
+
+      <form method="post" action="{% url 'accounts:login' %}" class="auth-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="auth-form-error">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <label class="auth-field">
+          <span class="auth-field-label">{% trans "Foydalanuvchi" %}</span>
+          <span class="auth-field-wrap">
+            <span class="auth-field-icon" aria-hidden="true">@</span>
+            <input type="text" name="username" required autofocus autocomplete="username" placeholder="{% trans 'username' %}" value="{{ form.username.value|default:'' }}">
+          </span>
+        </label>
+
+        <label class="auth-field">
+          <span class="auth-field-label">{% trans "Parol" %}</span>
+          <span class="auth-field-wrap">
+            <span class="auth-field-icon" aria-hidden="true">••</span>
+            <input type="password" name="password" required autocomplete="current-password" placeholder="••••••••">
+          </span>
+        </label>
+
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="auth-submit">
+          <span>{% trans "Tizimga kirish" %}</span>
+          <span class="auth-submit-arrow" aria-hidden="true">→</span>
+        </button>
+      </form>
+
+      <p class="auth-footer-note">{% trans "Rivoj Hotel PMS — faqat xodimlar uchun" %}</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% url 'properties:detail' property_obj.pk as cancel_url %}
+{% include "includes/page_header.html" with title=title subtitle=property_obj.name %}
+
+<section class="section-panel">
+<form method="post" class="app-form panel" hx-boost="false">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="form-grid app-form-grid">
+    {% for field in form %}
+      {% if field.name == "room_type" %}
+      <div class="form-field field-with-add">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        <div class="field-row">
+          {{ field }}
+          <button type="button" class="btn-ghost"
+                  hx-get="{% url 'properties:room_type_quick' property_obj.pk %}"
+                  hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
+                  hx-target="#modal-root" hx-select="unset"
+                  hx-swap="innerHTML">
+            {% trans "+ Yangi" %}
+          </button>
+        </div>
+        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+      </div>
+      {% elif field.name == "floor" %}
+      <div class="form-field field-with-add">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        <div class="field-row">
+          {{ field }}
+          <button type="button" class="btn-ghost"
+                  hx-get="{% url 'properties:floor_quick' property_obj.pk %}"
+                  hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
+                  hx-target="#modal-root" hx-select="unset"
+                  hx-swap="innerHTML">
+            {% trans "+ Yangi" %}
+          </button>
+        </div>
+        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+      </div>
+      {% else %}
+      <p class="form-field {% if field.field.widget.input_type == 'checkbox' %}field-check{% endif %}">
+        {% if field.field.widget.input_type == 'checkbox' %}
+          <label class="check-label">{{ field }} {{ field.label }}</label>
+        {% else %}
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+        {% endif %}
+        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+      </p>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn">{% trans "Saqlash" %}</button>
+    <a class="btn-ghost" href="{{ cancel_url }}">{% trans "Bekor" %}</a>
+  </div>
+</form>
+</section>
+{% endblock %}

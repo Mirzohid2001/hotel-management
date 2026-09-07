@@ -1,0 +1,17 @@
+{% load i18n %}
+<form method="post" class="app-form panel"{% if form_enctype %} enctype="{{ form_enctype }}"{% endif %}{% if form_id %} id="{{ form_id }}"{% endif %}>
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+  <div class="form-errors">{{ form.non_field_errors }}</div>
+  {% endif %}
+  <div class="form-grid app-form-grid">
+    {% include "includes/form_fields.html" with form=form %}
+  </div>
+  {% block form_extra %}{% endblock %}
+  <div class="form-actions">
+    <button type="submit" class="btn">{{ submit_label|default:_("Saqlash") }}</button>
+    {% if cancel_url %}
+    <a class="btn-ghost" href="{{ cancel_url }}">{% trans "Bekor" %}</a>
+    {% endif %}
+  </div>
+</form>

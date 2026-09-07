@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Tozalash" %}{% endblock %}
+{% block body_class %}page-hk{% endblock %}
+{% block content %}
+<div class="hk-page">
+
+  <header class="hk-hero">
+    <div class="hk-hero-text">
+      <p class="eyebrow">{% trans "Operatsiya" %} · {% trans "Xona holati" %}</p>
+      <h1>{% trans "Tozalash doskasi" %}</h1>
+      {% if hotel %}<p class="hk-hero-sub">{{ hotel.display_label }}</p>{% endif %}
+    </div>
+    <div class="hk-hero-actions">
+      <a class="btn-ghost hk-hero-btn" href="{% url 'bookings:board' %}">{% trans "Qabulxona doskasi" %}</a>
+    </div>
+  </header>
+
+  <div class="board-stats hk-stats">
+    <div class="board-stat">
+      <span class="board-stat-num">{{ hk_stats.total }}</span>
+      <span class="board-stat-lbl">{% trans "Jami" %}</span>
+    </div>
+    <div class="board-stat is-vacant">
+      <span class="board-stat-num">{{ hk_stats.ready }}</span>
+      <span class="board-stat-lbl">{% trans "Tayyor" %}</span>
+    </div>
+    <div class="board-stat is-dirty">
+      <span class="board-stat-num">{{ hk_stats.dirty }}</span>
+      <span class="board-stat-lbl">{% trans "Kir" %}</span>
+    </div>
+    <div class="board-stat">
+      <span class="board-stat-num">{{ hk_stats.cleaning }}</span>
+      <span class="board-stat-lbl">{% trans "Jarayonda" %}</span>
+    </div>
+    <div class="board-stat is-ooo">
+      <span class="board-stat-num">{{ hk_stats.ooo }}</span>
+      <span class="board-stat-lbl">OOO</span>
+    </div>
+    <div class="board-stat is-occupied">
+      <span class="board-stat-num">{{ hk_stats.tasks }}</span>
+      <span class="board-stat-lbl">{% trans "Vazifa" %}</span>
+    </div>
+  </div>
+
+  <div class="hk-toolbar">
+    <div class="board-legend board-legend-pills">
+      <span class="board-pill leg-vacant">{% trans "Tayyor" %}</span>
+      <span class="board-pill leg-dirty">{% trans "Kir" %}</span>
+      <span class="board-pill leg-hk-cleaning">{% trans "Tozalanmoqda" %}</span>
+      <span class="board-pill leg-ooo">OOO</span>
+    </div>
+    <p class="hk-touch-hint muted">{% trans "Tez status — bitta bosish" %}</p>
+  </div>
+
+  <div class="room-board hk-board hk-board-touch hk-board-premium">
+    {% for room in rooms %}
+    <article class="room-tile hk-tile hk-tile-premium {% if room.status == 'dirty' %}dirty{% elif room.status == 'out_of_order' %}ooo{% elif room.status == 'ready' %}vacant{% else %}occupied{% endif %}">
+      <div class="hk-tile-head">
+        <div class="num">{{ room.number }}</div>
+        <div class="meta">{{ room.get_status_display }}</div>
+      </div>
+      <div class="hk-quick-actions">
+        <form method="post" action="{% url 'housekeeping:set_status' room.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="ready">
+          <button type="submit" class="hk-touch-btn ok">{% trans "Tayyor" %}</button>
+        </form>
+        <form method="post" action="{% url 'housekeeping:set_status' room.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="cleaning">
+          <button type="submit" class="hk-touch-btn">{% trans "Tozalash" %}</button>
+        </form>
+        <form method="post" action="{% url 'housekeeping:set_status' room.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="dirty">
+          <button type="submit" class="hk-touch-btn warn">{% trans "Kir" %}</button>
+        </form>
+      </div>
+      {% if "maintenance" in plan_features %}
+      <details class="hk-maint-panel">
+        <summary class="hk-touch-btn danger">{% trans "Nosozlik" %}</summary>
+        <form method="post" action="{% url 'housekeeping:report_maintenance' room.pk %}" class="hk-maint-form">
+          {% csrf_token %}
+          <input type="text" name="title" placeholder="{% trans 'Muammo' %}" required maxlength="200">
+          <label class="hk-check">
+            <input type="checkbox" name="set_ooo" value="1"> {% trans "Xonani OOO qilish" %}
+          </label>
+          <button type="submit">{% trans "Ariza yuborish" %}</button>
+        </form>
+      </details>
+      {% endif %}
+    </article>
+    {% empty %}
+    <div class="hk-empty section-panel">
+      <p class="hk-empty-icon" aria-hidden="true">🛏</p>
+      <h2>{% trans "Xona yo‘q" %}</h2>
+      <p class="muted">{% trans "Avval xonalar ro‘yxatini to‘ldiring." %}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <section class="section-panel hk-tasks-panel">
+    <div class="dash-section-head">
+      <div>
+        <p class="eyebrow">{% trans "Vazifalar" %}</p>
+        <h2>{% trans "Faol vazifalar" %}</h2>
+      </div>
+      <span class="dash-count-badge {% if hk_stats.tasks %}warn{% else %}ok{% endif %}">{{ hk_stats.tasks }}</span>
+    </div>
+    <ul class="list hk-task-list">
+      {% for t in tasks %}
+      <li class="guest-chip hk-task-row">
+        <span>
+          <strong>{{ t.room.number }}</strong> · {{ t.title }} · {{ t.get_status_display }}
+          {% if t.assigned_to %}
+          <span class="muted"> · {{ t.assigned_to.get_username }}</span>
+          {% endif %}
+        </span>
+        <span class="hk-task-actions">
+          <form method="post" action="{% url 'housekeeping:assign_task' t.pk %}" class="hk-assign">
+            {% csrf_token %}
+            <select name="assigned_to">
+              <option value="">{% trans "Biriktirish…" %}</option>
+              {% for u in staff %}
+              <option value="{{ u.pk }}" {% if t.assigned_to_id == u.pk %}selected{% endif %}>
+                {{ u.get_full_name|default:u.username }}
+              </option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn-ghost">{% trans "Biriktirish" %}</button>
+          </form>
+          <form method="post" action="{% url 'housekeeping:complete_task' t.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="hk-touch-btn ok">{% trans "Tayyor" %}</button>
+          </form>
+        </span>
+      </li>
+      {% empty %}<li class="muted hk-task-empty">{% trans "Vazifa yo‘q — barcha xonalar tartibda" %}</li>{% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

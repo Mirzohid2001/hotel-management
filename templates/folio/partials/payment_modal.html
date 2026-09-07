@@ -1,0 +1,40 @@
+{% load i18n money_fmt %}
+<div class="modal-overlay" role="presentation" onclick="if(event.target===this){this.closest('#modal-root').innerHTML='';document.body.classList.remove('modal-open');}">
+  <div class="modal-dialog payment-modal" role="dialog" aria-modal="true" aria-label="{{ title }}">
+    <div class="quick-add-head">
+      <strong>{{ title }}</strong>
+      <button type="button" class="btn-ghost" onclick="document.getElementById('modal-root').innerHTML='';document.body.classList.remove('modal-open');">
+        {% trans "Yopish" %}
+      </button>
+    </div>
+    <p class="payment-modal-meta">
+      <span>{{ reservation.code }} · {{ reservation.guest.full_name }}</span>
+      <span>{% trans "Qoldiq" %} <strong class="money">{{ folio.balance|money }}</strong></span>
+    </p>
+    {% if errors %}
+    <ul class="messages"><li class="error">{% for e in errors %}{{ e }}{% endfor %}</li></ul>
+    {% endif %}
+    <form class="folio-mini-form payment-modal-form"
+          hx-post="{% url 'folio:add_payment' folio.pk %}"
+          hx-target="#modal-root"
+          hx-select="unset"
+          hx-swap="innerHTML">
+      {% csrf_token %}
+      <input type="hidden" name="from_modal" value="1">
+      <input type="hidden" name="from_board" value="{% if from_board %}1{% else %}0{% endif %}">
+      <div class="folio-fields">
+        {% for field in form %}
+        <label class="folio-field {% if field.name == 'note' or field.name == 'amount' %}folio-field-wide{% endif %}">
+          <span>{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+          {{ field }}
+          {% if field.errors %}<em class="field-error">{{ field.errors }}</em>{% endif %}
+        </label>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn">{% trans "Qabul qilish" %}</button>
+    </form>
+    <p class="payment-modal-foot">
+      <a href="{% url 'folio:detail' reservation.pk %}">{% trans "To‘liq mehmon hisobi" %}</a>
+    </p>
+  </div>
+</div>

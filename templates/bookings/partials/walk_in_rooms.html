@@ -1,0 +1,61 @@
+{% load i18n %}
+{{ form.room }}
+{% if form.room.errors %}
+<div class="walkin-field-error">{{ form.room.errors }}</div>
+{% endif %}
+
+<div class="form-grid walkin-stay-fields">
+  <p>
+    <label for="{{ form.nights.id_for_label }}">{{ form.nights.label }}</label>
+    {{ form.nights }}
+  </p>
+  <p>
+    <label for="{{ form.adults.id_for_label }}">{{ form.adults.label }}</label>
+    {{ form.adults }}
+  </p>
+  <p class="field-span-2">
+    <label for="{{ form.nightly_rate.id_for_label }}">{{ form.nightly_rate.label }}</label>
+    {{ form.nightly_rate }}
+    {% if form.nightly_rate.errors %}<span class="field-error">{{ form.nightly_rate.errors }}</span>{% endif %}
+  </p>
+</div>
+
+{% if form.room_cards %}
+<div class="walkin-room-grid" role="listbox" aria-label="{% trans 'Xona tanlash' %}">
+  {% for card in form.room_cards %}
+    {% if card.state == "occupied" %}
+    <div class="walkin-room-card is-occupied" role="option" aria-disabled="true">
+      <span class="walkin-room-num">{{ card.room.number }}</span>
+      <span class="walkin-room-meta">{{ card.room.room_type.name }}</span>
+      <span class="walkin-room-badge">{% trans "Band" %}</span>
+    </div>
+    {% else %}
+    <button type="button"
+            class="walkin-room-card is-selectable is-{{ card.state }}"
+            data-room-id="{{ card.room.pk }}"
+            data-base-price="{{ card.room.room_type.base_price|default_if_none:'' }}"
+            role="option">
+      <span class="walkin-room-num">{{ card.room.number }}</span>
+      <span class="walkin-room-meta">{{ card.room.room_type.name }}</span>
+      {% if card.state == "dirty" %}
+      <span class="walkin-room-badge warn">{% trans "Kir" %}</span>
+      {% else %}
+      <span class="walkin-room-badge ok">{% trans "Bo‘sh" %}</span>
+      {% endif %}
+    </button>
+    {% endif %}
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted walkin-no-rooms">{% trans "Bu filialda faol xona yo‘q." %}</p>
+{% endif %}
+
+{% if form.occupied_rooms and form.available_count %}
+<p class="walkin-hint muted">
+  {% blocktrans count counter=form.occupied_rooms|length %}
+    {{ counter }} ta xona band — tanlash mumkin emas.
+  {% plural %}
+    {{ counter }} ta xona band — tanlash mumkin emas.
+  {% endblocktrans %}
+</p>
+{% endif %}

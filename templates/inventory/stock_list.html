@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Inventar" %}{% endblock %}
+{% block content %}
+{% url 'inventory:create' as create_url %}
+{% url 'inventory:minibar' as minibar_url %}
+{% include "includes/page_header.html" with title=_("Inventar") eyebrow=_("Operatsiya") primary_url=create_url primary_label=_("Yangi") secondary_url=minibar_url secondary_label=_("Xona bar") %}
+
+{% if expired_count or soon_count or low_count %}
+<p class="muted page-subtitle stock-alerts-summary">
+  {% if expired_count %}<span class="badge badge-blacklist">{% trans "Muddati o‘tgan" %}: {{ expired_count }}</span>{% endif %}
+  {% if soon_count %}<span class="badge badge-vip">{% trans "Muddat yaqin" %}: {{ soon_count }}</span>{% endif %}
+  {% if low_count %}<span class="status-pill">{% trans "Kam qolgan" %}: {{ low_count }}</span>{% endif %}
+</p>
+{% endif %}
+
+<section class="section-panel">
+  <ul class="list entity-list">
+    {% for i in items %}
+    <li class="guest-chip entity-row">
+      <span>
+        <span class="entity-row-main">
+          <strong class="entity-title">{{ i.name }}</strong>
+          {% if i.pk in expired_ids %}<span class="badge badge-blacklist">{% trans "Muddati o‘tgan" %}</span>{% endif %}
+          {% if i.pk in soon_ids %}<span class="badge badge-vip">{% trans "Muddat yaqin" %}</span>{% endif %}
+          {% if i.pk in low_ids %}<span class="badge badge-blacklist">{% trans "Kam" %}</span>{% endif %}
+          {% if i.is_minibar %}<span class="status-pill">{% trans "minibar" %}</span>{% endif %}
+        </span>
+        <span class="entity-meta">
+          {{ i.quantity_on_hand }} {{ i.get_unit_display }}
+          {% if i.reorder_level %} · min {{ i.reorder_level }}{% endif %}
+          {% if i.expiry_date %}
+          · {% trans "muddat" %} {{ i.expiry_date|date:"d.m.Y" }}
+          {% if i.days_until_expiry is not None %}
+            {% if i.days_until_expiry < 0 %}
+              ({{ i.days_until_expiry|stringformat:"d" }} {% trans "kun o‘tdi" %})
+            {% else %}
+              ({{ i.days_until_expiry }} {% trans "kun" %})
+            {% endif %}
+          {% endif %}
+          {% endif %}
+        </span>
+      </span>
+      <a class="btn-ghost btn-sm" href="{% url 'inventory:edit' i.pk %}">{% trans "Tahrirlash" %}</a>
+      <a class="btn-ghost btn-sm" href="{% url 'inventory:adjust' i.pk %}">{% trans "Tuzatish" %}</a>
+    </li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Inventar bo‘sh") hint=_("Mahsulot qo‘shing — minibar va ombor hisobi uchun.") cta_url=create_url cta_label=_("Mahsulot qo‘shish") %}
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

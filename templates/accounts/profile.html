@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Profil" %}{% endblock %}
+
+{% block content %}
+{% include "includes/page_header.html" with title=_("Profil") subtitle=user_obj.get_full_name|default:user_obj.username %}
+
+<section class="section-panel">
+  <ul class="kv-list">
+    <li><span>{% trans "Email" %}</span><span>{{ user_obj.email|default:"—" }}</span></li>
+    <li><span>{% trans "Telefon" %}</span><span>{{ user_obj.phone|default:"—" }}</span></li>
+    <li><span>{% trans "Rol" %}</span><span>{{ current_membership.get_role_display }}</span></li>
+  </ul>
+</section>
+{% endblock %}

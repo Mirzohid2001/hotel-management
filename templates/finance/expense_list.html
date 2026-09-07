@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Rasxodlar" %}{% endblock %}
+{% block body_class %}page-expenses{% endblock %}
+{% block content %}
+<div class="expense-page">
+{% url 'finance:create' as create_url %}
+{% url 'finance:setup' as setup_url %}
+{% include "includes/page_header.html" with title=_("Rasxodlar") eyebrow=_("Moliya") subtitle=_("Filtrlash, tahrirlash, tasdiqlash va to‘lov — bir joyda.") primary_url=create_url primary_label=_("Yangi rasxod") secondary_url=setup_url secondary_label=_("Kategoriya / Yetkazib beruvchi") %}
+
+<form method="get" class="expense-filter panel">
+  <div class="expense-filter-head">
+    <div>
+      <p class="eyebrow">{% trans "Qidiruv" %}</p>
+      <h2 class="expense-filter-title">{% trans "Filtrlar" %}</h2>
+    </div>
+    <div class="expense-filter-actions">
+      <button type="submit" class="btn btn-sm">{% trans "Qo‘llash" %}</button>
+      <a class="btn-ghost btn-sm" href="{% url 'finance:list' %}">{% trans "Tozalash" %}</a>
+    </div>
+  </div>
+  <div class="expense-filter-grid">
+    <label class="expense-field expense-field-wide">
+      <span>{% trans "Qidiruv" %}</span>
+      <input type="search" name="q" value="{{ q }}" placeholder="{% trans 'Sarlavha, izoh, kategoriya…' %}" autocomplete="off">
+    </label>
+    <label class="expense-field">
+      <span>{% trans "Holat" %}</span>
+      <select name="status">
+        <option value="">{% trans "Barcha holat" %}</option>
+        {% for val, label in statuses %}
+        <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="expense-field">
+      <span>{% trans "Kategoriya" %}</span>
+      <select name="category">
+        <option value="">{% trans "Barchasi" %}</option>
+        {% for c in categories %}
+        <option value="{{ c.pk }}" {% if category_id == c.pk|stringformat:"s" %}selected{% endif %}>
+          {{ c.name }}{% if not c.is_active %} · {% trans "o‘chiq" %}{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="expense-field">
+      <span>{% trans "Yetkazib beruvchi" %}</span>
+      <select name="vendor">
+        <option value="">{% trans "Barchasi" %}</option>
+        {% for v in vendors %}
+        <option value="{{ v.pk }}" {% if vendor_id == v.pk|stringformat:"s" %}selected{% endif %}>
+          {{ v.name }}{% if not v.is_active %} · {% trans "o‘chiq" %}{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="expense-field">
+      <span>{% trans "To‘lov usuli" %}</span>
+      <select name="method">
+        <option value="">{% trans "Barchasi" %}</option>
+        {% for val, label in methods %}
+        <option value="{{ val }}" {% if method == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="expense-field">
+      <span>{% trans "Dan" %}</span>
+      <input type="date" name="date_from" value="{{ date_from }}">
+    </label>
+    <label class="expense-field">
+      <span>{% trans "Gacha" %}</span>
+      <input type="date" name="date_to" value="{{ date_to }}">
+    </label>
+  </div>
+</form>
+
+<div class="expense-summary">
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "Topildi" %}</span>
+    <strong class="expense-summary-val">{{ filter_count }}</strong>
+  </div>
+  <div class="expense-summary-card is-accent">
+    <span class="expense-summary-lbl">{% trans "Jami summa" %}</span>
+    <strong class="expense-summary-val money">{{ filter_total|money }}</strong>
+  </div>
+</div>
+
+<section class="section-panel expense-list-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Ro‘yxat" %}</p>
+      <h2>{% trans "Rasxodlar" %}</h2>
+    </div>
+  </div>
+  <ul class="list expense-list">
+    {% for e in expenses %}
+    {% include "finance/partials/expense_row.html" %}
+    {% empty %}
+    <li class="expense-empty">
+      <p class="expense-empty-icon" aria-hidden="true">◇</p>
+      <h3>{% trans "Mos rasxod yo‘q" %}</h3>
+      <p class="muted">{% trans "Filtrni o‘zgartiring yoki yangi rasxod qo‘shing." %}</p>
+      <a class="btn" href="{% url 'finance:create' %}">{% trans "Yangi rasxod" %}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if filter_count > 200 %}
+  <p class="muted expense-footnote">{% trans "Faqat birinchi 200 ta ko‘rsatilmoqda — filtrni toraytiring." %}</p>
+  {% endif %}
+</section>
+</div>
+{% endblock %}

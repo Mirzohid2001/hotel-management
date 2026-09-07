@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% url 'properties:detail' property_obj.pk as cancel_url %}
+{% include "includes/page_header.html" with title=title subtitle=property_obj.name %}
+
+{% if room_presets %}
+<section class="section-panel room-preset-picker">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Shablon" %}</p>
+      <h2>{% trans "Tezkor to‘ldirish" %}</h2>
+    </div>
+  </div>
+  <p class="muted room-preset-hint">{% trans "Tanlang — forma maydonlari to‘ldiriladi, keyin narxni sozlab saqlang." %}</p>
+  <div class="room-preset-chips" id="room-preset-buttons"
+       data-base="{{ suggested_base_price }}">
+    {% for p in room_presets %}
+    <button type="button"
+            class="room-preset-chip is-button"
+            data-code="{{ p.code }}"
+            data-name="{{ p.name }} · {{ p.name_uz }}"
+            data-adults="{{ p.capacity_adults }}"
+            data-children="{{ p.capacity_children }}"
+            data-factor="{{ p.price_factor }}"
+            data-desc="{{ p.description }}">
+      <strong>{{ p.name }}</strong>
+      <small>{{ p.name_uz }}</small>
+    </button>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="section-panel">
+{% include "includes/app_form.html" with form=form cancel_url=cancel_url %}
+</section>
+
+{% if room_presets %}
+<script>
+(function () {
+  var box = document.getElementById("room-preset-buttons");
+  if (!box) return;
+  var base = parseFloat(box.getAttribute("data-base") || "500000") || 500000;
+  function setVal(name, value) {
+    var el = document.querySelector('[name="' + name + '"]');
+    if (el) el.value = value;
+  }
+  box.addEventListener("click", function (e) {
+    var btn = e.target.closest(".room-preset-chip.is-button");
+    if (!btn) return;
+    var factor = parseFloat(btn.getAttribute("data-factor") || "1") || 1;
+    var price = Math.round(base * factor);
+    setVal("name", btn.getAttribute("data-name") || "");
+    setVal("code", btn.getAttribute("data-code") || "");
+    setVal("capacity_adults", btn.getAttribute("data-adults") || "2");
+    setVal("capacity_children", btn.getAttribute("data-children") || "0");
+    setVal("base_price", String(price));
+    setVal("description", btn.getAttribute("data-desc") || "");
+    box.querySelectorAll(".room-preset-chip.is-button").forEach(function (b) {
+      b.classList.toggle("is-selected", b === btn);
+    });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

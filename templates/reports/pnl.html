@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Foyda/zarar" %}{% endblock %}
+{% block content %}
+<div class="report-page pnl-page">
+
+  <header class="report-hero pnl-hero">
+    <div class="report-hero-text">
+      <p class="eyebrow">{% trans "Hisob-kitob" %} · P&amp;L</p>
+      <h1>{% trans "Foyda/zarar" %}</h1>
+      <p class="report-hero-sub">{{ year }}-{{ month|stringformat:"02d" }}
+        · {% if basis == 'accrual' %}{% trans "Hisoblangan" %}{% else %}{% trans "Naqd" %}{% endif %}
+      </p>
+      {% if active_hotel %}<p class="report-hero-badge">{{ active_hotel.display_label }}</p>{% endif %}
+    </div>
+    <div class="report-hero-actions">
+      <a class="btn-ghost" href="{% url 'reports:flash' %}">{% trans "Kunlik hisobot" %}</a>
+      <a class="btn" href="{% url 'finance:profit_share' %}">{% trans "Foyda ulushi" %}</a>
+      {% if can_csv %}
+      <a class="btn" href="{% url 'reports:export_pnl' %}?year={{ year }}&month={{ month }}&basis={{ basis }}">CSV</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <form method="get" class="filter-panel report-filter" role="search" aria-label="{% trans 'Davr filtri' %}">
+    <div class="filter-panel-grid">
+      <label class="filter-field">
+        <span class="filter-field-label">{% trans "Yil" %}</span>
+        <input type="number" name="year" value="{{ year }}" min="2020" max="2100" inputmode="numeric">
+      </label>
+      <label class="filter-field">
+        <span class="filter-field-label">{% trans "Oy" %}</span>
+        <select name="month">
+          {% for m, label in months %}
+          <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="filter-field">
+        <span class="filter-field-label">{% trans "Asos" %}</span>
+        <select name="basis">
+          <option value="cash" {% if basis == 'cash' %}selected{% endif %}>{% trans "Naqd" %}</option>
+          <option value="accrual" {% if basis == 'accrual' %}selected{% endif %}>{% trans "Hisoblangan" %}</option>
+        </select>
+      </label>
+      <div class="filter-field filter-field-action">
+        <span class="filter-field-label" aria-hidden="true">&nbsp;</span>
+        <button type="submit" class="btn">{% trans "Ko‘rish" %}</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="dash-pnl-row pnl-summary-row">
+    <div class="dash-pnl-item">
+      <span>{% trans "Tushum" %}</span>
+      <strong class="money">{{ report.revenue_total|money }}</strong>
+    </div>
+    <div class="dash-pnl-item">
+      <span>{% trans "Rasxod" %}</span>
+      <strong class="money">{{ report.expenses_total|money }}</strong>
+    </div>
+    <div class="dash-pnl-item">
+      <span>{% trans "Mehnat" %}</span>
+      <strong class="money">{{ report.labor_total|money }}</strong>
+    </div>
+    <div class="dash-pnl-item dash-pnl-net">
+      <span>{% trans "Sof" %}</span>
+      <strong class="money">{{ report.net|money }} {{ current_tenant.currency }}</strong>
+    </div>
+  </div>
+
+  <section class="section-panel pnl-charts-panel">
+    <div class="dash-section-head">
+      <div>
+        <p class="eyebrow">{% trans "Vizual" %}</p>
+        <h2>{% trans "Grafiklar" %}</h2>
+      </div>
+    </div>
+    <div class="pnl-charts-grid">
+      <div class="chart-wrap chart-wrap-donut">
+        <p class="chart-caption">{% trans "Tushum turlari" %}</p>
+        <canvas id="chart-pnl-revenue" aria-label="{% trans 'Tushum tafsiloti' %}"></canvas>
+      </div>
+      <div class="chart-wrap chart-wrap-donut">
+        <p class="chart-caption">{% trans "Rasxod kategoriyalari" %}</p>
+        <canvas id="chart-pnl-expense" aria-label="{% trans 'Rasxod kategoriyalari' %}"></canvas>
+      </div>
+      <div class="chart-wrap chart-wrap-bar chart-wrap-wide">
+        <p class="chart-caption">{% trans "Oy xulosasi" %}</p>
+        <canvas id="chart-pnl-summary" aria-label="{% trans 'Foyda/zarar xulosasi' %}"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <div class="dash-columns report-columns">
+    <section class="section-panel">
+      <div class="dash-section-head">
+        <h2>{% trans "Tushum tafsiloti" %}</h2>
+      </div>
+      <ul class="list report-breakdown">
+        {% for row in report.revenue_breakdown %}
+        <li class="guest-chip">
+          <span>{{ row.label }}</span>
+          <span class="money">{{ row.amount|money }}</span>
+        </li>
+        {% empty %}<li class="muted">{% trans "Yo‘q" %}</li>{% endfor %}
+      </ul>
+    </section>
+    <section class="section-panel">
+      <div class="dash-section-head">
+        <h2>{% trans "Xarajat tafsiloti" %}</h2>
+      </div>
+      <ul class="list report-breakdown">
+        {% for row in report.expenses_breakdown %}
+        <li class="guest-chip">
+          <span>{{ row.label }}</span>
+          <span class="money">{{ row.amount|money }}</span>
+        </li>
+        {% empty %}<li class="muted">{% trans "Yo‘q" %}</li>{% endfor %}
+      </ul>
+      <p class="muted report-footnote">
+        {% trans "Mehnat" %} (oylik + avans): <span class="money">{{ report.labor_total|money }}</span>
+        {% if report.commission %} · {% trans "Komissiya" %}: <span class="money">{{ report.commission|money }}</span>{% endif %}
+        {% if report.inventory_cost %} · {% trans "Ombor" %}: <span class="money">{{ report.inventory_cost|money }}</span>{% endif %}
+        {% if report.emehmon_shortfall %} · {% trans "E-mehmon farq" %}: <span class="money">{{ report.emehmon_shortfall|money }}</span>{% endif %}
+      </p>
+    </section>
+  </div>
+
+  <footer class="pnl-footer section-panel">
+    <p class="pnl-line">
+      {% trans "Operatsion xarajat" %} ({% trans "rasxod + mehnat + komissiya + ombor + E-mehmon farq" %}):
+      <strong class="money">{{ report.operating_costs|money }}</strong>
+      · {% trans "Sof" %}: <strong class="money">{{ report.net|money }}</strong> {{ current_tenant.currency }}
+    </p>
+    <p class="muted" style="margin-top:0.5rem">
+      {% trans "E-mehmon mehmondan olingan summa tushumga kirmaydi (o‘tkinchi). Faqat qoplanmagan farq rasxod." %}
+      <a href="{% url 'bookings:emehmon_report' %}?year={{ year }}&month={{ month }}">{% trans "E-mehmon hisoboti" %}</a>
+    </p>
+  </footer>
+</div>
+{{ chart_data|json_script:"chart-data-pnl" }}
+{% endblock %}

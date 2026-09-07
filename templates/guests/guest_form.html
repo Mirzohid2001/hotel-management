@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% url 'guests:list' as cancel_url %}
+{% include "includes/page_header.html" with title=title %}
+
+<section class="section-panel">
+{% include "includes/app_form.html" with form=form cancel_url=cancel_url %}
+</section>
+{% endblock %}

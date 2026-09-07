@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Oylik jadvali" %}{% endblock %}
+{% block content %}
+{% url 'hr:employees' as employees_url %}
+{% url 'hr:advances' as advances_url %}
+{% include "includes/page_header.html" with title=_("Oylik jadvali") eyebrow=_("Kadrlar") subtitle=_("Kunlik ish uchun Xodimlar sahifasidagi tugmalardan foydalaning. Bu yer — tekshiruv va tarix.") secondary_url=employees_url secondary_label=_("Xodimlar") %}
+
+<div class="page-toolbar">
+  <a class="btn-ghost" href="{% url 'hr:advances' %}">{% trans "Avanslar tarixi" %}</a>
+  <form method="post" action="{% url 'hr:payroll_generate' %}">
+    {% csrf_token %}<button type="submit" class="btn-ghost">{% trans "Shu oyini yangilash" %}</button>
+  </form>
+  <form method="post" action="{% url 'hr:payroll_pay_all' %}"
+        onsubmit="return confirm('{% trans "Shu oydagi barcha to‘lanmagan oyliklar to‘lansinmi?" %}')">
+    {% csrf_token %}<button type="submit" class="btn">{% trans "Hammasini to‘lash" %}</button>
+  </form>
+</div>
+
+{% for period in periods %}
+<section class="section-panel">
+  <div class="dash-section-head">
+    <div>
+      <h2>{{ period }} · {{ period.get_status_display }}</h2>
+    </div>
+  </div>
+  <div class="table-scroll">
+    <table class="data data-table payroll-table">
+      <thead>
+        <tr>
+          <th>{% trans "Xodim" %}</th>
+          <th class="num">{% trans "Baza" %}</th>
+          <th class="num">{% trans "Bonus" %}</th>
+          <th class="num">{% trans "Avans" %}</th>
+          <th class="num">{% trans "Ushlama" %}</th>
+          <th class="num">{% trans "Sof" %}</th>
+          <th>{% trans "Holat" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in period.items.all %}
+        <tr>
+          <td><strong class="entity-title">{{ item.employee.full_name }}</strong></td>
+          <td class="num money">{{ item.base_amount|money }}</td>
+          <td class="num money">{% if item.bonus %}{{ item.bonus|money }}{% else %}—{% endif %}</td>
+          <td class="num money">{% if item.advance %}−{{ item.advance|money }}{% else %}—{% endif %}</td>
+          <td class="num money">{% if item.deduction %}−{{ item.deduction|money }}{% else %}—{% endif %}</td>
+          <td class="num money"><strong>{{ item.net_amount|money }}</strong></td>
+          <td>
+            {% if not item.payment %}
+            <span class="row-actions">
+              <a class="btn-ghost btn-sm" href="{% url 'hr:payroll_item_edit' item.pk %}">{% trans "Bonus/ushlama" %}</a>
+              <form method="post" action="{% url 'hr:payroll_pay' item.pk %}">
+                {% csrf_token %}<button type="submit" class="btn btn-sm">{% trans "To‘lash" %}</button>
+              </form>
+            </span>
+            {% else %}
+            <span class="muted">{% trans "To‘langan" %}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            {% include "includes/empty_state.html" with title=_("Qator yo‘q") hint=_("«Shu oyini yangilash» yoki Xodimlar sahifasidan to‘lang.") cta_url=employees_url cta_label=_("Xodimlar") compact=1 %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% empty %}
+{% include "includes/empty_state.html" with title=_("Oylik davri yo‘q") hint=_("Xodimlar sahifasidan «Oylik to‘lash» bosing yoki shu yerda yangilang.") cta_url=employees_url cta_label=_("Xodimlar") %}
+{% endfor %}
+{% endblock %}

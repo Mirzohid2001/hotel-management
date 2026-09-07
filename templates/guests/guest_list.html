@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Mehmonlar" %}{% endblock %}
+{% block content %}
+{% url 'guests:create' as create_url %}
+{% url 'guests:company_list' as companies_url %}
+{% include "includes/page_header.html" with title=_("Mehmonlar") primary_url=create_url primary_label=_("Yangi mehmon") secondary_url=companies_url secondary_label=_("Kompaniyalar") %}
+
+<form method="get" class="search-form"
+      hx-get="{% url 'guests:list' %}"
+      hx-trigger="keyup changed delay:300ms from:input[name=q], submit"
+      hx-target="#guest-results"
+      hx-select="unset"
+      hx-swap="innerHTML"
+      hx-boost="false">
+  <input type="search" name="q" value="{{ q }}" placeholder="{% trans 'Qidiruv...' %}" autocomplete="off">
+  <button type="submit" class="btn btn-sm">{% trans "Topish" %}</button>
+</form>
+<section class="section-panel">
+<div id="guest-results">
+  {% include "guests/partials/guest_results.html" %}
+</div>
+</section>
+{% endblock %}

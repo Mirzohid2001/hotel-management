@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Valyutalar" %}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with title="Valyutalar va kurslar" subtitle="UZS · USD · EUR — hisob-kitob, to‘lov, foyda-zarar" %}
+
+<section class="section-panel">
+  <h2>{% trans "Bazaviy valyuta" %}</h2>
+  <p class="muted">{% trans "Barcha hisobotlar va mehmon hisobi qoldig‘i shu valyutada yuritiladi." %}</p>
+  <form method="post" class="app-form panel is-embedded">
+    {% csrf_token %}
+    <input type="hidden" name="form" value="base">
+    <div class="form-grid app-form-grid">
+      <p class="form-field">
+        <label for="{{ base_form.currency.id_for_label }}">{{ base_form.currency.label }}</label>
+        {{ base_form.currency }}
+        {% if base_form.currency.help_text %}<span class="muted">{{ base_form.currency.help_text }}</span>{% endif %}
+      </p>
+    </div>
+    <div class="form-actions"><button type="submit" class="btn">{% trans "Saqlash" %}</button></div>
+  </form>
+</section>
+
+<section class="section-panel">
+  <h2>{% trans "Joriy kurslar" %} · {{ base_currency }}</h2>
+  <ul class="kv-list">
+    {% for row in live %}
+    <li>
+      <span>1 {{ row.code }}</span>
+      <span class="money">{{ row.rate|money:4 }} {{ base_currency }}</span>
+    </li>
+    {% empty %}
+    <li class="muted">{% trans "Faqat bazaviy valyuta." %}</li>
+    {% endfor %}
+  </ul>
+  <form method="post" class="form-actions" style="margin-top:0.75rem">
+    {% csrf_token %}
+    <input type="hidden" name="form" value="cbu">
+    <button type="submit" class="btn">
+      {% if cbu_today %}{% trans "MB dan qayta yuklash" %}{% else %}{% trans "Markaziy bankdan yuklash" %}{% endif %}
+    </button>
+  </form>
+  <p class="muted" style="margin-top:0.5rem">
+    {% trans "Kurslar har kuni Markaziy bank (cbu.uz) dan avtomatik olinadi. Qo‘lda ham yangilash mumkin." %}
+  </p>
+</section>
+
+<section class="section-panel">
+  <h2>{% trans "Yangi kurs" %}</h2>
+  <form method="post" class="app-form panel is-embedded">
+    {% csrf_token %}
+    <input type="hidden" name="form" value="rate">
+    {% if rate_form.non_field_errors %}<div class="form-errors">{{ rate_form.non_field_errors }}</div>{% endif %}
+    <div class="form-grid app-form-grid">
+      {% for field in rate_form %}
+      <p class="form-field {% if field.name == 'note' %}field-span-2{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+      </p>
+      {% endfor %}
+    </div>
+    <div class="form-actions"><button type="submit" class="btn">{% trans "Kurs qo‘shish" %}</button></div>
+  </form>
+</section>
+
+<section class="section-panel">
+  <h2>{% trans "Kurs tarixi" %}</h2>
+  <ul class="list entity-list">
+    {% for r in rates %}
+    <li class="entity-row">
+      <span class="entity-title">1 {{ r.currency }} = {{ r.rate|money:4 }} {{ r.base_currency }}</span>
+      <span class="entity-meta">{{ r.effective_on }}{% if r.note %} · {{ r.note }}{% endif %}</span>
+      <form method="post" action="{% url 'finance:exchange_rate_delete' r.pk %}" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn-ghost">{% trans "O‘chirish" %}</button>
+      </form>
+    </li>
+    {% empty %}
+    <li class="muted empty-row">{% trans "Hali kurs yo‘q — default ishlatiladi." %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

@@ -1,0 +1,28 @@
+"""Local development settings. Copy to settings_dev.py and edit."""
+
+from .settings import *  # noqa: F403
+
+DEBUG = True
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "hotel-management",
+        "USER": "postgres",
+        "PASSWORD": "change-me",
+        "HOST": "localhost",
+        "PORT": 5432,
+    }
+}
+
+SMS_CODE_ACTIVE = False
+ESKIZ_TOKEN = ""
+MAPS_API_KEY = ""
+
+EMAIL_HOST = "smtp.sendgrid.net"
+EMAIL_PORT = 587
+EMAIL_HOST_USER = "apikey"
+EMAIL_HOST_PASSWORD = ""  # SendGrid API Key
+SERVER_EMAIL = EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = ""

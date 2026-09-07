@@ -1,0 +1,155 @@
+{% load i18n money_fmt %}
+<div id="board-page" class="board-page">
+  <header class="board-hero">
+    <div class="board-hero-text">
+      <p class="eyebrow">{% trans "Qabulxona" %} · {% trans "Bugungi smena" %}</p>
+      <h1>{% trans "Doska" %}</h1>
+      {% if hotel %}<p class="board-hero-sub">{{ hotel.display_label }}</p>{% endif %}
+    </div>
+    <nav class="board-date-nav" aria-label="{% trans 'Sana' %}">
+      <a class="board-date-btn"
+         href="?date={{ prev|date:'Y-m-d' }}"
+         hx-get="{% url 'bookings:board' %}?date={{ prev|date:'Y-m-d' }}"
+         hx-target="#board-page"
+         hx-select="unset"
+         hx-swap="outerHTML"
+         hx-push-url="true"
+         aria-label="{% trans 'Oldingi kun' %}">←</a>
+      <div class="board-date-pill">
+        <span class="board-date-label">{% trans "Sana" %}</span>
+        <strong>{{ day|date:"d F Y" }}</strong>
+        {% if day == today %}<span class="board-date-today">{% trans "Bugun" %}</span>{% endif %}
+      </div>
+      <a class="board-date-btn"
+         href="?date={{ next|date:'Y-m-d' }}"
+         hx-get="{% url 'bookings:board' %}?date={{ next|date:'Y-m-d' }}"
+         hx-target="#board-page"
+         hx-select="unset"
+         hx-swap="outerHTML"
+         hx-push-url="true"
+         aria-label="{% trans 'Keyingi kun' %}">→</a>
+    </nav>
+  </header>
+
+  <div class="board-stats">
+    <div class="board-stat">
+      <span class="board-stat-num">{{ board_stats.total }}</span>
+      <span class="board-stat-lbl">{% trans "Jami" %}</span>
+    </div>
+    <div class="board-stat is-vacant">
+      <span class="board-stat-num">{{ board_stats.vacant }}</span>
+      <span class="board-stat-lbl">{% trans "Bo‘sh" %}</span>
+    </div>
+    <div class="board-stat is-occupied">
+      <span class="board-stat-num">{{ board_stats.occupied }}</span>
+      <span class="board-stat-lbl">{% trans "Band" %}</span>
+    </div>
+    <div class="board-stat is-dirty">
+      <span class="board-stat-num">{{ board_stats.dirty }}</span>
+      <span class="board-stat-lbl">{% trans "Kir" %}</span>
+    </div>
+    <div class="board-stat is-ooo">
+      <span class="board-stat-num">{{ board_stats.ooo }}</span>
+      <span class="board-stat-lbl">OOO</span>
+    </div>
+  </div>
+
+  <div class="board-toolbar">
+    <div class="board-legend board-legend-pills">
+      <span class="board-pill leg-vacant">{% trans "Bo‘sh" %}</span>
+      <span class="board-pill leg-occupied">{% trans "Band" %}</span>
+      <span class="board-pill leg-dirty">{% trans "Kir" %}</span>
+      <span class="board-pill leg-ooo">OOO</span>
+    </div>
+    <div class="board-toolbar-actions">
+      <a class="btn-ghost btn-sm" href="{% url 'bookings:calendar' %}?start={{ day|date:'Y-m-d' }}">{% trans "Shaxmatka (Taqvim)" %}</a>
+      <a class="btn btn-sm" href="{% url 'bookings:walk_in' %}">{% trans "Darhol joylash" %}</a>
+    </div>
+  </div>
+
+  <div class="room-board">
+    {% for row in rows %}
+      {% if row.room.status == 'out_of_order' %}
+        <article class="room-tile ooo">
+          <span class="room-tile-badge">OOO</span>
+          <div class="room-tile-top">
+            <div class="num">{{ row.room.number }}</div>
+            <div class="meta">{{ row.room.room_type.name }}</div>
+          </div>
+        </article>
+      {% elif row.reservation %}
+        {% with r=row.reservation folio=row.folio %}
+        <article class="room-tile {% if row.room.status == 'dirty' or row.room.status == 'cleaning' %}dirty{% else %}occupied{% endif %}">
+          <span class="room-tile-badge">{% if row.room.status == 'dirty' or row.room.status == 'cleaning' %}{% trans "Kir" %}{% else %}{% trans "Band" %}{% endif %}</span>
+          <div class="room-tile-top">
+            <div class="num">{{ row.room.number }}</div>
+            <div class="meta">
+              {{ row.room.room_type.name }} · {{ r.get_status_display }}
+            </div>
+          </div>
+          <div class="guest">
+            <a href="{% url 'bookings:detail' r.pk %}">{{ r.guest.full_name }}</a>
+            {% if r.guest.is_blacklisted %}<span class="badge badge-blacklist">QR</span>{% endif %}
+            {% if r.guest.is_vip %}<span class="badge badge-vip">VIP</span>{% endif %}
+            <div class="meta room-code">{{ r.code }}</div>
+            <div class="tile-actions">
+              {% if r.status == 'confirmed' or r.status == 'inquiry' %}
+              <form method="post" action="{% url 'bookings:check_in' r.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'bookings:board' %}?date={{ day|date:'Y-m-d' }}">
+                {% if row.room.status == 'dirty' or row.room.status == 'cleaning' %}
+                <input type="hidden" name="allow_dirty" value="1">
+                <button type="submit" class="btn btn-sm btn-warn">{% trans "Kirish*" %}</button>
+                {% else %}
+                <button type="submit" class="btn btn-sm">{% trans "Kirish" %}</button>
+                {% endif %}
+              </form>
+              {% elif r.status == 'checked_in' %}
+              {% if folio %}
+              <span class="tile-balance {% if folio.balance > 0 %}warn{% endif %} money">{{ folio.balance|money }}</span>
+              {% endif %}
+              <button type="button" class="btn btn-sm btn-ghost-tile"
+                      hx-get="{% url 'bookings:checkout_modal' r.pk %}?from=board"
+                      hx-target="#modal-root" hx-select="unset"
+                      hx-swap="innerHTML">{% trans "Chiqish" %}</button>
+              <button type="button" class="btn btn-sm"
+                      hx-get="{% url 'folio:payment_modal' r.pk %}?from=board"
+                      hx-target="#modal-root" hx-select="unset"
+                      hx-swap="innerHTML">{% trans "To‘lov" %}</button>
+              <a class="btn btn-sm btn-ghost-tile" href="{% url 'folio:detail' r.pk %}">{% trans "Hisob" %}</a>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+        {% endwith %}
+      {% elif row.room.status == 'dirty' or row.room.status == 'cleaning' %}
+        <article class="room-tile dirty">
+          <span class="room-tile-badge">{% trans "Kir" %}</span>
+          <div class="room-tile-top">
+            <div class="num">{{ row.room.number }}</div>
+            <div class="meta">{{ row.room.room_type.name }} · {{ row.room.get_status_display }}</div>
+          </div>
+          <div class="guest">
+            <a class="btn btn-sm btn-ghost-tile" href="{% url 'housekeeping:board' %}">{% trans "Tozalash" %}</a>
+          </div>
+        </article>
+      {% else %}
+        <article class="room-tile vacant">
+          <span class="room-tile-badge ok">{% trans "Bo‘sh" %}</span>
+          <div class="room-tile-top">
+            <div class="num">{{ row.room.number }}</div>
+            <div class="meta">{{ row.room.room_type.name }}</div>
+          </div>
+          <div class="guest">
+            <a class="btn btn-sm" href="{% url 'bookings:walk_in' %}?room={{ row.room.pk }}">{% trans "Joylash" %}</a>
+          </div>
+        </article>
+      {% endif %}
+    {% empty %}
+      <div class="board-empty">
+        <p>{% trans "Xona yo‘q" %}</p>
+        <a class="btn-ghost" href="{% url 'properties:list' %}">{% trans "Filiallar" %}</a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
