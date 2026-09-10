@@ -15,6 +15,12 @@
     <span>{% trans "Jami" %}</span>
     <strong class="money">{{ folio.grand_total|money }} {{ current_tenant.currency }}</strong>
   </div>
+  {% if folio.emehmon_charges_total %}
+  <div class="folio-strip-item">
+    <span>{% trans "E-mehmon" %}</span>
+    <strong class="money">{{ folio.emehmon_charges_total|money }} {{ current_tenant.currency }}</strong>
+  </div>
+  {% endif %}
   <div class="folio-strip-item">
     <span>{% trans "To‘langan" %}</span>
     <strong class="money">{{ folio.payments_total|money }} {{ current_tenant.currency }}</strong>

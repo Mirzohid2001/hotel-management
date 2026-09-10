@@ -256,9 +256,7 @@ def build_folio_pdf(folio) -> bytes:
     story.append(Spacer(1, 10))
 
     line_rows = []
-    for c in folio.charges.all():
-        if getattr(c, "is_void", False):
-            continue
+    for c in folio.stay_charges:
         line_rows.append(
             (
                 c.description,
@@ -280,10 +278,42 @@ def build_folio_pdf(folio) -> bytes:
     totals = [(_("Subtotal"), folio.charges_total)]
     if folio.tax_percent and folio.tax_percent > 0:
         totals.append((f"{_('QQS')} ({folio.tax_percent:g}%)", folio.tax_amount))
-    totals.append((_("Jami"), folio.grand_total))
+    totals.append((_("Jami (mehmonxona)"), folio.grand_total))
     story.append(_totals_table(totals, styles, currency))
 
-    payments = [p for p in folio.payments.all() if not getattr(p, "is_void", False)]
+    if folio.emehmon_charges:
+        story.append(Paragraph(_("E-mehmon (alohida)"), styles["h2"]))
+        em_rows = []
+        for c in folio.emehmon_charges:
+            em_rows.append(
+                (
+                    c.description,
+                    f"{c.quantity:g}",
+                    c.amount,
+                    getattr(c, "currency", None) or currency,
+                )
+            )
+        story.append(
+            _lines_table(
+                [_("Tavsif"), _("Miqdor"), _("Summa")],
+                em_rows,
+                styles,
+                currency,
+            )
+        )
+        story.append(Spacer(1, 6))
+        story.append(
+            _totals_table(
+                [
+                    (_("E-mehmon jami"), folio.emehmon_charges_total),
+                    (_("E-mehmon to‘langan"), folio.emehmon_payments_total),
+                ],
+                styles,
+                currency,
+            )
+        )
+
+    payments = folio.stay_payments
     if payments:
         story.append(Paragraph(_("To‘lovlar"), styles["h2"]))
         pay_rows = []

@@ -414,6 +414,28 @@ EMEHMON_LEGACY_MARKERS = ("E-mehmon", "Emehmon", "e-mehmon")
 DEFAULT_EMEHMON_UNIT = Decimal("9000")
 
 
+def emehmon_charge_q():
+    """Folio charge filtri: E-mehmon (o‘tkinchi, xona narxiga kirmaydi)."""
+    from django.db.models import Q
+
+    from .models import FolioCharge
+
+    q = Q(charge_type=FolioCharge.ChargeType.EMEHMON)
+    for prefix in EMEHMON_LEGACY_MARKERS:
+        q |= Q(description__startswith=prefix)
+    return q
+
+
+def emehmon_payment_q():
+    """GuestPayment filtri: E-mehmon to‘lovi (note marker)."""
+    from django.db.models import Q
+
+    q = Q()
+    for marker in EMEHMON_LEGACY_MARKERS:
+        q |= Q(note__icontains=marker)
+    return q
+
+
 def emehmon_guest_count(adults=None, children=None) -> int:
     """Ro‘yxatdan o‘tadigan mehmonlar soni (kamida 1)."""
     a = int(adults or 0)
@@ -468,12 +490,7 @@ def default_emehmon_fee(reservation) -> Decimal:
 
 
 def emehmon_already_posted(folio) -> bool:
-    from django.db.models import Q
-
-    already = Q(charge_type=FolioCharge.ChargeType.EMEHMON)
-    for prefix in EMEHMON_LEGACY_MARKERS:
-        already |= Q(description__startswith=prefix)
-    return folio.charges.filter(already, is_void=False).exists()
+    return folio.charges.filter(emehmon_charge_q(), is_void=False).exists()
 
 
 @transaction.atomic

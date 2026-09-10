@@ -36,20 +36,62 @@ class Folio(TenantOwnedModel):
     def base_currency(self) -> str:
         return getattr(self.tenant, "currency", None) or "UZS"
 
+    def _stay_charges(self):
+        from folio.services import emehmon_charge_q
+
+        return self.charges.filter(is_void=False).exclude(emehmon_charge_q())
+
+    def _emehmon_charges(self):
+        from folio.services import emehmon_charge_q
+
+        return self.charges.filter(is_void=False).filter(emehmon_charge_q())
+
+    def _stay_payments(self):
+        from folio.services import emehmon_payment_q
+
+        return self.payments.filter(is_void=False).exclude(emehmon_payment_q())
+
+    def _emehmon_payments(self):
+        from folio.services import emehmon_payment_q
+
+        return self.payments.filter(is_void=False).filter(emehmon_payment_q())
+
+    @property
+    def stay_charges(self):
+        return list(self._stay_charges().order_by("created_at"))
+
+    @property
+    def emehmon_charges(self):
+        return list(self._emehmon_charges().order_by("created_at"))
+
+    @property
+    def stay_payments(self):
+        return list(self._stay_payments().order_by("created_at"))
+
     @property
     def charges_total(self) -> Decimal:
-        """Bazaviy valyutadagi xarajatlar jami (hisobot/balans)."""
-        return money_sum(self.charges.filter(is_void=False))
+        """Mehmonxona xarajatlari (E-mehmon siz) — bazaviy valyuta."""
+        return money_sum(self._stay_charges())
+
+    @property
+    def emehmon_charges_total(self) -> Decimal:
+        """E-mehmon komissiyasi (o‘tkinchi) — xona narxiga kirmaydi."""
+        return money_sum(self._emehmon_charges())
 
     @property
     def payments_total(self) -> Decimal:
-        """Net to‘lovlar: kirim − sdachi/qaytarish (bazaviy valyuta)."""
-        incoming = money_sum(
-            self.payments.filter(is_void=False).exclude(kind=GuestPayment.Kind.REFUND)
-        )
-        refunds = money_sum(
-            self.payments.filter(is_void=False, kind=GuestPayment.Kind.REFUND)
-        )
+        """Mehmonxona to‘lovlari sof: kirim − sdachi (E-mehmon siz)."""
+        qs = self._stay_payments()
+        incoming = money_sum(qs.exclude(kind=GuestPayment.Kind.REFUND))
+        refunds = money_sum(qs.filter(kind=GuestPayment.Kind.REFUND))
+        return incoming - refunds
+
+    @property
+    def emehmon_payments_total(self) -> Decimal:
+        """E-mehmon bo‘yicha olingan to‘lovlar (sof)."""
+        qs = self._emehmon_payments()
+        incoming = money_sum(qs.exclude(kind=GuestPayment.Kind.REFUND))
+        refunds = money_sum(qs.filter(kind=GuestPayment.Kind.REFUND))
         return incoming - refunds
 
     @property
@@ -69,7 +111,7 @@ class Folio(TenantOwnedModel):
 
     @property
     def grand_total(self) -> Decimal:
-        """Charges + VAT (bazaviy valyuta)."""
+        """Mehmonxona jami (charges + VAT), E-mehmon siz."""
         return self.charges_total + self.tax_amount
 
     @property

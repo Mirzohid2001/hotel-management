@@ -134,10 +134,8 @@
       <tr><th>{% trans "Tavsif" %}</th><th>{% trans "Summa" %}</th></tr>
     </thead>
     <tbody>
-      {% for c in folio.charges.all %}
-      {% if not c.is_void %}
+      {% for c in folio.stay_charges %}
       <tr><td>{{ c.description }}</td><td class="num">{{ c.amount|money }} {{ c.currency|default:tenant.currency }}</td></tr>
-      {% endif %}
       {% empty %}
       <tr><td colspan="2" class="muted">—</td></tr>
       {% endfor %}
@@ -145,24 +143,37 @@
       {% if folio.tax_percent %}
       <tr><td>{% trans "QQS" %} ({{ folio.tax_percent }}%)</td><td class="num">{{ folio.tax_amount|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
       {% endif %}
-      <tr class="total"><td>{% trans "Jami" %}</td><td class="num">{{ folio.grand_total|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
+      <tr class="total"><td>{% trans "Jami (mehmonxona)" %}</td><td class="num">{{ folio.grand_total|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
     </tbody>
   </table>
 
-  {% if folio.payments.all %}
+  {% if folio.emehmon_charges %}
+  <p class="section-title">{% trans "E-mehmon (alohida)" %}</p>
+  <table>
+    <tbody>
+      {% for c in folio.emehmon_charges %}
+      <tr><td>{{ c.description }}</td><td class="num">{{ c.amount|money }} {{ c.currency|default:tenant.currency }}</td></tr>
+      {% endfor %}
+      <tr class="total"><td>{% trans "E-mehmon jami" %}</td><td class="num">{{ folio.emehmon_charges_total|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
+      {% if folio.emehmon_payments_total %}
+      <tr><td>{% trans "E-mehmon to‘langan" %}</td><td class="num">{{ folio.emehmon_payments_total|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if folio.stay_payments %}
   <p class="section-title">{% trans "To‘lovlar" %}</p>
   <table>
     <thead>
       <tr><th>{% trans "Usul" %}</th><th>{% trans "Summa" %}</th></tr>
     </thead>
     <tbody>
-      {% for p in folio.payments.all %}
-      {% if not p.is_void %}
+      {% for p in folio.stay_payments %}
       <tr>
         <td>{{ p.get_method_display }} · {{ p.get_kind_display }}{% if p.note %} · {{ p.note }}{% endif %}</td>
         <td class="num">{% if p.is_refund %}−{% endif %}{{ p.amount|money }} {{ p.currency|default:tenant.currency }}</td>
       </tr>
-      {% endif %}
       {% endfor %}
       <tr class="total"><td>{% trans "To‘langan (sof)" %}</td><td class="num">{{ folio.payments_total|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
     </tbody>

@@ -183,6 +183,16 @@ class EmehmonFeeTests(TestCase):
         self.assertEqual(charge.charge_type, FolioCharge.ChargeType.EMEHMON)
         self.assertEqual(payment.amount, Decimal("18000.00"))
         self.assertTrue(charge.description.startswith("E-mehmon"))
+        folio = reservation.folio
+        from core.currency import money_sum
+
+        all_charges = money_sum(folio.charges.filter(is_void=False))
+        self.assertEqual(folio.emehmon_charges_total, Decimal("18000.00"))
+        self.assertEqual(folio.emehmon_payments_total, Decimal("18000.00"))
+        # E-mehmon xona/mehmonxona jamiyatiga kirmaydi
+        self.assertEqual(folio.charges_total, all_charges - Decimal("18000.00"))
+        self.assertEqual(folio.payments_total, Decimal("0"))
+        self.assertEqual(folio.balance, folio.charges_total)  # nights posted, unpaid
         with self.assertRaises(ValidationError):
             collect_emehmon_fee(reservation, self.user, method=GuestPayment.Method.CARD)
 

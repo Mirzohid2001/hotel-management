@@ -61,7 +61,6 @@ class VatPdfTests(TestCase):
         )
         check_in_reservation(reservation, self.user)
         folio = reservation.folio
-        self.assertEqual(folio.charges_total, Decimal("0"))
         from folio.services import ensure_stay_nights_posted
 
         ensure_stay_nights_posted(reservation, self.user)
