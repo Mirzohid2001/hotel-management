@@ -406,8 +406,18 @@ def payment_method_breakdown(tenant, start: date, end: date, *, hotel=None) -> d
         for key, _ in choices:
             methods.setdefault(key, {"in": Decimal("0"), "out": Decimal("0")})
 
-    for row in guest_qs.values("method").annotate(total=Sum("amount_base")):
+    for row in (
+        guest_qs.exclude(kind=GuestPayment.Kind.REFUND)
+        .values("method")
+        .annotate(total=Sum("amount_base"))
+    ):
         methods[row["method"]]["in"] += row["total"] or Decimal("0")
+    for row in (
+        guest_qs.filter(kind=GuestPayment.Kind.REFUND)
+        .values("method")
+        .annotate(total=Sum("amount_base"))
+    ):
+        methods[row["method"]]["out"] += row["total"] or Decimal("0")
     for row in company_qs.values("method").annotate(total=Sum("amount_base")):
         methods[row["method"]]["in"] += row["total"] or Decimal("0")
     for row in expense_qs.values("payment_method").annotate(total=Sum("amount_base")):

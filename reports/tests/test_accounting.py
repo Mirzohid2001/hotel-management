@@ -261,3 +261,27 @@ class AccountingReportsTests(TestCase):
     def test_revenue_by_charge_type(self):
         rev = revenue_by_charge_type(self.tenant, self.today.year, self.today.month)
         self.assertGreater(rev["total"], Decimal("0"))
+
+    def test_payment_methods_refunds_are_out_not_in(self):
+        from folio.models import GuestPayment
+        from folio.services import add_payment, open_cash_shift, refund_overpayment
+
+        open_cash_shift(self.tenant, self.user, Decimal("0"), hotel=self.prop)
+        folio = self.reservation.folio
+        add_payment(
+            folio,
+            self.user,
+            amount=Decimal("150000"),
+            method=GuestPayment.Method.CASH,
+        )
+        refund_overpayment(
+            folio,
+            self.user,
+            amount=Decimal("50000"),
+            method=GuestPayment.Method.CASH,
+        )
+        breakdown = payment_method_breakdown(self.tenant, self.today, self.today)
+        cash = next(r for r in breakdown["rows"] if r["key"] == "cash")
+        self.assertEqual(cash["in"], Decimal("150000"))
+        # Sdachi 50k + setUp rasxod 200k (cash)
+        self.assertEqual(cash["out"], Decimal("250000"))
