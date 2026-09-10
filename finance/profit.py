@@ -219,14 +219,23 @@ def record_withdrawal(
     if amount <= 0:
         raise ValidationError(_("Summa 0 dan katta bo‘lishi kerak."))
 
+    from core.currency import to_base_amount
+
+    pay_currency = currency or tenant.currency or "UZS"
     period = ensure_open_period(tenant)
     ledger = build_partner_ledger(tenant, period=period)
     row = next((r for r in ledger["rows"] if r["partner"].pk == partner.pk), None)
     remaining = row["remaining"] if row else ZERO
-    if not allow_overdraw and amount > remaining:
+    _cur, _rate, amount_base = to_base_amount(tenant, amount, pay_currency)
+    if not allow_overdraw and amount_base > remaining:
         raise ValidationError(
-            _("Ulush qoldig‘idan ko‘p: qolgan %(r)s, so‘ralgan %(a)s.")
-            % {"r": remaining, "a": amount}
+            _("Ulush qoldig‘idan ko‘p: qolgan %(r)s %(cur)s, so‘ralgan %(a)s %(pay)s.")
+            % {
+                "r": remaining,
+                "cur": tenant.currency or "UZS",
+                "a": amount,
+                "pay": pay_currency,
+            }
         )
 
     return ProfitWithdrawal.objects.create(
@@ -234,7 +243,7 @@ def record_withdrawal(
         period=period,
         partner=partner,
         amount=amount,
-        currency=currency or tenant.currency or "UZS",
+        currency=pay_currency,
         paid_on=paid_on or timezone.localdate(),
         payment_method=payment_method,
         note=note,

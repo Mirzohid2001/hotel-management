@@ -65,6 +65,8 @@ def folio_has_legacy_prepaid_room(folio: Folio) -> bool:
     """
     from django.db.models import Sum
 
+    from core.currency import to_base_amount
+
     other = FolioCharge.objects.filter(
         folio=folio, charge_type=FolioCharge.ChargeType.ROOM, is_void=False
     ).exclude(description__startswith="Night ")
@@ -74,7 +76,13 @@ def folio_has_legacy_prepaid_room(folio: Folio) -> bool:
     res = getattr(folio, "reservation", None)
     quote = Decimal(getattr(res, "total_amount", None) or 0) if res else Decimal("0")
     if quote > 0:
-        return total >= quote * Decimal("0.5")
+        # total_amount bron valyutasida; amount_base — tenant bazasida
+        _cur, _rate, quote_base = to_base_amount(
+            folio.tenant,
+            quote,
+            getattr(res, "currency", None) or folio.tenant.currency,
+        )
+        return total >= quote_base * Decimal("0.5")
     return True
 
 
@@ -240,17 +248,30 @@ def refund_overpayment(
     Ortib qolgan pulni (avans/sdachi) mehmonga qaytarish.
     Folio credit_amount dan ortiq qaytarib bo‘lmaydi.
     """
+    from core.currency import to_base_amount
+
     if not folio.is_open:
         raise ValidationError(_("Mehmon hisobi yopilgan."))
     credit = folio.credit_amount
     if credit <= 0:
         raise ValidationError(_("Qaytarish uchun ortiqcha to‘lov yo‘q."))
-    fee = Decimal(amount) if amount is not None else credit
-    if fee <= 0:
-        raise ValidationError(_("Qaytarish summasi musbat bo‘lishi kerak."))
-    if fee > credit:
+    pay_currency = currency or folio.tenant.currency or "UZS"
+    if amount is None:
+        # Default: to‘liq credit — bazaviy valyutada
+        fee = credit
+        pay_currency = folio.tenant.currency or "UZS"
+        fee_base = credit
+    else:
+        fee = Decimal(amount)
+        if fee <= 0:
+            raise ValidationError(_("Qaytarish summasi musbat bo‘lishi kerak."))
+        _cur, _rate, fee_base = to_base_amount(
+            folio.tenant, fee, pay_currency, fx_rate=fx_rate
+        )
+    if fee_base > credit:
         raise ValidationError(
-            _("Ortganidan ko‘p qaytarib bo‘lmaydi: avans %(c)s.") % {"c": credit}
+            _("Ortganidan ko‘p qaytarib bo‘lmaydi: avans %(c)s %(cur)s.")
+            % {"c": credit, "cur": folio.tenant.currency or "UZS"}
         )
     refund_note = (note or "").strip() or _("Sdachi — ortiqcha to‘lovni qaytarish")
     payment = add_payment(
@@ -260,7 +281,7 @@ def refund_overpayment(
         method=method,
         note=refund_note,
         kind=GuestPayment.Kind.REFUND,
-        currency=currency,
+        currency=pay_currency,
         fx_rate=fx_rate,
     )
     log_activity(

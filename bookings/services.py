@@ -288,7 +288,7 @@ def _post_timing_fee(folio, user, *, amount, description, marker: str, legacy_ma
         already |= Q(description__startswith=prefix)
     if folio.charges.filter(already, is_void=False).exists():
         return None
-    res = folio.reservation
+    # Early/late fee sozlamalari tenant bazaviy valyutasida (so‘m/$/€)
     return add_charge(
         folio,
         user,
@@ -296,7 +296,7 @@ def _post_timing_fee(folio, user, *, amount, description, marker: str, legacy_ma
         description=f"{marker}: {description}",
         unit_price=amount,
         quantity=Decimal("1"),
-        currency=getattr(res, "currency", None) or folio.tenant.currency,
+        currency=folio.tenant.currency or "UZS",
     )
 
 

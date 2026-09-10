@@ -109,15 +109,24 @@ def record_commission_payment(
     if amount <= 0:
         raise ValidationError(_("Summa musbat bo‘lishi kerak."))
 
+    from core.currency import to_base_amount
+
+    pay_currency = currency or tenant.currency or "UZS"
     report = build_commission_report(tenant, year=year, month=month)
     group = next((g for g in report["groups"] if g["referrer"].pk == referrer.pk), None)
     owed = group["commission_total"] if group else Decimal("0")
     paid = paid_total_for_period(tenant, year=year, month=month, referrer_id=referrer.pk)
     remaining = owed - paid
-    if not allow_overpay and amount > remaining:
+    _cur, _rate, amount_base = to_base_amount(tenant, amount, pay_currency)
+    if not allow_overpay and amount_base > remaining:
         raise ValidationError(
-            _("Qolgan summadan ko‘p: qolgan %(r)s, so‘ralgan %(a)s.")
-            % {"r": remaining, "a": amount}
+            _("Qolgan summadan ko‘p: qolgan %(r)s %(cur)s, so‘ralgan %(a)s %(pay)s.")
+            % {
+                "r": remaining,
+                "cur": tenant.currency or "UZS",
+                "a": amount,
+                "pay": pay_currency,
+            }
         )
 
     return ReferrerCommissionPayment.objects.create(
@@ -126,7 +135,7 @@ def record_commission_payment(
         year=year,
         month=month,
         amount=amount,
-        currency=currency or tenant.currency or "UZS",
+        currency=pay_currency,
         paid_on=paid_on or timezone.localdate(),
         method=method,
         note=(note or "").strip(),

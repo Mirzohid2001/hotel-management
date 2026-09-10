@@ -9,7 +9,10 @@
     </div>
     <p class="payment-modal-meta">
       <span>{{ reservation.code }} · {{ reservation.guest.full_name }}</span>
-      <span>{% trans "Qoldiq" %} <strong class="money">{{ folio.balance|money }}</strong></span>
+      <span>{% trans "Qoldiq" %} <strong class="money">{{ folio.balance|money }} {{ current_tenant.currency|default:"UZS" }}</strong></span>
+    </p>
+    <p class="muted" style="margin:0 0 0.75rem;font-size:0.82rem">
+      {% trans "Summa tanlangan valyutada. Qoldiq — mehmonxona bazaviy valyutasida (kurs bo‘yicha)." %}
     </p>
     {% if errors %}
     <ul class="messages"><li class="error">{% for e in errors %}{{ e }}{% endfor %}</li></ul>

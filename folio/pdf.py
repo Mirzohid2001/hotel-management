@@ -141,6 +141,7 @@ def _header_table(left_lines, right_lines, styles):
 
 
 def _lines_table(header, rows, styles, currency: str):
+    """rows: (desc, qty, amount) yoki (desc, qty, amount, line_currency)."""
     data = [
         [
             Paragraph(header[0], styles["cell"]),
@@ -148,12 +149,17 @@ def _lines_table(header, rows, styles, currency: str):
             Paragraph(header[2], styles["cell_r"]),
         ]
     ]
-    for desc, qty, amount in rows:
+    for row in rows:
+        if len(row) >= 4:
+            desc, qty, amount, line_cur = row[0], row[1], row[2], row[3]
+        else:
+            desc, qty, amount = row[0], row[1], row[2]
+            line_cur = currency
         data.append(
             [
                 Paragraph(str(desc), styles["cell"]),
                 Paragraph(str(qty), styles["cell_r"]),
-                Paragraph(_money(amount, currency), styles["cell_r"]),
+                Paragraph(_money(amount, line_cur or currency), styles["cell_r"]),
             ]
         )
     table = Table(data, colWidths=[105 * mm, 25 * mm, 45 * mm])
@@ -253,7 +259,14 @@ def build_folio_pdf(folio) -> bytes:
     for c in folio.charges.all():
         if getattr(c, "is_void", False):
             continue
-        line_rows.append((c.description, f"{c.quantity:g}", c.amount))
+        line_rows.append(
+            (
+                c.description,
+                f"{c.quantity:g}",
+                c.amount,
+                getattr(c, "currency", None) or currency,
+            )
+        )
     story.append(
         _lines_table(
             [_("Tavsif"), _("Miqdor"), _("Summa")],
@@ -278,7 +291,14 @@ def build_folio_pdf(folio) -> bytes:
             label = p.get_method_display()
             if p.note:
                 label = f"{label} · {p.note}"
-            pay_rows.append((label, "", p.amount))
+            pay_rows.append(
+                (
+                    label,
+                    "",
+                    p.amount,
+                    getattr(p, "currency", None) or currency,
+                )
+            )
         story.append(
             _lines_table(
                 [_("Usul"), "", _("Summa")],
@@ -368,7 +388,14 @@ def build_company_invoice_pdf(invoice) -> bytes:
         desc = line.description
         if line.source_reservation_id:
             desc = f"{desc} · {line.source_reservation.code}"
-        line_rows.append((desc, "1", line.amount))
+        line_rows.append(
+            (
+                desc,
+                "1",
+                line.amount,
+                getattr(line, "currency", None) or currency,
+            )
+        )
     story.append(
         _lines_table(
             [_("Tavsif"), _("Miqdor"), _("Summa")],
@@ -388,7 +415,14 @@ def build_company_invoice_pdf(invoice) -> bytes:
             label = p.get_method_display()
             if p.note:
                 label = f"{label} · {p.note}"
-            pay_rows.append((label, "", p.amount))
+            pay_rows.append(
+                (
+                    label,
+                    "",
+                    p.amount,
+                    getattr(p, "currency", None) or currency,
+                )
+            )
         story.append(
             _lines_table([_("Usul"), "", _("Summa")], pay_rows, styles, currency)
         )

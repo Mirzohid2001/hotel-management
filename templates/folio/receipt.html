@@ -135,15 +135,17 @@
     </thead>
     <tbody>
       {% for c in folio.charges.all %}
-      <tr><td>{{ c.description }}</td><td class="num">{{ c.amount|money }}</td></tr>
+      {% if not c.is_void %}
+      <tr><td>{{ c.description }}</td><td class="num">{{ c.amount|money }} {{ c.currency|default:tenant.currency }}</td></tr>
+      {% endif %}
       {% empty %}
       <tr><td colspan="2" class="muted">—</td></tr>
       {% endfor %}
-      <tr><td>{% trans "Oraliq jami" %}</td><td class="num">{{ folio.charges_total|money }}</td></tr>
+      <tr><td>{% trans "Oraliq jami" %}</td><td class="num">{{ folio.charges_total|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
       {% if folio.tax_percent %}
-      <tr><td>{% trans "QQS" %} ({{ folio.tax_percent }}%)</td><td class="num">{{ folio.tax_amount|money }}</td></tr>
+      <tr><td>{% trans "QQS" %} ({{ folio.tax_percent }}%)</td><td class="num">{{ folio.tax_amount|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
       {% endif %}
-      <tr class="total"><td>{% trans "Jami" %}</td><td class="num">{{ folio.grand_total|money }}</td></tr>
+      <tr class="total"><td>{% trans "Jami" %}</td><td class="num">{{ folio.grand_total|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
     </tbody>
   </table>
 
@@ -158,20 +160,20 @@
       {% if not p.is_void %}
       <tr>
         <td>{{ p.get_method_display }} · {{ p.get_kind_display }}{% if p.note %} · {{ p.note }}{% endif %}</td>
-        <td class="num">{% if p.is_refund %}−{% endif %}{{ p.amount|money }}</td>
+        <td class="num">{% if p.is_refund %}−{% endif %}{{ p.amount|money }} {{ p.currency|default:tenant.currency }}</td>
       </tr>
       {% endif %}
       {% endfor %}
-      <tr class="total"><td>{% trans "To‘langan (sof)" %}</td><td class="num">{{ folio.payments_total|money }}</td></tr>
+      <tr class="total"><td>{% trans "To‘langan (sof)" %}</td><td class="num">{{ folio.payments_total|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
     </tbody>
   </table>
   {% endif %}
 
   <table>
     {% if folio.credit_amount > 0 %}
-    <tr class="total"><td>{% trans "Avans / qaytarilishi kerak" %}</td><td class="num">{{ folio.credit_amount|money }}</td></tr>
+    <tr class="total"><td>{% trans "Avans / qaytarilishi kerak" %}</td><td class="num">{{ folio.credit_amount|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
     {% else %}
-    <tr class="total"><td>{% trans "Qoldiq" %}</td><td class="num">{{ folio.amount_due|money }}</td></tr>
+    <tr class="total"><td>{% trans "Qoldiq" %}</td><td class="num">{{ folio.amount_due|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
     {% endif %}
   </table>
 

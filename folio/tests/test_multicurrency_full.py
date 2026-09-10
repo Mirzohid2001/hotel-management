@@ -158,3 +158,103 @@ class FullMultiCurrencyAccountingTests(TestCase):
         )
         cost = inventory_cost_in_range(self.tenant, self.today, self.today)
         self.assertEqual(cost, Decimal("200000"))  # 2 * 10 USD * 10000
+
+    def test_refund_foreign_currency_uses_base_credit(self):
+        from folio.services import refund_overpayment
+
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+        )
+        folio = open_folio_for_deposit(reservation, self.user)
+        add_charge(
+            folio,
+            self.user,
+            charge_type=FolioCharge.ChargeType.ROOM,
+            description="Night",
+            unit_price=Decimal("50"),
+            currency="USD",
+        )
+        # Pay 60 USD → credit 10 USD = 100_000 UZS
+        add_payment(
+            folio,
+            self.user,
+            amount=Decimal("60"),
+            method=GuestPayment.Method.CARD,
+            currency="USD",
+        )
+        self.assertEqual(folio.credit_amount, Decimal("100000"))
+        refund_overpayment(
+            folio,
+            self.user,
+            amount=Decimal("10"),
+            currency="USD",
+            method=GuestPayment.Method.CARD,
+        )
+        folio.refresh_from_db()
+        self.assertEqual(folio.credit_amount, Decimal("0"))
+
+    def test_timing_fee_posts_in_tenant_currency(self):
+        from bookings.services import _post_timing_fee
+
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+            currency="USD",
+            nightly_rate=Decimal("50"),
+        )
+        folio = open_folio_for_deposit(reservation, self.user)
+        charge = _post_timing_fee(
+            folio,
+            self.user,
+            amount=Decimal("75000"),
+            description="before 14:00",
+            marker="Erta joylash to‘lovi",
+        )
+        self.assertIsNotNone(charge)
+        self.assertEqual(charge.currency, "UZS")
+        self.assertEqual(charge.amount, Decimal("75000"))
+        self.assertEqual(charge.amount_base, Decimal("75000"))
+
+    def test_legacy_prepaid_compares_quote_in_base(self):
+        from folio.services import ensure_stay_nights_posted, folio_has_legacy_prepaid_room
+
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+            currency="USD",
+            nightly_rate=Decimal("50"),
+        )
+        folio = open_folio_for_deposit(reservation, self.user)
+        add_charge(
+            folio,
+            self.user,
+            charge_type=FolioCharge.ChargeType.ROOM,
+            description="beer",
+            unit_price=Decimal("5000"),
+            currency="UZS",
+        )
+        self.assertFalse(folio_has_legacy_prepaid_room(folio))
+        posted = ensure_stay_nights_posted(reservation, self.user)
+        self.assertEqual(posted, 1)

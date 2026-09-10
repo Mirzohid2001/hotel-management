@@ -77,20 +77,37 @@ class RefundForm(forms.Form):
     def __init__(self, *args, tenant=None, max_amount=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.tenant = tenant
+        # max_amount — bazaviy valyutadagi credit (folio.credit_amount)
         self.max_amount = max_amount
         if tenant is not None:
             self.fields["currency"].initial = tenant.currency or "UZS"
         if max_amount is not None and max_amount > 0:
             self.fields["amount"].initial = max_amount
-            self.fields["amount"].widget.attrs["max"] = str(max_amount)
+            self.fields["amount"].help_text = _(
+                "Maksimal avans: %(m)s %(cur)s (bazaviy). Boshqa valyutada kurs bo‘yicha hisoblanadi."
+            ) % {"m": max_amount, "cur": (tenant.currency if tenant else "UZS") or "UZS"}
 
-    def clean_amount(self):
-        amount = self.cleaned_data["amount"]
-        if self.max_amount is not None and amount > self.max_amount:
-            raise forms.ValidationError(
-                _("Ortganidan ko‘p: maksimal %(m)s.") % {"m": self.max_amount}
-            )
-        return amount
+    def clean(self):
+        cleaned = super().clean()
+        amount = cleaned.get("amount")
+        currency = cleaned.get("currency")
+        if (
+            amount is not None
+            and self.max_amount is not None
+            and self.tenant is not None
+        ):
+            from core.currency import to_base_amount
+
+            _cur, _rate, amount_base = to_base_amount(self.tenant, amount, currency)
+            if amount_base > self.max_amount:
+                raise forms.ValidationError(
+                    _("Ortganidan ko‘p: maksimal %(m)s %(cur)s.")
+                    % {
+                        "m": self.max_amount,
+                        "cur": self.tenant.currency or "UZS",
+                    }
+                )
+        return cleaned
 
 
 class VoidForm(forms.Form):

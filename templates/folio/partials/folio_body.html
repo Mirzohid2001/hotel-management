@@ -5,23 +5,23 @@
 <div class="folio-strip" role="group" aria-label="{% trans 'Hisob xulosasi' %}">
   <div class="folio-strip-item">
     <span>{% trans "Xarajat" %}</span>
-    <strong class="money">{{ folio.charges_total|money }}</strong>
+    <strong class="money">{{ folio.charges_total|money }} {{ current_tenant.currency }}</strong>
   </div>
   <div class="folio-strip-item">
     <span>{% trans "QQS" %}</span>
-    <strong class="money">{{ folio.tax_amount|money }}</strong>
+    <strong class="money">{{ folio.tax_amount|money }} {{ current_tenant.currency }}</strong>
   </div>
   <div class="folio-strip-item">
     <span>{% trans "Jami" %}</span>
-    <strong class="money">{{ folio.grand_total|money }}</strong>
+    <strong class="money">{{ folio.grand_total|money }} {{ current_tenant.currency }}</strong>
   </div>
   <div class="folio-strip-item">
     <span>{% trans "To‘langan" %}</span>
-    <strong class="money">{{ folio.payments_total|money }}</strong>
+    <strong class="money">{{ folio.payments_total|money }} {{ current_tenant.currency }}</strong>
   </div>
   <div class="folio-strip-item {% if folio.amount_due > 0 %}is-due{% elif folio.credit_amount > 0 %}is-credit{% endif %}">
     <span>{% if folio.credit_amount > 0 %}{% trans "Ortgan" %}{% else %}{% trans "Qoldiq" %}{% endif %}</span>
-    <strong class="money">{% if folio.credit_amount > 0 %}{{ folio.credit_amount|money }}{% else %}{{ folio.amount_due|money }}{% endif %}</strong>
+    <strong class="money">{% if folio.credit_amount > 0 %}{{ folio.credit_amount|money }}{% else %}{{ folio.amount_due|money }}{% endif %} {{ current_tenant.currency }}</strong>
   </div>
 </div>
 
@@ -143,7 +143,7 @@
         <strong>{{ c.get_charge_type_display }}</strong>
         <span>{{ c.description }}{% if c.quantity and c.quantity != 1 %} · ×{{ c.quantity }}{% endif %}</span>
       </div>
-      <strong class="money folio-line-amt">{{ c.amount|money }}</strong>
+      <strong class="money folio-line-amt">{{ c.amount|money }} {{ c.currency|default:current_tenant.currency }}</strong>
       {% if folio.is_open %}
       <details class="folio-void-details">
         <summary title="{% trans 'Bekor qilish' %}">×</summary>
@@ -170,7 +170,7 @@
           <strong>{{ c.get_charge_type_display }}</strong>
           <span>{{ c.description }}{% if c.void_reason %} · {{ c.void_reason }}{% endif %}</span>
         </div>
-        <strong class="money folio-line-amt">{{ c.amount|money }}</strong>
+        <strong class="money folio-line-amt">{{ c.amount|money }} {{ c.currency|default:current_tenant.currency }}</strong>
       </li>
       {% endfor %}
     </ul>
@@ -208,7 +208,7 @@
         <span>{{ p.get_method_display }}{% if p.note %} · {{ p.note }}{% endif %}</span>
       </div>
       <strong class="money folio-line-amt{% if p.is_refund %} is-out{% endif %}">
-        {% if p.is_refund %}−{% endif %}{{ p.amount|money }}
+        {% if p.is_refund %}−{% endif %}{{ p.amount|money }} {{ p.currency|default:current_tenant.currency }}
       </strong>
       {% if folio.is_open %}
       <details class="folio-void-details">
