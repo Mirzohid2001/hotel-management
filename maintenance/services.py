@@ -1,7 +1,10 @@
+from calendar import monthrange
+from datetime import date
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
@@ -279,3 +282,68 @@ def delete_ticket(ticket: MaintenanceTicket, user=None) -> None:
         object_id=pk,
         payload={"title": title},
     )
+
+
+def maintenance_expense_qs(tenant, *, hotel=None):
+    """Remontga tegishli xarajatlar (joriy + reinvest + arizaga bog‘langan)."""
+    qs = Expense.objects.filter(tenant=tenant).filter(
+        Q(funding=Expense.Funding.REINVESTMENT)
+        | Q(category__name__in=[CAT_OPERATING, CAT_REINVESTMENT])
+        | Q(maintenance_ticket__isnull=False)
+    )
+    if hotel is not None:
+        qs = qs.filter(hotel=hotel)
+    return qs.select_related(
+        "category", "maintenance_ticket", "maintenance_ticket__room", "hotel", "paid_by"
+    )
+
+
+def build_maintenance_statement(tenant, *, year: int, month: int, hotel=None) -> dict:
+    """Oylik Remont bayonnomasi — joriy / reinvestitsiya xarajatlari."""
+    start = date(year, month, 1)
+    end = date(year, month, monthrange(year, month)[1])
+    qs = (
+        maintenance_expense_qs(tenant, hotel=hotel)
+        .filter(
+            status=Expense.Status.PAID,
+            expense_date__gte=start,
+            expense_date__lte=end,
+        )
+        .order_by("expense_date", "id")
+    )
+    operating = Decimal("0")
+    reinvest = Decimal("0")
+    rows = []
+    for e in qs:
+        amount = e.amount_base if e.amount_base is not None else e.amount
+        if e.funding == Expense.Funding.REINVESTMENT:
+            reinvest += amount
+            funding_label = _("Reinvestitsiya")
+        else:
+            operating += amount
+            funding_label = _("Joriy")
+        ticket = e.maintenance_ticket
+        rows.append(
+            {
+                "date": e.expense_date,
+                "title": e.title,
+                "notes": e.notes or "",
+                "funding": e.funding,
+                "funding_label": funding_label,
+                "method": e.get_payment_method_display(),
+                "amount": amount,
+                "ticket_title": ticket.title if ticket else "",
+                "room": ticket.room.number if ticket and ticket.room_id else "",
+            }
+        )
+    return {
+        "start": start,
+        "end": end,
+        "year": year,
+        "month": month,
+        "rows": rows,
+        "count": len(rows),
+        "operating_total": operating,
+        "reinvest_total": reinvest,
+        "grand_total": operating + reinvest,
+    }

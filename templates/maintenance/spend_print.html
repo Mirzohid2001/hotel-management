@@ -1,0 +1,127 @@
+{% load money_fmt i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "Remont cheki" %} · {{ expense.title }}</title>
+  <style>
+    :root {
+      --brand: #c04a00;
+      --ink: #1a1410;
+      --muted: #7a7168;
+      --line: #ddd4c8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      max-width: 520px;
+      margin: 1.5rem auto;
+      padding: 0 1rem 2rem;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    h1 { font-size: 1.25rem; color: var(--brand); margin: 0 0 0.25rem; }
+    .muted { color: var(--muted); }
+    .head {
+      border-bottom: 2px solid var(--brand);
+      padding-bottom: 0.65rem;
+      margin-bottom: 1rem;
+    }
+    .meta { margin: 0.15rem 0; font-size: 0.92rem; }
+    .amount {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      margin: 0.75rem 0;
+    }
+    dl {
+      display: grid;
+      grid-template-columns: 8.5rem 1fr;
+      gap: 0.35rem 0.75rem;
+      margin: 1rem 0;
+      font-size: 0.95rem;
+    }
+    dt { color: var(--muted); }
+    dd { margin: 0; }
+    .actions { margin: 0 0 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button, .actions a {
+      background: var(--brand);
+      color: #fff;
+      border: 0;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: none;
+    }
+    .actions a.ghost {
+      background: transparent;
+      color: var(--brand);
+      border: 1px solid var(--brand);
+    }
+    .sign {
+      margin-top: 2rem;
+      border-top: 1px solid var(--line);
+      padding-top: 0.75rem;
+      font-size: 0.9rem;
+    }
+    @media print {
+      .actions { display: none !important; }
+      body { margin: 0; max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button type="button" onclick="window.print()">{% trans "Chop etish" %}</button>
+    <a class="ghost" href="{% url 'maintenance:list' %}?tab=costs">{% trans "Orqaga" %}</a>
+  </div>
+
+  <header class="head">
+    <h1>{% trans "Remont cheki" %}</h1>
+    <p class="meta"><strong>{{ tenant.name }}</strong>{% if hotel %} · {{ hotel.display_label|default:hotel.name }}{% endif %}</p>
+    <p class="meta muted">
+      {% trans "Chop etilgan" %}: {{ printed_at|date:"d.m.Y H:i" }}
+      {% if printed_by %}· {{ printed_by }}{% endif %}
+    </p>
+  </header>
+
+  <p class="amount">{{ expense.amount_base|default:expense.amount|money }} {{ currency }}</p>
+
+  <dl>
+    <dt>{% trans "Nima" %}</dt>
+    <dd>{{ expense.title }}</dd>
+    <dt>{% trans "Sana" %}</dt>
+    <dd>{{ expense.expense_date|date:"d.m.Y" }}</dd>
+    <dt>{% trans "Manba" %}</dt>
+    <dd>
+      {% if expense.funding == 'reinvestment' %}
+      {% trans "Reinvestitsiya (ulushdan)" %}
+      {% else %}
+      {% trans "Joriy (sof foydadan)" %}
+      {% endif %}
+    </dd>
+    <dt>{% trans "To‘lov" %}</dt>
+    <dd>{{ expense.get_payment_method_display }}</dd>
+    <dt>{% trans "Holat" %}</dt>
+    <dd>{{ expense.get_status_display }}</dd>
+    {% if expense.maintenance_ticket %}
+    <dt>{% trans "Ariza" %}</dt>
+    <dd>
+      {{ expense.maintenance_ticket.title }}
+      {% if expense.maintenance_ticket.room %}
+      · {% trans "Xona" %} {{ expense.maintenance_ticket.room.number }}
+      {% endif %}
+    </dd>
+    {% endif %}
+    {% if expense.notes %}
+    <dt>{% trans "Izoh" %}</dt>
+    <dd>{{ expense.notes }}</dd>
+    {% endif %}
+  </dl>
+
+  <div class="sign">
+    {% trans "Qabul qildi / imzo" %}: ________________
+  </div>
+</body>
+</html>

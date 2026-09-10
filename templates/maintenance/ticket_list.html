@@ -6,8 +6,15 @@
 <div class="expense-page maint-page">
 {% url 'maintenance:create' as create_url %}
 {% url 'maintenance:spend_create' as spend_url %}
+{% url 'maintenance:statement' as statement_url %}
 {% include "includes/page_header.html" with title=_("Ta’mir") eyebrow=_("Operatsiya") subtitle=_("Arizalar va xarajatlar — joriy ta’mir yoki reinvestitsiya.") primary_url=create_url primary_label=_("Yangi ariza") secondary_url=spend_url secondary_label=_("Xarajat") %}
 
+<p class="maint-statement-bar">
+  <a class="btn-ghost btn-sm"
+     href="{{ statement_url }}?year={{ statement_year }}&amp;month={{ statement_month }}"
+     target="_blank" rel="noopener" hx-boost="false">{% trans "Bayonnoma / chek" %}</a>
+  <span class="muted">{% trans "Joriy oy xarajatlari — chop etish / imzo" %}</span>
+</p>
 <nav class="maint-tabs" aria-label="{% trans 'Bo‘lim' %}">
   <a class="maint-tab {% if tab == 'tickets' %}is-active{% endif %}" href="?tab=tickets">{% trans "Arizalar" %}</a>
   <a class="maint-tab {% if tab == 'costs' %}is-active{% endif %}" href="?tab=costs">{% trans "Xarajatlar" %}</a>
@@ -150,6 +157,9 @@
       <h2>{% trans "Xarajatlar" %}</h2>
     </div>
     <a class="btn btn-sm" href="{% url 'maintenance:spend_create' %}">{% trans "Xarajat qo‘shish" %}</a>
+    <a class="btn-ghost btn-sm"
+       href="{% url 'maintenance:statement' %}?year={{ statement_year }}&amp;month={{ statement_month }}"
+       target="_blank" rel="noopener" hx-boost="false">{% trans "Bayonnoma / chek" %}</a>
   </div>
   <p class="maint-hint muted">{% trans "Joriy — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, ulushdan ayiriladi." %}</p>
   <ul class="expense-list maint-list">
@@ -180,6 +190,8 @@
         <strong class="expense-card-amount money">{{ e.amount_base|default:e.amount|money }}</strong>
         <div class="expense-card-actions">
           {% if e.status == 'paid' %}
+          <a class="btn btn-sm" href="{% url 'maintenance:spend_print' e.pk %}"
+             target="_blank" rel="noopener" hx-boost="false">{% trans "Chek" %}</a>
           <a class="btn-ghost btn-sm" href="{% url 'maintenance:spend_edit' e.pk %}">{% trans "Tahrir" %}</a>
           <form method="post" action="{% url 'maintenance:spend_void' e.pk %}"
                 onsubmit="return confirm('{% trans "Hisobdan chiqarilsinmi?" %}');">

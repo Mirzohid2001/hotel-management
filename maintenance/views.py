@@ -18,12 +18,12 @@ from finance.models import Expense
 from .forms import MaintenanceSpendForm, MaintenanceTicketForm
 from .models import MaintenanceTicket
 from .services import (
-    CAT_OPERATING,
-    CAT_REINVESTMENT,
     assign_ticket,
+    build_maintenance_statement,
     cancel_ticket,
     complete_ticket,
     delete_ticket,
+    maintenance_expense_qs,
     open_ticket,
     record_maintenance_spend,
     update_maintenance_spend,
@@ -42,6 +42,18 @@ def _active_hotel(request):
     return getattr(request, "active_property", None)
 
 
+def _parse_year_month(request):
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get("year", today.year))
+        month = int(request.GET.get("month", today.month))
+        if month < 1 or month > 12:
+            raise ValueError
+    except (TypeError, ValueError):
+        year, month = today.year, today.month
+    return year, month
+
+
 @feature_required("maintenance")
 @role_required(*OPS_MANAGER)
 def ticket_list(request):
@@ -50,6 +62,7 @@ def ticket_list(request):
         tab = "tickets"
     status = request.GET.get("status", "open")
     hotel = _active_hotel(request)
+    year, month = _parse_year_month(request)
 
     tickets = MaintenanceTicket.objects.filter(tenant=request.tenant).select_related(
         "room", "assignee", "created_by"
@@ -76,14 +89,9 @@ def ticket_list(request):
     elif status in {s.value for s in MaintenanceTicket.Status}:
         tickets = tickets.filter(status=status)
 
-    costs = Expense.objects.filter(tenant=request.tenant).filter(
-        Q(funding=Expense.Funding.REINVESTMENT)
-        | Q(category__name__in=[CAT_OPERATING, CAT_REINVESTMENT])
-        | Q(maintenance_ticket__isnull=False)
-    ).select_related("category", "maintenance_ticket", "hotel")
-    if hotel is not None:
-        costs = costs.filter(hotel=hotel)
-    costs = costs.order_by("-expense_date", "-id")
+    costs = maintenance_expense_qs(request.tenant, hotel=hotel).order_by(
+        "-expense_date", "-id"
+    )
     cost_operating = costs.filter(
         funding=Expense.Funding.OPERATING, status=Expense.Status.PAID
     ).aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
@@ -106,6 +114,8 @@ def ticket_list(request):
             "costs": costs[:200],
             "cost_operating": cost_operating,
             "cost_reinvest": cost_reinvest,
+            "statement_year": year,
+            "statement_month": month,
         },
     )
 
@@ -341,3 +351,54 @@ def spend_delete(request, pk):
     except ValidationError as exc:
         messages.error(request, "; ".join(exc.messages))
     return redirect(reverse("maintenance:list") + "?tab=costs")
+
+
+@feature_required("maintenance")
+@role_required(*OPS_MANAGER)
+def statement(request):
+    """Remont oylik bayonnoma / chek (chop etish)."""
+    year, month = _parse_year_month(request)
+    hotel = _active_hotel(request)
+    statement_data = build_maintenance_statement(
+        request.tenant, year=year, month=month, hotel=hotel
+    )
+    return render(
+        request,
+        "maintenance/statement.html",
+        {
+            "statement": statement_data,
+            "year": year,
+            "month": month,
+            "tenant": request.tenant,
+            "hotel": hotel,
+            "currency": request.tenant.currency or "UZS",
+            "printed_at": timezone.now(),
+            "printed_by": request.user.get_full_name() or request.user.get_username(),
+        },
+    )
+
+
+@feature_required("maintenance")
+@role_required(*OPS_MANAGER)
+def spend_print(request, pk):
+    """Bitta Remont xarajati cheki."""
+    expense = get_object_or_404(
+        maintenance_expense_qs(request.tenant),
+        pk=pk,
+    )
+    hotel = _active_hotel(request)
+    if hotel is not None and expense.hotel_id and expense.hotel_id != hotel.pk:
+        messages.error(request, _("Bu xarajat boshqa filialga tegishli."))
+        return redirect(reverse("maintenance:list") + "?tab=costs")
+    return render(
+        request,
+        "maintenance/spend_print.html",
+        {
+            "expense": expense,
+            "tenant": request.tenant,
+            "hotel": expense.hotel or hotel,
+            "currency": expense.currency or request.tenant.currency or "UZS",
+            "printed_at": timezone.now(),
+            "printed_by": request.user.get_full_name() or request.user.get_username(),
+        },
+    )

@@ -306,3 +306,36 @@ class MaintenanceReinvestmentTests(TestCase):
         self.assertEqual(
             expenses_in_range(self.tenant, self.today, self.today), Decimal("0")
         )
+
+    def test_statement_and_spend_print(self):
+        record_maintenance_spend(
+            self.tenant,
+            self.user,
+            hotel=self.prop,
+            title="Kran",
+            amount=Decimal("120000"),
+            expense_date=self.today,
+            funding=Expense.Funding.OPERATING,
+            payment_method=Expense.PaymentMethod.CASH,
+            notes="Yangi kran o‘rnatildi",
+        )
+        exp = Expense.objects.filter(tenant=self.tenant, title="Kran").first()
+        self.assertIsNotNone(exp)
+
+        stmt = self.client.get(
+            reverse("maintenance:statement"),
+            {"year": self.today.year, "month": self.today.month},
+        )
+        self.assertEqual(stmt.status_code, 200)
+        self.assertContains(stmt, "Remont bayonnomasi")
+        self.assertContains(stmt, "Kran")
+        self.assertContains(stmt, "120")
+
+        chek = self.client.get(reverse("maintenance:spend_print", args=[exp.pk]))
+        self.assertEqual(chek.status_code, 200)
+        self.assertContains(chek, "Remont cheki")
+        self.assertContains(chek, "Kran")
+
+        listing = self.client.get(reverse("maintenance:list") + "?tab=costs")
+        self.assertContains(listing, "Bayonnoma / chek")
+        self.assertContains(listing, reverse("maintenance:spend_print", args=[exp.pk]))
