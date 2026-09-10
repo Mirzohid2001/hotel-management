@@ -91,8 +91,25 @@
   }
 
   function hideProgress() {
-    if (progress) progress.hidden = true;
-    spaRoot.classList.remove("spa-loading");
+    if (progress) {
+      progress.hidden = true;
+      progress.setAttribute("aria-hidden", "true");
+    }
+    spaRoot.classList.remove("spa-loading", "htmx-settling", "htmx-request", "htmx-swapping");
+  }
+
+  function resetShellChrome() {
+    hideProgress();
+    document.body.classList.remove("modal-open", "nav-lock");
+    var modal = document.getElementById("modal-root");
+    if (modal) modal.innerHTML = "";
+    if (shell.classList.contains("nav-open")) {
+      shell.classList.remove("nav-open");
+      var toggle = document.getElementById("nav-toggle");
+      if (toggle) toggle.setAttribute("aria-expanded", "false");
+      var backdrop = document.getElementById("nav-backdrop");
+      if (backdrop) backdrop.hidden = true;
+    }
   }
 
   function isSpaNavigation(evt) {
@@ -139,11 +156,34 @@
   });
 
   document.body.addEventListener("htmx:historyRestore", function () {
+    /* Orqaga/oldinga: spa-loading qolib ekran oqarib qolmasin */
+    resetShellChrome();
     updateNavActive();
   });
 
   document.body.addEventListener("htmx:responseError", function (evt) {
     if (isSpaNavigation(evt)) hideProgress();
+  });
+
+  document.body.addEventListener("htmx:sendError", function (evt) {
+    if (isSpaNavigation(evt)) hideProgress();
+  });
+
+  document.body.addEventListener("htmx:timeout", function (evt) {
+    if (isSpaNavigation(evt)) hideProgress();
+  });
+
+  /* Brauzer nazad / bfcache: loading holatini tozalash */
+  window.addEventListener("pageshow", function (evt) {
+    if (evt.persisted || spaRoot.classList.contains("spa-loading")) {
+      resetShellChrome();
+      updateNavActive();
+    }
+  });
+
+  window.addEventListener("popstate", function () {
+    /* HTMX historyRestore kechiksa ham oqarishni darhol olib tashlash */
+    hideProgress();
   });
 
   /* Mobile menyu — navigatsiyadan keyin yopish */
