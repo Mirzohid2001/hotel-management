@@ -6,8 +6,7 @@ from django.utils import timezone
 
 from bookings.models import Reservation
 from finance.models import Expense
-from folio.models import FolioCharge, GuestPayment
-from hr.models import SalaryPayment
+from folio.models import FolioCharge
 from properties.models import Room
 
 
@@ -85,8 +84,11 @@ def occupancy_stats(tenant, day: date, *, hotel=None) -> dict:
 
 def revenue_on(tenant, day: date, *, hotel=None) -> Decimal:
     from folio.models import GuestPayment
+    from folio.services import emehmon_payment_q
 
-    qs = GuestPayment.objects.filter(tenant=tenant, created_at__date=day, is_void=False)
+    qs = GuestPayment.objects.filter(
+        tenant=tenant, created_at__date=day, is_void=False
+    ).exclude(emehmon_payment_q())
     if hotel is not None:
         qs = qs.filter(folio__reservation__hotel=hotel)
     incoming = (
@@ -101,33 +103,37 @@ def revenue_on(tenant, day: date, *, hotel=None) -> Decimal:
 
 
 def charges_on(tenant, day: date, *, hotel=None) -> Decimal:
+    from folio.services import emehmon_charge_q
+
     qs = FolioCharge.objects.filter(
         tenant=tenant, created_at__date=day, is_void=False
-    )
+    ).exclude(emehmon_charge_q())
     if hotel is not None:
         qs = qs.filter(folio__reservation__hotel=hotel)
     return qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
 
 
 def expenses_in_month(tenant, year: int, month: int, *, hotel=None) -> Decimal:
+    from reports.accounting import _paid_expense_month_q
+
     qs = Expense.objects.filter(
         tenant=tenant,
-        expense_date__year=year,
-        expense_date__month=month,
-        status__in=[Expense.Status.APPROVED, Expense.Status.PAID],
-    )
+        status=Expense.Status.PAID,
+    ).filter(_paid_expense_month_q(year, month))
     if hotel is not None:
         qs = qs.filter(hotel=hotel)
     return qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
 
 
 def payroll_in_month(tenant, year: int, month: int) -> Decimal:
-    return (
-        SalaryPayment.objects.filter(
-            tenant=tenant, paid_at__year=year, paid_at__month=month
-        ).aggregate(s=Sum("amount_base"))["s"]
-        or Decimal("0")
-    )
+    """Yalpi mehnat xarajati — cash P&L bilan bir xil."""
+    from calendar import monthrange
+
+    from reports.accounting import payroll_in_range
+
+    start = date(year, month, 1)
+    end = date(year, month, monthrange(year, month)[1])
+    return payroll_in_range(tenant, start, end)
 
 
 def pnl_lite(tenant, year: int, month: int, *, hotel=None) -> dict:

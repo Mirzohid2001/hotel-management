@@ -135,17 +135,17 @@ class FullMultiCurrencyAccountingTests(TestCase):
             unit_cost=Decimal("10"),
             sell_price=Decimal("20"),
             currency="USD",
-            quantity_on_hand=Decimal("0"),
+            quantity_on_hand=Decimal("2"),
         )
         adjust_stock(
             item,
-            movement_type=StockMovement.MovementType.IN,
+            movement_type=StockMovement.MovementType.OUT,
             quantity=Decimal("2"),
             user=self.user,
-            note="buy",
+            note="sale",
         )
         cost = inventory_cost_in_range(self.tenant, self.today, self.today)
-        self.assertEqual(cost, Decimal("200000"))  # 2 * 10 USD * 10000
+        self.assertEqual(cost, Decimal("200000"))  # 2 * 10 USD * 10000 COGS
 
     def test_refund_foreign_currency_uses_base_credit(self):
         from folio.services import refund_overpayment

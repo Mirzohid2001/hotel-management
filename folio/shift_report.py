@@ -37,6 +37,8 @@ def movements_in_shift(shift: CashShift) -> dict:
 
 
 def cash_out_in_shift(shift: CashShift) -> dict:
+    from hr.models import SalaryAdvance
+
     start, end = _shift_window(shift)
     expense_qs = Expense.objects.filter(
         tenant=shift.tenant,
@@ -53,25 +55,37 @@ def cash_out_in_shift(shift: CashShift) -> dict:
         paid_at__gte=start,
         paid_at__lte=end,
     )
+    advance_qs = SalaryAdvance.objects.filter(
+        tenant=shift.tenant,
+        advance_date__gte=start.date(),
+        advance_date__lte=end.date(),
+    )
     expense_total = expense_qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
     payroll_total = payroll_qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+    advance_total = advance_qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
     return {
         "expenses": expense_total,
         "payroll": payroll_total,
-        "total": expense_total + payroll_total,
+        "advances": advance_total,
+        "total": expense_total + payroll_total + advance_total,
         "expense_rows": list(expense_qs.order_by("-paid_at")[:20]),
         "payroll_rows": list(payroll_qs.select_related("item__employee").order_by("-paid_at")[:20]),
+        "advance_rows": list(advance_qs.select_related("employee").order_by("-advance_date")[:20]),
     }
 
 
 def payments_in_shift(shift: CashShift) -> dict:
+    from folio.services import emehmon_payment_q
+
     start, end = _shift_window(shift)
     bound_cash = GuestPayment.objects.filter(
         tenant=shift.tenant,
         cash_shift=shift,
         method=GuestPayment.Method.CASH,
         is_void=False,
-    ).select_related("folio__reservation", "folio__reservation__guest")
+    ).exclude(emehmon_payment_q()).select_related(
+        "folio__reservation", "folio__reservation__guest"
+    )
     legacy_cash = GuestPayment.objects.filter(
         tenant=shift.tenant,
         method=GuestPayment.Method.CASH,
@@ -79,21 +93,27 @@ def payments_in_shift(shift: CashShift) -> dict:
         is_void=False,
         created_at__gte=start,
         created_at__lte=end,
-    ).select_related("folio__reservation", "folio__reservation__guest")
+    ).exclude(emehmon_payment_q()).select_related(
+        "folio__reservation", "folio__reservation__guest"
+    )
     card = GuestPayment.objects.filter(
         tenant=shift.tenant,
         method=GuestPayment.Method.CARD,
         is_void=False,
         created_at__gte=start,
         created_at__lte=end,
-    ).select_related("folio__reservation", "folio__reservation__guest")
+    ).exclude(emehmon_payment_q()).select_related(
+        "folio__reservation", "folio__reservation__guest"
+    )
     transfer = GuestPayment.objects.filter(
         tenant=shift.tenant,
         method=GuestPayment.Method.TRANSFER,
         is_void=False,
         created_at__gte=start,
         created_at__lte=end,
-    ).select_related("folio__reservation", "folio__reservation__guest")
+    ).exclude(emehmon_payment_q()).select_related(
+        "folio__reservation", "folio__reservation__guest"
+    )
     if shift.hotel_id:
         hotel_q = {"folio__reservation__hotel_id": shift.hotel_id}
         legacy_cash = legacy_cash.filter(**hotel_q)

@@ -12,7 +12,7 @@ from folio.models import CompanyPayment, Folio, FolioCharge, GuestPayment
 from folio.services import EMEHMON_LEGACY_MARKERS
 from hr.models import SalaryAdvance, SalaryPayment
 
-from .services import adr_revpar, charges_on, payroll_in_month, pnl_lite, revenue_on
+from .services import adr_revpar, charges_on, pnl_lite, revenue_on
 
 
 def _emehmon_payment_q() -> Q:
@@ -23,13 +23,28 @@ def _emehmon_payment_q() -> Q:
     return q
 
 
+def _paid_expense_date_q(start: date, end: date) -> Q:
+    """PAID: paid_at sanasi; legacy (paid_at yo‘q) → expense_date."""
+    return Q(paid_at__date__gte=start, paid_at__date__lte=end) | Q(
+        paid_at__isnull=True, expense_date__gte=start, expense_date__lte=end
+    )
+
+
+def _paid_expense_month_q(year: int, month: int) -> Q:
+    return Q(paid_at__year=year, paid_at__month=month) | Q(
+        paid_at__isnull=True, expense_date__year=year, expense_date__month=month
+    )
+
+
 def revenue_by_charge_type(tenant, year: int, month: int, *, hotel=None) -> dict:
+    from folio.services import emehmon_charge_q
+
     qs = FolioCharge.objects.filter(
         tenant=tenant,
         is_void=False,
         created_at__year=year,
         created_at__month=month,
-    ).exclude(charge_type=FolioCharge.ChargeType.EMEHMON)
+    ).exclude(emehmon_charge_q())
     if hotel is not None:
         qs = qs.filter(folio__reservation__hotel=hotel)
     rows = qs.values("charge_type").annotate(total=Sum("amount_base")).order_by("charge_type")
@@ -90,26 +105,36 @@ def cash_revenue_in_range(tenant, start: date, end: date, *, hotel=None) -> dict
 
 
 def expenses_in_range(tenant, start: date, end: date, *, hotel=None) -> Decimal:
+    """Naqd asos: faqat to‘langan rasxodlar (paid_at; yo‘q bo‘lsa expense_date)."""
     qs = Expense.objects.filter(
         tenant=tenant,
-        expense_date__gte=start,
-        expense_date__lte=end,
-        status__in=[Expense.Status.APPROVED, Expense.Status.PAID],
-    )
+        status=Expense.Status.PAID,
+    ).filter(_paid_expense_date_q(start, end))
     if hotel is not None:
         qs = qs.filter(hotel=hotel)
     return qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
 
 
 def payroll_in_range(tenant, start: date, end: date) -> Decimal:
-    return (
-        SalaryPayment.objects.filter(
-            tenant=tenant,
-            paid_at__date__gte=start,
-            paid_at__date__lte=end,
-        ).aggregate(s=Sum("amount_base"))["s"]
-        or Decimal("0")
-    )
+    """To‘langan oyliklarning yalpi mehnat xarajati (baza+bonus−ushlama)."""
+    from hr.models import PayrollItem
+
+    total = Decimal("0")
+    items = PayrollItem.objects.filter(
+        tenant=tenant,
+        payment__isnull=False,
+        payment__paid_at__date__gte=start,
+        payment__paid_at__date__lte=end,
+    ).only("base_amount", "bonus", "deduction")
+    for item in items:
+        gross = (
+            (item.base_amount or Decimal("0"))
+            + (item.bonus or Decimal("0"))
+            - (item.deduction or Decimal("0"))
+        )
+        if gross > 0:
+            total += gross
+    return total
 
 
 def cash_revenue_in_month(tenant, year: int, month: int, *, hotel=None) -> dict:
@@ -137,13 +162,20 @@ def cash_revenue_in_month(tenant, year: int, month: int, *, hotel=None) -> dict:
     }
 
 
-def expenses_by_category(tenant, year: int, month: int, *, hotel=None) -> dict:
-    qs = Expense.objects.filter(
-        tenant=tenant,
-        expense_date__year=year,
-        expense_date__month=month,
-        status__in=[Expense.Status.APPROVED, Expense.Status.PAID],
-    )
+def expenses_by_category(tenant, year: int, month: int, *, hotel=None, basis="cash") -> dict:
+    """basis=cash → faqat PAID (paid_at); accrual → APPROVED+PAID (expense_date)."""
+    if basis == "accrual":
+        qs = Expense.objects.filter(
+            tenant=tenant,
+            expense_date__year=year,
+            expense_date__month=month,
+            status__in=[Expense.Status.APPROVED, Expense.Status.PAID],
+        )
+    else:
+        qs = Expense.objects.filter(
+            tenant=tenant,
+            status=Expense.Status.PAID,
+        ).filter(_paid_expense_month_q(year, month))
     if hotel is not None:
         qs = qs.filter(hotel=hotel)
     rows = (
@@ -183,7 +215,7 @@ def advances_in_range(tenant, start: date, end: date) -> Decimal:
 
 
 def commission_in_range(tenant, start: date, end: date, *, hotel=None) -> Decimal:
-    """Checkout tushgan bronlar bo‘yicha hisoblangan yo‘naltiruvchi komissiyasi."""
+    """Faqat chiqish qilingan bronlar bo‘yicha yo‘naltiruvchi komissiyasi."""
     from bookings.commission import reservation_commission_amount
     from bookings.models import Reservation
 
@@ -191,14 +223,9 @@ def commission_in_range(tenant, start: date, end: date, *, hotel=None) -> Decima
         Reservation.objects.filter(
             tenant=tenant,
             referrer__isnull=False,
+            status=Reservation.Status.CHECKED_OUT,
             check_out__gte=start,
             check_out__lte=end,
-        )
-        .exclude(
-            status__in=[
-                Reservation.Status.CANCELLED,
-                Reservation.Status.NO_SHOW,
-            ]
         )
         .select_related("folio")
         .prefetch_related("folio__charges")
@@ -221,7 +248,7 @@ def commission_in_month(tenant, year: int, month: int, *, hotel=None) -> Decimal
 
 def inventory_cost_in_range(tenant, start: date, end: date, *, hotel=None) -> Decimal:
     """
-    Ombor tannarxi (bazaviy valyuta): kirim × unit_cost, mahsulot valyutasi bo‘yicha.
+    Ombor tannarxi (COGS): chiqim (OUT) × unit_cost, bazaviy valyuta.
     """
     from core.currency import to_base_amount
     from inventory.models import StockMovement
@@ -229,7 +256,7 @@ def inventory_cost_in_range(tenant, start: date, end: date, *, hotel=None) -> De
     total = Decimal("0")
     moves = StockMovement.objects.filter(
         tenant=tenant,
-        movement_type=StockMovement.MovementType.IN,
+        movement_type=StockMovement.MovementType.OUT,
         created_at__date__gte=start,
         created_at__date__lte=end,
     ).select_related("item")
@@ -327,11 +354,13 @@ def build_pnl_report(tenant, year: int, month: int, *, basis="cash", hotel=None)
             {"label": _("Kompaniya to‘lovlari"), "amount": rev["company_payments"]},
         ]
 
-    exp = expenses_by_category(tenant, year, month, hotel=hotel)
+    exp = expenses_by_category(tenant, year, month, hotel=hotel, basis=basis)
     shortfall = emehmon_shortfall_for_range(tenant, start, end, hotel=hotel)
+    # Mehnat: to‘langan qatorlar yalpi (baza+bonus−ushlama)
+    payroll = payroll_in_range(tenant, start, end)
     costs = _operating_bundle(
         expenses=exp["total"],
-        payroll=payroll_in_month(tenant, year, month),
+        payroll=payroll,
         advances=advances_in_month(tenant, year, month),
         commission=commission_in_month(tenant, year, month, hotel=hotel),
         inventory=inventory_cost_in_month(tenant, year, month, hotel=hotel),
@@ -339,14 +368,14 @@ def build_pnl_report(tenant, year: int, month: int, *, basis="cash", hotel=None)
     )
     cost_breakdown = list(exp["breakdown"])
     if costs["payroll"]:
-        cost_breakdown.append({"label": _("Oylik to‘lovlar"), "amount": costs["payroll"]})
+        cost_breakdown.append({"label": _("Oylik (yalpi)"), "amount": costs["payroll"]})
     if costs["commission"]:
         cost_breakdown.append(
             {"label": _("Yo‘naltiruvchi komissiya"), "amount": costs["commission"]}
         )
     if costs["inventory_cost"]:
         cost_breakdown.append(
-            {"label": _("Ombor xarid (tannarx)"), "amount": costs["inventory_cost"]}
+            {"label": _("Ombor tannarx (sotilgan)"), "amount": costs["inventory_cost"]}
         )
     if costs["emehmon_shortfall"]:
         cost_breakdown.append(
@@ -374,7 +403,7 @@ def payment_method_breakdown(tenant, start: date, end: date, *, hotel=None) -> d
         is_void=False,
         created_at__date__gte=start,
         created_at__date__lte=end,
-    )
+    ).exclude(_emehmon_payment_q())
     company_qs = CompanyPayment.objects.filter(
         tenant=tenant,
         is_void=False,
@@ -383,14 +412,17 @@ def payment_method_breakdown(tenant, start: date, end: date, *, hotel=None) -> d
     )
     expense_qs = Expense.objects.filter(
         tenant=tenant,
-        expense_date__gte=start,
-        expense_date__lte=end,
         status=Expense.Status.PAID,
-    )
+    ).filter(_paid_expense_date_q(start, end))
     payroll_qs = SalaryPayment.objects.filter(
         tenant=tenant,
         paid_at__date__gte=start,
         paid_at__date__lte=end,
+    )
+    advance_qs = SalaryAdvance.objects.filter(
+        tenant=tenant,
+        advance_date__gte=start,
+        advance_date__lte=end,
     )
     if hotel is not None:
         guest_qs = guest_qs.filter(folio__reservation__hotel=hotel)
@@ -425,6 +457,11 @@ def payment_method_breakdown(tenant, start: date, end: date, *, hotel=None) -> d
         methods[row["payment_method"]]["out"] += row["total"] or Decimal("0")
     for row in payroll_qs.values("method").annotate(total=Sum("amount_base")):
         methods[row["method"]]["out"] += row["total"] or Decimal("0")
+    # Avans — kassa chiqimi (P&L sofida emas, lekin flash/kassa net uchun)
+    adv_total = advance_qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+    if adv_total:
+        methods.setdefault("cash", {"in": Decimal("0"), "out": Decimal("0")})
+        methods["cash"]["out"] += adv_total
 
     labels = dict(GuestPayment.Method.choices)
     rows = []

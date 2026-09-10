@@ -122,7 +122,7 @@
     </tbody>
   </table>
 
-  {% if report.cash_out.expense_rows or report.cash_out.payroll_rows %}
+  {% if report.cash_out.expense_rows or report.cash_out.payroll_rows or report.cash_out.advance_rows %}
   <h2>{% trans "Naqd chiqimlar" %}</h2>
   <table>
     <thead><tr><th>{% trans "Turi" %}</th><th>{% trans "Izoh" %}</th><th class="num">{% trans "Summa" %}</th></tr></thead>
@@ -132,6 +132,9 @@
       {% endfor %}
       {% for p in report.cash_out.payroll_rows %}
       <tr><td>{% trans "Oylik" %}</td><td>{{ p.item.employee.full_name }}</td><td class="num">−{{ p.amount|money }}</td></tr>
+      {% endfor %}
+      {% for a in report.cash_out.advance_rows %}
+      <tr><td>{% trans "Avans" %}</td><td>{{ a.employee.full_name }}</td><td class="num">−{{ a.amount|money }}</td></tr>
       {% endfor %}
     </tbody>
   </table>

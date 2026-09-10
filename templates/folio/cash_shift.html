@@ -177,10 +177,10 @@
 </details>
 {% endif %}
 
-{% if report.cash_out.expense_rows or report.cash_out.payroll_rows %}
+{% if report.cash_out.expense_rows or report.cash_out.payroll_rows or report.cash_out.advance_rows %}
 <details class="section-panel cash-shift-fold is-panel">
   <summary class="dash-section-head cash-shift-fold-summary">
-    <h2>{% trans "Naqd chiqimlar (rasxod / oylik)" %}</h2>
+    <h2>{% trans "Naqd chiqimlar (rasxod / oylik / avans)" %}</h2>
   </summary>
   <ul class="list entity-list">
     {% for e in report.cash_out.expense_rows %}
@@ -193,6 +193,12 @@
     <li class="guest-chip entity-row">
       <span>{% trans "Oylik" %}: {{ p.item.employee.full_name }}</span>
       <span class="money">−{{ p.amount|money }}</span>
+    </li>
+    {% endfor %}
+    {% for a in report.cash_out.advance_rows %}
+    <li class="guest-chip entity-row">
+      <span>{% trans "Avans" %}: {{ a.employee.full_name }}</span>
+      <span class="money">−{{ a.amount|money }}</span>
     </li>
     {% endfor %}
   </ul>

@@ -140,8 +140,15 @@ class AccountingReportsTests(TestCase):
         self.reservation.referrer = referrer
         self.reservation.commission_percent = Decimal("10")
         self.reservation.check_out = self.today
+        self.reservation.status = self.reservation.Status.CHECKED_OUT
         self.reservation.save(
-            update_fields=["referrer", "commission_percent", "check_out", "updated_at"]
+            update_fields=[
+                "referrer",
+                "commission_percent",
+                "check_out",
+                "status",
+                "updated_at",
+            ]
         )
 
         stock = StockItem.objects.create(
@@ -150,12 +157,12 @@ class AccountingReportsTests(TestCase):
             name="Cola",
             sku="cola",
             unit_cost=Decimal("5000"),
-            quantity_on_hand=Decimal("0"),
+            quantity_on_hand=Decimal("10"),
             is_minibar=True,
         )
         adjust_stock(
             stock,
-            movement_type=StockMovement.MovementType.IN,
+            movement_type=StockMovement.MovementType.OUT,
             quantity=Decimal("10"),
             user=self.user,
         )
@@ -164,7 +171,8 @@ class AccountingReportsTests(TestCase):
             self.tenant, self.today.year, self.today.month, basis="cash"
         )
         self.assertEqual(report["advances"], Decimal("500000"))
-        self.assertEqual(report["payroll"], item.net_amount)
+        # Yalpi mehnat = baza (avans ushlansa ham)
+        self.assertEqual(report["payroll"], Decimal("3000000"))
         self.assertEqual(report["inventory_cost"], Decimal("50000"))
         self.assertGreater(report["commission"], Decimal("0"))
         # Avans sof foydadan ayirilmaydi (xodim qarzi)

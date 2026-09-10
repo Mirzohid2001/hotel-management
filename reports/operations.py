@@ -33,14 +33,16 @@ def room_status_summary(tenant, *, hotel=None) -> list[dict]:
 
 
 def revenue_trend(tenant, end_day: date, *, days: int = 7, hotel=None) -> list[dict]:
-    """Kunlik sof tushum (kirim − sdachi/refund), dashboard grafik uchun."""
+    """Kunlik sof tushum (kirim − sdachi/refund), E-mehmon siz."""
+    from folio.services import emehmon_payment_q
+
     start = end_day - timedelta(days=days - 1)
     qs = GuestPayment.objects.filter(
         tenant=tenant,
         is_void=False,
         created_at__date__gte=start,
         created_at__date__lte=end_day,
-    )
+    ).exclude(emehmon_payment_q())
     if hotel is not None:
         qs = qs.filter(folio__reservation__hotel=hotel)
     incoming = {

@@ -115,7 +115,7 @@
 </section>
 {% endif %}
 
-{% if report.cash_out.expense_rows or report.cash_out.payroll_rows %}
+{% if report.cash_out.expense_rows or report.cash_out.payroll_rows or report.cash_out.advance_rows %}
 <section class="section-panel">
   <h2>{% trans "Naqd chiqimlar" %}</h2>
   <ul class="list entity-list">
@@ -129,6 +129,12 @@
     <li class="guest-chip entity-row">
       <span>{% trans "Oylik" %}: {{ p.item.employee.full_name }}</span>
       <span class="money">−{{ p.amount|money }}</span>
+    </li>
+    {% endfor %}
+    {% for a in report.cash_out.advance_rows %}
+    <li class="guest-chip entity-row">
+      <span>{% trans "Avans" %}: {{ a.employee.full_name }}</span>
+      <span class="money">−{{ a.amount|money }}</span>
     </li>
     {% endfor %}
   </ul>

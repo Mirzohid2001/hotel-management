@@ -149,8 +149,12 @@ def transfer_charges_to_company(
 
 @transaction.atomic
 def transfer_open_charges_to_company(folio: Folio, user, *, company=None, notes: str = ""):
+    from folio.services import emehmon_charge_q
+
     ids = list(
-        folio.charges.filter(is_void=False).values_list("pk", flat=True)
+        folio.charges.filter(is_void=False)
+        .exclude(emehmon_charge_q())
+        .values_list("pk", flat=True)
     )
     return transfer_charges_to_company(folio, user, ids, company=company, notes=notes)
 
