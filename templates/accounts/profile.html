@@ -4,13 +4,29 @@
 {% block title %}{% trans "Profil" %}{% endblock %}
 
 {% block content %}
-{% include "includes/page_header.html" with title=_("Profil") subtitle=user_obj.get_full_name|default:user_obj.username %}
+{% url 'accounts:profile_edit' as edit_url %}
+{% include "includes/page_header.html" with title=_("Profil") subtitle=user_obj.get_full_name|default:user_obj.username primary_url=edit_url primary_label=_("Tahrirlash") %}
 
 <section class="section-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Hisob" %}</p>
+      <h2>{{ user_obj.get_full_name|default:user_obj.username }}</h2>
+    </div>
+    <span class="detail-actions">
+      <a class="btn-ghost btn-sm" href="{% url 'accounts:profile_edit' %}">{% trans "Tahrirlash" %}</a>
+      <form method="post" action="{% url 'accounts:profile_delete' %}" class="inline-form" hx-boost="false"
+            onsubmit="return confirm('{% trans "Akkauntingiz o‘chirilsinmi? Tizimga kira olmaysiz." %}');">
+        {% csrf_token %}
+        <button type="submit" class="btn-ghost btn-sm">{% trans "O‘chirish" %}</button>
+      </form>
+    </span>
+  </div>
   <ul class="kv-list">
+    <li><span>{% trans "Login" %}</span><span>@{{ user_obj.username }}</span></li>
     <li><span>{% trans "Email" %}</span><span>{{ user_obj.email|default:"—" }}</span></li>
     <li><span>{% trans "Telefon" %}</span><span>{{ user_obj.phone|default:"—" }}</span></li>
-    <li><span>{% trans "Rol" %}</span><span>{{ current_membership.get_role_display }}</span></li>
+    <li><span>{% trans "Rol" %}</span><span>{% if current_membership %}{{ current_membership.get_role_display }}{% else %}—{% endif %}</span></li>
   </ul>
 </section>
 {% endblock %}
