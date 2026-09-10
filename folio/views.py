@@ -706,10 +706,11 @@ def invoice_detail(request, pk):
         {
             "invoice": invoice,
             "payment_form": CompanyPaymentForm(
+                tenant=request.tenant,
                 initial={
                     "amount": invoice.balance if invoice.balance > 0 else Decimal("0"),
                     "method": GuestPayment.Method.TRANSFER,
-                }
+                },
             ),
         },
     )

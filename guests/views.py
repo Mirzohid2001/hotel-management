@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.db.models import Exists, OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 
@@ -138,10 +139,32 @@ def guest_detail(request, pk):
     guest = get_object_or_404(Guest, pk=pk, tenant=request.tenant)
     doc_form = GuestDocumentForm()
     note_form = GuestNoteForm()
+    reservations = (
+        Reservation.objects.filter(tenant=request.tenant, guest=guest)
+        .select_related("room", "hotel")
+        .order_by("-check_in", "-pk")[:30]
+    )
+    in_house_reservation_id = (
+        Reservation.objects.filter(
+            tenant=request.tenant,
+            guest=guest,
+            status=Reservation.Status.CHECKED_IN,
+        )
+        .order_by("-check_in")
+        .values_list("pk", flat=True)
+        .first()
+    )
     return render(
         request,
         "guests/guest_detail.html",
-        {"guest": guest, "doc_form": doc_form, "note_form": note_form},
+        {
+            "guest": guest,
+            "doc_form": doc_form,
+            "note_form": note_form,
+            "reservations": reservations,
+            "in_house_reservation_id": in_house_reservation_id,
+            "new_booking_url": f"{reverse('bookings:create')}?guest={guest.pk}",
+        },
     )
 
 

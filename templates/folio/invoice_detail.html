@@ -2,7 +2,7 @@
 {% load i18n money_fmt %}
 {% block title %}{{ invoice.code }}{% endblock %}
 {% block content %}
-<div class="app-page">
+<div class="app-page expense-page">
 {% url 'folio:city_ledger' as back_url %}
 {% url 'folio:invoice_pdf' invoice.pk as pdf_url %}
 {% include "includes/page_header.html" with title=invoice.code eyebrow=_("Kompaniya hisobi") primary_href=pdf_url primary_label=_("PDF") secondary_url=back_url secondary_label=_("Debitorlar") %}
@@ -11,52 +11,75 @@
   <a href="{% url 'guests:company_detail' invoice.company_id %}">{{ invoice.company.name }}</a>
   · {{ invoice.get_status_display }}
   {% if invoice.hotel %} · {{ invoice.hotel.name }}{% endif %}
-  · {% trans "Berilgan" %}: {{ invoice.issued_at }}
-  {% if invoice.due_date %} · {% trans "Muddat" %}: {{ invoice.due_date }}{% endif %}
+  · {% trans "Berilgan" %}: {{ invoice.issued_at|date:"d.m.Y" }}
+  {% if invoice.due_date %} · {% trans "Muddat" %}: {{ invoice.due_date|date:"d.m.Y" }}{% endif %}
 </p>
 
-<div class="folio-summary folio-summary-premium">
-  <div class="stat folio-stat">
-    <span class="dash-stat-lbl">{% trans "Qatorlar" %}</span>
-    <strong class="money">{{ invoice.lines_total|money }}</strong>
+<div class="expense-summary">
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "Qatorlar" %}</span>
+    <strong class="expense-summary-val money">{{ invoice.lines_total|money }}</strong>
   </div>
-  <div class="stat folio-stat">
-    <span class="dash-stat-lbl">{% trans "To‘lovlar" %}</span>
-    <strong class="money">{{ invoice.payments_total|money }}</strong>
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "To‘lovlar" %}</span>
+    <strong class="expense-summary-val money">{{ invoice.payments_total|money }}</strong>
   </div>
-  <div class="stat folio-stat {% if invoice.balance > 0 %}warn{% endif %}">
-    <span class="dash-stat-lbl">{% trans "Qoldiq" %}</span>
-    <strong class="money">{{ invoice.balance|money }}</strong>
+  <div class="expense-summary-card {% if invoice.balance > 0 %}is-warn{% else %}is-accent{% endif %}">
+    <span class="expense-summary-lbl">{% trans "Qoldiq" %}</span>
+    <strong class="expense-summary-val money">{{ invoice.balance|money }}</strong>
   </div>
 </div>
 
 <section class="section-panel">
-  <h2>{% trans "Qatorlar" %}</h2>
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Hisob" %}</p>
+      <h2>{% trans "Qatorlar" %}</h2>
+    </div>
+  </div>
   <ul class="list entity-list">
     {% for line in invoice.lines.all %}
     <li class="guest-chip entity-row">
-      <span>{{ line.description }}{% if line.source_reservation %} · {{ line.source_reservation.code }}{% endif %}</span>
+      <span class="entity-meta">
+        {{ line.description }}
+        {% if line.source_reservation %}
+        · <a href="{% url 'bookings:detail' line.source_reservation_id %}">{{ line.source_reservation.code }}</a>
+        {% endif %}
+      </span>
       <span class="money">{{ line.amount|money }}</span>
     </li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Qator yo‘q") compact=1 %}
     {% endfor %}
   </ul>
 </section>
 
-<section class="section-panel">
-  <h2>{% trans "To‘lovlar" %}</h2>
+<section class="section-panel" id="invoice-pay">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Kassa" %}</p>
+      <h2>{% trans "To‘lovlar" %}</h2>
+    </div>
+  </div>
   <ul class="list entity-list">
     {% for p in invoice.payments.all %}
     <li class="guest-chip entity-row {% if p.is_void %}is-void{% endif %}">
-      <span>{{ p.get_method_display }}{% if p.note %} · {{ p.note }}{% endif %}</span>
+      <span class="entity-meta">{{ p.get_method_display }}{% if p.note %} · {{ p.note }}{% endif %}</span>
       <span class="money">{{ p.amount|money }}</span>
     </li>
-    {% empty %}<li class="muted empty-row">{% trans "Yo‘q" %}</li>{% endfor %}
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("To‘lov yo‘q") hint=_("Qoldiqni yopish uchun pastdagi formadan to‘lov qabul qiling.") compact=1 %}
+    {% endfor %}
   </ul>
   {% if invoice.status != 'void' and invoice.status != 'paid' %}
-  <form method="post" action="{% url 'folio:invoice_pay' invoice.pk %}" class="stack-form app-form panel is-embedded form-block-follow">
+  <form method="post" action="{% url 'folio:invoice_pay' invoice.pk %}" class="app-form panel is-embedded form-block-follow" hx-boost="false">
     {% csrf_token %}
-    {{ payment_form.as_p }}
-    <div class="form-actions"><button type="submit" class="btn">{% trans "To‘lov qabul" %}</button></div>
+    <div class="form-grid app-form-grid">
+      {% include "includes/form_fields.html" with form=payment_form %}
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn">{% trans "To‘lov qabul" %}</button>
+    </div>
   </form>
   {% endif %}
 </section>

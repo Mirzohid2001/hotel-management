@@ -1,41 +1,106 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Bronlar" %}{% endblock %}
+{% block body_class %}page-bookings{% endblock %}
 {% block content %}
+<div class="expense-page booking-list-page">
 {% url 'bookings:inquiries' as inquiries_url %}
 {% url 'bookings:create' as create_url %}
-{% include "includes/page_header.html" with title=_("Bronlar") secondary_url=inquiries_url secondary_label=_("So‘rov") primary_url=create_url primary_label=_("Yangi bron") %}
+{% include "includes/page_header.html" with title=_("Bronlar") eyebrow=_("Front office") subtitle=_("Holat, qidiruv va tezkor folio / kirish / chiqish.") secondary_url=inquiries_url secondary_label=_("So‘rov") primary_url=create_url primary_label=_("Yangi bron") %}
 
-<form method="get" class="search-form">
-  <select name="status">
-    <option value="">{% trans "Barcha holat" %}</option>
-    {% for val, label in statuses %}
-    <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
-    {% endfor %}
-  </select>
-  <button type="submit" class="btn btn-sm">{% trans "Filtrlash" %}</button>
+<form method="get" class="expense-filter panel">
+  <div class="expense-filter-head">
+    <div>
+      <p class="eyebrow">{% trans "Qidiruv" %}</p>
+      <h2 class="expense-filter-title">{% trans "Filtrlar" %}</h2>
+    </div>
+    <div class="expense-filter-actions">
+      <button type="submit" class="btn btn-sm">{% trans "Qo‘llash" %}</button>
+      <a class="btn-ghost btn-sm" href="{% url 'bookings:list' %}">{% trans "Tozalash" %}</a>
+    </div>
+  </div>
+  <div class="expense-filter-grid guest-filter-grid">
+    <label class="expense-field expense-field-wide">
+      <span>{% trans "Qidiruv" %}</span>
+      <input type="search" name="q" value="{{ q }}" placeholder="{% trans 'Kod, mehmon, xona…' %}" autocomplete="off">
+    </label>
+    <label class="expense-field">
+      <span>{% trans "Holat" %}</span>
+      <select name="status">
+        <option value="">{% trans "Barcha holat" %}</option>
+        {% for val, label in statuses %}
+        <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
 </form>
 
-<section class="section-panel">
-<ul class="list entity-list">
-  {% for r in reservations %}
-  <li class="guest-chip entity-row">
-    <span>
-      <span class="entity-row-main">
-        <a href="{% url 'bookings:detail' r.pk %}" class="entity-title">{{ r.code }}</a>
-        <span class="status-pill status-{{ r.status }}">{{ r.get_status_display }}</span>
+<div class="expense-summary guest-summary">
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "Topildi" %}</span>
+    <strong class="expense-summary-val">{{ filter_count }}</strong>
+  </div>
+  <div class="expense-summary-card is-accent">
+    <span class="expense-summary-lbl">{% trans "Joylashgan" %}</span>
+    <strong class="expense-summary-val">{{ checked_in_count }}</strong>
+  </div>
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "Tasdiqlangan" %}</span>
+    <strong class="expense-summary-val">{{ confirmed_count }}</strong>
+  </div>
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "Bugun kirish" %}</span>
+    <strong class="expense-summary-val">{{ arrivals_today }}</strong>
+  </div>
+</div>
+
+<section class="section-panel expense-list-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Ro‘yxat" %}</p>
+      <h2>{% trans "Bronlar" %}</h2>
+    </div>
+    <span class="muted">{{ reservations|length }} / {{ filter_count }}</span>
+  </div>
+  <ul class="list entity-list">
+    {% for r in reservations %}
+    <li class="guest-chip entity-row">
+      <span>
+        <span class="entity-row-main">
+          <a href="{% url 'bookings:detail' r.pk %}" class="entity-title">{{ r.code }}</a>
+          <span class="status-pill status-{{ r.status }}">{{ r.get_status_display }}</span>
+        </span>
+        <span class="entity-meta">
+          {{ r.guest.full_name }}
+          · {{ r.check_in|date:"d.m.Y" }} → {{ r.check_out|date:"d.m.Y" }}
+          {% if r.room %}· {% trans "Xona" %} {{ r.room.number }}{% endif %}
+        </span>
       </span>
-      <span class="entity-meta">
-        {{ r.guest.full_name }}
-        · {{ r.check_in }} → {{ r.check_out }}
-        {% if r.room %}· {% trans "Xona" %} {{ r.room.number }}{% endif %}
+      <span class="expense-actions row-actions">
+        {% if r.status == "checked_in" %}
+        <a class="btn btn-sm" href="{% url 'folio:detail' r.pk %}">{% trans "Folio" %}</a>
+        <button type="button" class="btn-ghost btn-sm"
+                hx-get="{% url 'bookings:checkout_modal' r.pk %}"
+                hx-target="#modal-root" hx-select="unset" hx-swap="innerHTML">
+          {% trans "Chiqish" %}
+        </button>
+        {% elif r.status == "confirmed" %}
+        <a class="btn btn-sm" href="{% url 'bookings:detail' r.pk %}">{% trans "Kirish" %}</a>
+        <a class="btn-ghost btn-sm" href="{% url 'folio:detail' r.pk %}">{% trans "Folio" %}</a>
+        {% else %}
+        <a class="btn-ghost btn-sm" href="{% url 'bookings:detail' r.pk %}">{% trans "Ochish" %}</a>
+        {% endif %}
       </span>
-    </span>
-  </li>
-  {% empty %}
-  {% url 'bookings:create' as create_url %}
-  {% include "includes/empty_state.html" with as_li=1 title=_("Bron yo‘q") hint=_("Yangi rezervatsiya yarating yoki so‘rovlarni tekshiring.") cta_url=create_url cta_label=_("Yangi bron") %}
-  {% endfor %}
-</ul>
+    </li>
+    {% empty %}
+    {% url 'bookings:create' as create_url %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Bron yo‘q") hint=_("Yangi rezervatsiya yarating yoki so‘rovlarni tekshiring.") cta_url=create_url cta_label=_("Yangi bron") %}
+    {% endfor %}
+  </ul>
+  {% if filter_count > 200 %}
+  <p class="muted expense-footnote">{% trans "Faqat birinchi 200 ta ko‘rsatilmoqda — filtrni toraytiring." %}</p>
+  {% endif %}
 </section>
+</div>
 {% endblock %}

@@ -56,16 +56,19 @@
     </div>
   </div>
 
-  <div class="pnl-charts-grid cash-shift-charts">
-    <div class="chart-wrap chart-wrap-donut">
-      <p class="chart-caption">{% trans "To‘lov turlari" %}</p>
-      <canvas id="chart-shift-mix" aria-label="{% trans 'To‘lov turlari' %}"></canvas>
+  <details class="cash-shift-fold">
+    <summary class="cash-shift-fold-summary">{% trans "Diagrammalar" %}</summary>
+    <div class="pnl-charts-grid cash-shift-charts">
+      <div class="chart-wrap chart-wrap-donut">
+        <p class="chart-caption">{% trans "To‘lov turlari" %}</p>
+        <canvas id="chart-shift-mix" aria-label="{% trans 'To‘lov turlari' %}"></canvas>
+      </div>
+      <div class="chart-wrap chart-wrap-bar">
+        <p class="chart-caption">{% trans "Naqd oqimi" %}</p>
+        <canvas id="chart-shift-flow" aria-label="{% trans 'Naqd oqimi' %}"></canvas>
+      </div>
     </div>
-    <div class="chart-wrap chart-wrap-bar">
-      <p class="chart-caption">{% trans "Naqd oqimi" %}</p>
-      <canvas id="chart-shift-flow" aria-label="{% trans 'Naqd oqimi' %}"></canvas>
-    </div>
-  </div>
+  </details>
 
   <div class="cash-shift-grid">
     <section class="cash-shift-card">
@@ -124,13 +127,16 @@
 
 <section class="section-panel">
   <div class="dash-section-head">
-    <h2>{% trans "Naqd to‘lovlar" %}</h2>
+    <div>
+      <p class="eyebrow">{% trans "Naqd" %}</p>
+      <h2>{% trans "Naqd to‘lovlar" %}</h2>
+    </div>
   </div>
   <ul class="list entity-list">
     {% for p in report.payments.rows %}
     <li class="guest-chip entity-row">
       <span>
-        {{ p.folio.reservation.code }}
+        <a class="entity-title" href="{% url 'folio:detail' p.folio.reservation_id %}">{{ p.folio.reservation.code }}</a>
         {% if p.folio.reservation.guest %} · {{ p.folio.reservation.guest }}{% endif %}
         · {{ p.get_method_display }}
         · {{ p.created_at|date:"H:i" }}
@@ -144,32 +150,38 @@
 </section>
 
 {% if report.payments.card_rows or report.payments.transfer_rows %}
-<section class="section-panel">
-  <div class="dash-section-head">
+<details class="section-panel cash-shift-fold is-panel">
+  <summary class="dash-section-head cash-shift-fold-summary">
     <h2>{% trans "Naqd bo‘lmagan to‘lovlar" %}</h2>
-  </div>
+  </summary>
   <ul class="list entity-list">
     {% for p in report.payments.card_rows %}
     <li class="guest-chip entity-row">
-      <span>{{ p.folio.reservation.code }} · {% trans "Karta" %} · {{ p.created_at|date:"H:i" }}</span>
+      <span>
+        <a href="{% url 'folio:detail' p.folio.reservation_id %}">{{ p.folio.reservation.code }}</a>
+        · {% trans "Karta" %} · {{ p.created_at|date:"H:i" }}
+      </span>
       <span class="money">{{ p.amount|money }}</span>
     </li>
     {% endfor %}
     {% for p in report.payments.transfer_rows %}
     <li class="guest-chip entity-row">
-      <span>{{ p.folio.reservation.code }} · {% trans "O‘tkazma" %} · {{ p.created_at|date:"H:i" }}</span>
+      <span>
+        <a href="{% url 'folio:detail' p.folio.reservation_id %}">{{ p.folio.reservation.code }}</a>
+        · {% trans "O‘tkazma" %} · {{ p.created_at|date:"H:i" }}
+      </span>
       <span class="money">{{ p.amount|money }}</span>
     </li>
     {% endfor %}
   </ul>
-</section>
+</details>
 {% endif %}
 
 {% if report.cash_out.expense_rows or report.cash_out.payroll_rows %}
-<section class="section-panel">
-  <div class="dash-section-head">
+<details class="section-panel cash-shift-fold is-panel">
+  <summary class="dash-section-head cash-shift-fold-summary">
     <h2>{% trans "Naqd chiqimlar (rasxod / oylik)" %}</h2>
-  </div>
+  </summary>
   <ul class="list entity-list">
     {% for e in report.cash_out.expense_rows %}
     <li class="guest-chip entity-row">
@@ -184,7 +196,7 @@
     </li>
     {% endfor %}
   </ul>
-</section>
+</details>
 {% endif %}
 
 {% elif not open_shift %}
@@ -215,18 +227,22 @@
 </section>
 {% endif %}
 
-<section class="section-panel">
+<section class="section-panel cash-shift-history-panel {% if open_shift %}is-secondary{% endif %}">
   <div class="dash-section-head">
     <div>
+      <p class="eyebrow">{% trans "Arxiv" %}</p>
       <h2>{% trans "Tarix" %}</h2>
       <p class="muted report-section-meta">{% trans "Oxirgi 20 smena · farq grafigi" %}</p>
     </div>
   </div>
   {% if chart_data.varianceHistory %}
-  <div class="chart-wrap chart-wrap-bar chart-wrap-wide cash-shift-history-chart">
-    <p class="chart-caption">{% trans "Smena farqi (variance)" %}</p>
-    <canvas id="chart-shift-variance" aria-label="{% trans 'Smena farqi' %}"></canvas>
-  </div>
+  <details class="cash-shift-fold" {% if not open_shift %}open{% endif %}>
+    <summary class="cash-shift-fold-summary">{% trans "Farq grafigi" %}</summary>
+    <div class="chart-wrap chart-wrap-bar chart-wrap-wide cash-shift-history-chart">
+      <p class="chart-caption">{% trans "Smena farqi (variance)" %}</p>
+      <canvas id="chart-shift-variance" aria-label="{% trans 'Smena farqi' %}"></canvas>
+    </div>
+  </details>
   {% endif %}
   <ul class="list entity-list">
     {% for s in history %}

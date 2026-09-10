@@ -75,7 +75,11 @@ def _get_reservation(request, pk):
 
 @role_required(*FRONT_OFFICE)
 def reservation_list(request):
+    from django.db.models import Q
+    from django.utils import timezone
+
     status = request.GET.get("status", "")
+    q = (request.GET.get("q") or "").strip()
     qs = Reservation.objects.filter(tenant=request.tenant).select_related(
         "guest", "room", "hotel", "group"
     )
@@ -84,10 +88,36 @@ def reservation_list(request):
         qs = qs.filter(hotel=hotel)
     if status:
         qs = qs.filter(status=status)
+    if q:
+        qs = qs.filter(
+            Q(code__icontains=q)
+            | Q(guest__first_name__icontains=q)
+            | Q(guest__last_name__icontains=q)
+            | Q(guest__phone__icontains=q)
+            | Q(room__number__icontains=q)
+        )
+    qs = qs.order_by("-check_in", "-pk")
+    filter_count = qs.count()
+    today = timezone.localdate()
+    base = Reservation.objects.filter(tenant=request.tenant)
+    if hotel is not None:
+        base = base.filter(hotel=hotel)
     return render(
         request,
         "bookings/reservation_list.html",
-        {"reservations": qs[:200], "status": status, "statuses": Reservation.Status.choices},
+        {
+            "reservations": qs[:200],
+            "status": status,
+            "q": q,
+            "statuses": Reservation.Status.choices,
+            "filter_count": filter_count,
+            "checked_in_count": base.filter(status=Reservation.Status.CHECKED_IN).count(),
+            "confirmed_count": base.filter(status=Reservation.Status.CONFIRMED).count(),
+            "arrivals_today": base.filter(
+                check_in=today,
+                status__in=[Reservation.Status.CONFIRMED, Reservation.Status.CHECKED_IN],
+            ).count(),
+        },
     )
 
 

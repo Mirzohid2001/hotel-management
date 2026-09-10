@@ -1,22 +1,60 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Ta’mir" %}{% endblock %}
+{% block body_class %}page-maintenance{% endblock %}
 {% block content %}
+<div class="expense-page">
 {% url 'maintenance:create' as create_url %}
-{% include "includes/page_header.html" with title=_("Ta’mir arizalari") eyebrow=_("Operatsiya") primary_url=create_url primary_label=_("Yangi") %}
+{% include "includes/page_header.html" with title=_("Ta’mir arizalari") eyebrow=_("Operatsiya") subtitle=_("Nosoz xona / jihoz — biriktirish va yakunlash.") primary_url=create_url primary_label=_("Yangi") %}
 
-<form method="get" class="search-form">
-  <select name="status">
-    <option value="open" {% if status == 'open' %}selected{% endif %}>{% trans "Ochiq" %}</option>
-    {% for val, label in statuses %}
-    <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
-    {% endfor %}
-    <option value="" {% if status == '' %}selected{% endif %}>{% trans "Barchasi" %}</option>
-  </select>
-  <button type="submit" class="btn btn-sm">{% trans "Filtrlash" %}</button>
+<form method="get" class="expense-filter panel">
+  <div class="expense-filter-head">
+    <div>
+      <p class="eyebrow">{% trans "Filtr" %}</p>
+      <h2 class="expense-filter-title">{% trans "Holat" %}</h2>
+    </div>
+    <div class="expense-filter-actions">
+      <button type="submit" class="btn btn-sm">{% trans "Qo‘llash" %}</button>
+      <a class="btn-ghost btn-sm" href="{% url 'maintenance:list' %}">{% trans "Tozalash" %}</a>
+    </div>
+  </div>
+  <div class="expense-filter-grid guest-filter-grid">
+    <label class="expense-field">
+      <span>{% trans "Holat" %}</span>
+      <select name="status">
+        <option value="open" {% if status == 'open' %}selected{% endif %}>{% trans "Ochiq" %}</option>
+        {% for val, label in statuses %}
+        <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+        <option value="" {% if status == '' %}selected{% endif %}>{% trans "Barchasi" %}</option>
+      </select>
+    </label>
+  </div>
 </form>
 
-<section class="section-panel">
+<div class="expense-summary">
+  <div class="expense-summary-card is-accent">
+    <span class="expense-summary-lbl">{% trans "Ochiq" %}</span>
+    <strong class="expense-summary-val">{{ open_count }}</strong>
+  </div>
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "Jarayonda" %}</span>
+    <strong class="expense-summary-val">{{ in_progress_count }}</strong>
+  </div>
+  <div class="expense-summary-card {% if high_count %}is-warn{% endif %}">
+    <span class="expense-summary-lbl">{% trans "Yuqori prioritet" %}</span>
+    <strong class="expense-summary-val">{{ high_count }}</strong>
+  </div>
+</div>
+
+<section class="section-panel expense-list-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Ro‘yxat" %}</p>
+      <h2>{% trans "Arizalar" %}</h2>
+    </div>
+    <span class="muted">{{ tickets|length }}</span>
+  </div>
   <ul class="list entity-list">
     {% for t in tickets %}
     <li class="guest-chip entity-row">
@@ -27,12 +65,12 @@
           {% if t.priority == 'high' %}<span class="badge badge-blacklist">{% trans "Yuqori" %}</span>{% endif %}
         </span>
         <span class="entity-meta">
-          {% if t.room %} · {% trans "Xona" %} {{ t.room.number }}{% endif %}
-          · {{ t.get_priority_display }}
+          {% if t.room %}{% trans "Xona" %} {{ t.room.number }} · {% endif %}
+          {{ t.get_priority_display }}
           {% if t.assignee %} · {{ t.assignee.get_full_name|default:t.assignee.username }}{% endif %}
         </span>
       </span>
-      <span class="hk-task-actions">
+      <span class="expense-actions row-actions hk-task-actions">
         {% if t.status == 'open' or t.status == 'in_progress' %}
         <form method="post" action="{% url 'maintenance:assign' t.pk %}" class="hk-assign">
           {% csrf_token %}
@@ -44,7 +82,7 @@
             </option>
             {% endfor %}
           </select>
-          <button type="submit" class="btn-ghost btn-sm">→</button>
+          <button type="submit" class="btn-ghost btn-sm">{% trans "Biriktir" %}</button>
         </form>
         <form method="post" action="{% url 'maintenance:complete' t.pk %}">
           {% csrf_token %}<button type="submit" class="btn btn-sm">{% trans "Tayyor" %}</button>
@@ -57,4 +95,5 @@
     {% endfor %}
   </ul>
 </section>
+</div>
 {% endblock %}

@@ -1,54 +1,116 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{{ guest.full_name }}{% endblock %}
+{% block body_class %}page-guest-detail{% endblock %}
 {% block content %}
+<div class="expense-page guest-detail-page">
 {% url 'guests:edit' guest.pk as edit_url %}
-<div class="detail-hero">
-  <div class="page-head-text">
-    <h1>
-      {{ guest.full_name }}
-      {% if guest.is_vip %}<span class="badge badge-vip">VIP</span>{% endif %}
-      {% if guest.is_blacklisted %}<span class="badge badge-blacklist">{% trans "Qora ro‘yxat" %}</span>{% endif %}
-    </h1>
-    <p class="muted page-subtitle">{{ guest.phone }}{% if guest.email %} · {{ guest.email }}{% endif %}{% if guest.nationality %} · {{ guest.nationality }}{% endif %}</p>
-  </div>
-  <div class="detail-actions">
-    <a class="btn" href="{{ edit_url }}">{% trans "Tahrirlash" %}</a>
-  </div>
-</div>
+{% include "includes/page_header.html" with title=guest.full_name eyebrow=_("Mehmon") subtitle=guest.phone|default:_("Telefon yo‘q") primary_url=edit_url primary_label=_("Tahrirlash") %}
+
+{% if guest.is_vip or guest.is_blacklisted or guest.company or guest.email or guest.nationality %}
+<p class="page-meta-bar muted">
+  {% if guest.is_vip %}<span class="badge badge-vip">VIP</span>{% endif %}
+  {% if guest.is_blacklisted %}<span class="badge badge-blacklist">{% trans "Qora ro‘yxat" %}</span>{% endif %}
+  {% if guest.email %}{{ guest.email }}{% endif %}
+  {% if guest.nationality %}{% if guest.email %} · {% endif %}{{ guest.nationality }}{% endif %}
+  {% if guest.company %} · {{ guest.company.name }}{% endif %}
+</p>
+{% endif %}
 
 {% if guest.is_blacklisted %}
 <div class="alert-banner blacklist">
   <strong>{% trans "Qora ro‘yxat" %}</strong>
-  — {{ guest.blacklist_reason|default:"Sabab ko‘rsatilmagan" }}
+  — {{ guest.blacklist_reason|default:_("Sabab ko‘rsatilmagan") }}
 </div>
 {% endif %}
 
+<div class="guest-detail-cta">
+  {% if in_house_reservation_id %}
+  <a class="btn" href="{% url 'folio:detail' in_house_reservation_id %}">{% trans "Folio" %}</a>
+  {% elif not guest.is_blacklisted %}
+  <a class="btn" href="{{ new_booking_url }}">{% trans "Bron" %}</a>
+  {% endif %}
+  <a class="btn-ghost" href="{% url 'guests:list' %}">{% trans "Ro‘yxat" %}</a>
+</div>
+
 <section class="section-panel">
-  <h2>{% trans "Hujjatlar" %}</h2>
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Tarix" %}</p>
+      <h2>{% trans "Bronlar" %}</h2>
+    </div>
+    <span class="muted">{{ reservations|length }}</span>
+  </div>
+  <ul class="list entity-list">
+    {% for r in reservations %}
+    <li class="guest-chip entity-row">
+      <span>
+        <span class="entity-row-main">
+          <a class="entity-title" href="{% url 'bookings:detail' r.pk %}">{{ r.code }}</a>
+          <span class="status-pill status-{{ r.status }}">{{ r.get_status_display }}</span>
+        </span>
+        <span class="entity-meta">
+          {{ r.check_in|date:"d.m.Y" }} → {{ r.check_out|date:"d.m.Y" }}
+          {% if r.room %} · {% trans "Xona" %} {{ r.room.number }}{% endif %}
+        </span>
+      </span>
+      <span class="expense-actions row-actions">
+        {% if r.status == "checked_in" %}
+        <a class="btn btn-sm" href="{% url 'folio:detail' r.pk %}">{% trans "Folio" %}</a>
+        {% endif %}
+        <a class="btn-ghost btn-sm" href="{% url 'bookings:detail' r.pk %}">{% trans "Ochish" %}</a>
+      </span>
+    </li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Bron yo‘q") hint=_("Shu mehmon uchun yangi bron yarating.") cta_url=new_booking_url cta_label=_("Bron") compact=1 %}
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="section-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Hujjat" %}</p>
+      <h2>{% trans "Hujjatlar" %}</h2>
+    </div>
+  </div>
   <ul class="list entity-list">
     {% for d in guest.documents.all %}
-    <li class="entity-row"><span class="entity-meta">{{ d.get_doc_type_display }} · {{ d.number }}</span></li>
-    {% empty %}<li class="muted empty-row">{% trans "Yo‘q" %}</li>{% endfor %}
+    <li class="entity-row"><span class="entity-meta">{{ d.get_doc_type_display }} · {{ d.number }}{% if d.issued_country %} · {{ d.issued_country }}{% endif %}</span></li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Hujjat yo‘q") hint=_("Pasport yoki ID qo‘shing — check-in uchun.") compact=1 %}
+    {% endfor %}
   </ul>
-  <form method="post" action="{% url 'guests:add_document' guest.pk %}" enctype="multipart/form-data" class="app-form panel" style="margin-top:1rem;max-width:none">
+  <form method="post" action="{% url 'guests:add_document' guest.pk %}" enctype="multipart/form-data" class="app-form panel is-embedded form-block-follow" hx-boost="false">
     {% csrf_token %}
-    <div class="form-grid app-form-grid">{{ doc_form.as_p }}</div>
+    <div class="form-grid app-form-grid">
+      {% include "includes/form_fields.html" with form=doc_form %}
+    </div>
     <div class="form-actions"><button type="submit" class="btn">{% trans "Hujjat qo‘shish" %}</button></div>
   </form>
 </section>
 
 <section class="section-panel">
-  <h2>{% trans "Izohlar" %}</h2>
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "CRM" %}</p>
+      <h2>{% trans "Izohlar" %}</h2>
+    </div>
+  </div>
   <ul class="list entity-list">
     {% for n in guest.guest_notes.all %}
-    <li class="entity-row"><span class="entity-meta">{{ n.body }} · {{ n.created_at }}</span></li>
-    {% empty %}<li class="muted empty-row">{% trans "Yo‘q" %}</li>{% endfor %}
+    <li class="entity-row"><span class="entity-meta">{{ n.body }} · {{ n.created_at|date:"d.m.Y H:i" }}</span></li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Izoh yo‘q") compact=1 %}
+    {% endfor %}
   </ul>
-  <form method="post" action="{% url 'guests:add_note' guest.pk %}" class="app-form panel" style="margin-top:1rem;max-width:none">
+  <form method="post" action="{% url 'guests:add_note' guest.pk %}" class="app-form panel is-embedded form-block-follow" hx-boost="false">
     {% csrf_token %}
-    <div class="form-grid app-form-grid">{{ note_form.as_p }}</div>
+    <div class="form-grid app-form-grid">
+      {% include "includes/form_fields.html" with form=note_form %}
+    </div>
     <div class="form-actions"><button type="submit" class="btn">{% trans "Izoh" %}</button></div>
   </form>
 </section>
+</div>
 {% endblock %}

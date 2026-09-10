@@ -30,6 +30,16 @@ def ticket_list(request):
     hotel = getattr(request, "active_property", None)
     if hotel is not None:
         tickets = tickets.filter(room__property=hotel)
+    base = tickets
+    open_count = base.filter(status=MaintenanceTicket.Status.OPEN).count()
+    in_progress_count = base.filter(status=MaintenanceTicket.Status.IN_PROGRESS).count()
+    high_count = base.filter(
+        priority=MaintenanceTicket.Priority.HIGH,
+        status__in=[
+            MaintenanceTicket.Status.OPEN,
+            MaintenanceTicket.Status.IN_PROGRESS,
+        ],
+    ).count()
     if status == "open":
         tickets = tickets.filter(
             status__in=[
@@ -47,6 +57,9 @@ def ticket_list(request):
             "status": status,
             "statuses": MaintenanceTicket.Status.choices,
             "staff": _maintenance_staff(request.tenant),
+            "open_count": open_count,
+            "in_progress_count": in_progress_count,
+            "high_count": high_count,
         },
     )
 

@@ -1,20 +1,69 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Inventar" %}{% endblock %}
+{% block body_class %}page-inventory{% endblock %}
 {% block content %}
+<div class="expense-page">
 {% url 'inventory:create' as create_url %}
 {% url 'inventory:minibar' as minibar_url %}
-{% include "includes/page_header.html" with title=_("Inventar") eyebrow=_("Operatsiya") primary_url=create_url primary_label=_("Yangi") secondary_url=minibar_url secondary_label=_("Xona bar") %}
+{% include "includes/page_header.html" with title=_("Inventar") eyebrow=_("Operatsiya") subtitle=_("Ombor, minibar va muddat nazorati.") primary_url=create_url primary_label=_("Yangi") secondary_url=minibar_url secondary_label=_("Xona bar") %}
 
-{% if expired_count or soon_count or low_count %}
-<p class="muted page-subtitle stock-alerts-summary">
-  {% if expired_count %}<span class="badge badge-blacklist">{% trans "Muddati o‘tgan" %}: {{ expired_count }}</span>{% endif %}
-  {% if soon_count %}<span class="badge badge-vip">{% trans "Muddat yaqin" %}: {{ soon_count }}</span>{% endif %}
-  {% if low_count %}<span class="status-pill">{% trans "Kam qolgan" %}: {{ low_count }}</span>{% endif %}
-</p>
-{% endif %}
+<form method="get" class="expense-filter panel">
+  <div class="expense-filter-head">
+    <div>
+      <p class="eyebrow">{% trans "Qidiruv" %}</p>
+      <h2 class="expense-filter-title">{% trans "Filtrlar" %}</h2>
+    </div>
+    <div class="expense-filter-actions">
+      <button type="submit" class="btn btn-sm">{% trans "Qo‘llash" %}</button>
+      <a class="btn-ghost btn-sm" href="{% url 'inventory:list' %}">{% trans "Tozalash" %}</a>
+    </div>
+  </div>
+  <div class="expense-filter-grid guest-filter-grid">
+    <label class="expense-field expense-field-wide">
+      <span>{% trans "Qidiruv" %}</span>
+      <input type="search" name="q" value="{{ q }}" placeholder="{% trans 'Mahsulot nomi…' %}" autocomplete="off">
+    </label>
+    <label class="expense-field">
+      <span>{% trans "Belgi" %}</span>
+      <select name="flag">
+        <option value="">{% trans "Barchasi" %}</option>
+        <option value="low" {% if flag == "low" %}selected{% endif %}>{% trans "Kam qolgan" %}</option>
+        <option value="soon" {% if flag == "soon" %}selected{% endif %}>{% trans "Muddat yaqin" %}</option>
+        <option value="expired" {% if flag == "expired" %}selected{% endif %}>{% trans "Muddati o‘tgan" %}</option>
+        <option value="minibar" {% if flag == "minibar" %}selected{% endif %}>{% trans "Minibar" %}</option>
+      </select>
+    </label>
+  </div>
+</form>
 
-<section class="section-panel">
+<div class="expense-summary guest-summary">
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "Jami" %}</span>
+    <strong class="expense-summary-val">{{ total_count }}</strong>
+  </div>
+  <div class="expense-summary-card {% if low_count %}is-warn{% endif %}">
+    <span class="expense-summary-lbl">{% trans "Kam" %}</span>
+    <strong class="expense-summary-val">{{ low_count }}</strong>
+  </div>
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "Muddat yaqin" %}</span>
+    <strong class="expense-summary-val">{{ soon_count }}</strong>
+  </div>
+  <div class="expense-summary-card {% if expired_count %}is-warn{% endif %}">
+    <span class="expense-summary-lbl">{% trans "Muddati o‘tgan" %}</span>
+    <strong class="expense-summary-val">{{ expired_count }}</strong>
+  </div>
+</div>
+
+<section class="section-panel expense-list-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Ombor" %}</p>
+      <h2>{% trans "Mahsulotlar" %}</h2>
+    </div>
+    <span class="muted">{{ items|length }}</span>
+  </div>
   <ul class="list entity-list">
     {% for i in items %}
     <li class="guest-chip entity-row">
@@ -22,7 +71,7 @@
         <span class="entity-row-main">
           <strong class="entity-title">{{ i.name }}</strong>
           {% if i.pk in expired_ids %}<span class="badge badge-blacklist">{% trans "Muddati o‘tgan" %}</span>{% endif %}
-          {% if i.pk in soon_ids %}<span class="badge badge-vip">{% trans "Muddat yaqin" %}</span>{% endif %}
+          {% if i.pk in soon_ids %}<span class="status-pill">{% trans "Muddat yaqin" %}</span>{% endif %}
           {% if i.pk in low_ids %}<span class="badge badge-blacklist">{% trans "Kam" %}</span>{% endif %}
           {% if i.is_minibar %}<span class="status-pill">{% trans "minibar" %}</span>{% endif %}
         </span>
@@ -41,12 +90,15 @@
           {% endif %}
         </span>
       </span>
-      <a class="btn-ghost btn-sm" href="{% url 'inventory:edit' i.pk %}">{% trans "Tahrirlash" %}</a>
-      <a class="btn-ghost btn-sm" href="{% url 'inventory:adjust' i.pk %}">{% trans "Tuzatish" %}</a>
+      <span class="expense-actions row-actions">
+        <a class="btn btn-sm" href="{% url 'inventory:adjust' i.pk %}">{% trans "Tuzatish" %}</a>
+        <a class="btn-ghost btn-sm" href="{% url 'inventory:edit' i.pk %}">{% trans "Tahrirlash" %}</a>
+      </span>
     </li>
     {% empty %}
     {% include "includes/empty_state.html" with as_li=1 title=_("Inventar bo‘sh") hint=_("Mahsulot qo‘shing — minibar va ombor hisobi uchun.") cta_url=create_url cta_label=_("Mahsulot qo‘shish") %}
     {% endfor %}
   </ul>
 </section>
+</div>
 {% endblock %}

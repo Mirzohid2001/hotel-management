@@ -1,17 +1,26 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{{ title }}{% endblock %}
+{% block body_class %}page-reservation-form{% endblock %}
 {% block content %}
+<div class="expense-page reservation-create-page">
 {% url 'bookings:list' as cancel_url %}
-{% include "includes/page_header.html" with title=title subtitle=hotel.name|default:"" %}
+{% url 'bookings:walk_in' as walkin_url %}
+{% include "includes/page_header.html" with title=title eyebrow=_("Front office") subtitle=hotel.name|default:"" secondary_url=walkin_url secondary_label=_("Darhol joylash") %}
 
-<section class="section-panel">
-<form method="post" class="app-form panel" id="reservation-form" hx-boost="false">
+<form method="post" class="reservation-create-layout" id="reservation-form" hx-boost="false">
   {% csrf_token %}
   {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
-  <div class="form-grid app-form-grid">
-    {% for field in form %}
-      {% if field.name == "guest" %}
+
+  <section class="section-panel">
+    <div class="dash-section-head">
+      <div>
+        <p class="eyebrow">{% trans "1" %}</p>
+        <h2>{% trans "Mehmon" %}</h2>
+      </div>
+    </div>
+    <div class="form-grid app-form-grid">
+      {% with field=form.guest %}
       <div class="form-field field-with-add field-span-2">
         <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
         <div class="field-row">
@@ -20,13 +29,12 @@
                   hx-get="{% url 'guests:quick_guest' %}"
                   hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
                   hx-target="#modal-root" hx-select="unset"
-                  hx-swap="innerHTML">
-            {% trans "+ Yangi" %}
-          </button>
+                  hx-swap="innerHTML">{% trans "+ Yangi" %}</button>
         </div>
         {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
       </div>
-      {% elif field.name == "company" %}
+      {% endwith %}
+      {% with field=form.company %}
       <div class="form-field field-with-add">
         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
         <div class="field-row">
@@ -35,13 +43,12 @@
                   hx-get="{% url 'guests:quick_company' %}"
                   hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
                   hx-target="#modal-root" hx-select="unset"
-                  hx-swap="innerHTML">
-            {% trans "+ Yangi" %}
-          </button>
+                  hx-swap="innerHTML">{% trans "+ Yangi" %}</button>
         </div>
         {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
       </div>
-      {% elif field.name == "referrer" %}
+      {% endwith %}
+      {% with field=form.referrer %}
       <div class="form-field field-with-add">
         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
         <div class="field-row">
@@ -50,30 +57,70 @@
                   hx-get="{% url 'bookings:referrer_quick' %}"
                   hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
                   hx-target="#modal-root" hx-select="unset"
-                  hx-swap="innerHTML">
-            {% trans "+ Yangi" %}
-          </button>
+                  hx-swap="innerHTML">{% trans "+ Yangi" %}</button>
         </div>
         {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
       </div>
-      {% else %}
-      <p class="form-field {% if field.field.widget.input_type == 'textarea' %}field-span-2{% endif %}">
-        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+      {% endwith %}
+      {% with field=form.commission_percent %}
+      <p class="form-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
         {{ field }}
         {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
       </p>
-      {% endif %}
-    {% endfor %}
-  </div>
-  <div id="availability-box" class="availability muted panel" style="margin:0.85rem 0;padding:0.75rem 1rem">{% trans "Xona va sanalarni tanlang" %}</div>
-  <p class="muted" style="margin:0 0 0.85rem">{% trans "E-mehmon komissiyasi zayezd (kirish) paytida tanlanadi." %}</p>
+      {% endwith %}
+    </div>
+  </section>
 
-  <div class="form-actions">
-    <button type="submit" class="btn">{% trans "Saqlash" %}</button>
+  <section class="section-panel">
+    <div class="dash-section-head">
+      <div>
+        <p class="eyebrow">{% trans "2" %}</p>
+        <h2>{% trans "Sana va xona" %}</h2>
+      </div>
+    </div>
+    <div class="form-grid app-form-grid">
+      {% for field in form %}
+        {% if field.name == "check_in" or field.name == "check_out" or field.name == "room_type" or field.name == "room" or field.name == "nightly_rate" or field.name == "adults" or field.name == "children" %}
+        <p class="form-field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          {% if field.help_text %}<span class="field-help">{{ field.help_text }}</span>{% endif %}
+          {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+        </p>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div id="availability-box" class="availability muted panel reservation-avail-box">{% trans "Xona va sanalarni tanlang" %}</div>
+  </section>
+
+  <section class="section-panel">
+    <div class="dash-section-head">
+      <div>
+        <p class="eyebrow">{% trans "3" %}</p>
+        <h2>{% trans "Qo‘shimcha" %}</h2>
+      </div>
+    </div>
+    <div class="form-grid app-form-grid">
+      {% for field in form %}
+        {% if field.name == "source" or field.name == "status" or field.name == "notes" %}
+        <p class="form-field {% if field.name == 'notes' %}field-span-2{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+        </p>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <p class="muted reservation-emehmon-note">{% trans "E-mehmon komissiyasi kirish (zayezd) paytida tanlanadi." %}</p>
+  </section>
+
+  <div class="reservation-create-actions form-actions">
+    <button type="submit" class="btn">{% trans "Bron yaratish" %}</button>
     <a class="btn-ghost" href="{{ cancel_url }}">{% trans "Bekor" %}</a>
   </div>
 </form>
-</section>
+</div>
 <script>
 (function () {
   var form = document.getElementById("reservation-form");

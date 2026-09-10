@@ -1,18 +1,32 @@
 {% extends "base.html" %}
 {% load i18n money_fmt %}
 {% block title %}{% trans "Kompaniya hisobi" %}{% endblock %}
+{% block body_class %}page-city-ledger{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with title=_("Kompaniya hisobi") eyebrow=_("Debitor qarzdorlik") %}
+<div class="expense-page">
+{% include "includes/page_header.html" with title=_("Kompaniya hisobi") eyebrow=_("Debitor qarzdorlik") subtitle=_("Ochiq hisoblar, muddat va tezkor to‘lov.") %}
 
-<div class="stats-grid">
-  <div class="stat"><span>{% trans "Jami debitorlik" %}</span><strong class="money">{{ aging.grand_total|money }}</strong></div>
+<div class="expense-summary guest-summary">
+  <div class="expense-summary-card is-accent">
+    <span class="expense-summary-lbl">{% trans "Jami debitorlik" %}</span>
+    <strong class="expense-summary-val money">{{ aging.grand_total|money }}</strong>
+  </div>
   {% for key, bucket in aging.buckets.items %}
-  <div class="stat"><span>{{ bucket.label }}</span><strong class="money">{{ bucket.total|money }}</strong></div>
+  <div class="expense-summary-card {% if key == 'b90_plus' and bucket.total %}is-warn{% endif %}">
+    <span class="expense-summary-lbl">{{ bucket.label }}</span>
+    <strong class="expense-summary-val money">{{ bucket.total|money }}</strong>
+  </div>
   {% endfor %}
 </div>
 
-<section class="section-panel">
-  <h2>{% trans "Ochiq hisoblar" %}</h2>
+<section class="section-panel expense-list-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Ro‘yxat" %}</p>
+      <h2>{% trans "Ochiq hisoblar" %}</h2>
+    </div>
+    <span class="muted">{{ open_invoices|length }}</span>
+  </div>
   <ul class="list entity-list">
     {% for inv in open_invoices %}
     <li class="guest-chip entity-row">
@@ -21,13 +35,22 @@
           <a class="entity-title code" href="{% url 'folio:invoice_detail' inv.pk %}">{{ inv.code }}</a>
           <span class="status-pill">{{ inv.get_status_display }}</span>
         </span>
-        <span class="entity-meta">{{ inv.company.name }}{% if inv.due_date %} · {% trans "muddat" %} {{ inv.due_date }}{% endif %}</span>
+        <span class="entity-meta">
+          {{ inv.company.name }}
+          {% if inv.due_date %} · {% trans "muddat" %} {{ inv.due_date|date:"d.m.Y" }}{% endif %}
+          · <span class="money">{{ inv.balance|money }}</span>
+        </span>
       </span>
-      <span class="money">{{ inv.balance|money }}</span>
+      <span class="expense-actions row-actions">
+        <a class="btn btn-sm" href="{% url 'folio:invoice_detail' inv.pk %}#invoice-pay">{% trans "To‘lov" %}</a>
+        <a class="btn-ghost btn-sm" href="{% url 'folio:invoice_pdf' inv.pk %}">{% trans "PDF" %}</a>
+        <a class="btn-ghost btn-sm" href="{% url 'guests:company_detail' inv.company_id %}">{% trans "Kompaniya" %}</a>
+      </span>
     </li>
     {% empty %}
     {% include "includes/empty_state.html" with as_li=1 title=_("Ochiq hisob yo‘q") hint=_("Kompaniyaga o‘tkazilgan mehmon hisoblari shu yerda ko‘rinadi.") compact=1 %}
     {% endfor %}
   </ul>
 </section>
+</div>
 {% endblock %}

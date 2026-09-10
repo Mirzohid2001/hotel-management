@@ -134,13 +134,30 @@ def employee_pay(request, pk):
 @feature_required("payroll")
 @role_required(*HR)
 def payroll_list(request):
+    from decimal import Decimal
+    from django.db.models import Sum
+
     periods = PayrollPeriod.objects.filter(tenant=request.tenant).prefetch_related(
         Prefetch(
             "items",
             queryset=PayrollItem.objects.select_related("employee", "payment"),
         )
     )
-    return render(request, "hr/payroll_list.html", {"periods": periods})
+    unpaid_qs = PayrollItem.objects.filter(
+        tenant=request.tenant, payment__isnull=True
+    )
+    unpaid_count = unpaid_qs.count()
+    unpaid_total = unpaid_qs.aggregate(s=Sum("net_amount"))["s"] or Decimal("0")
+    return render(
+        request,
+        "hr/payroll_list.html",
+        {
+            "periods": periods,
+            "period_count": periods.count(),
+            "unpaid_count": unpaid_count,
+            "unpaid_total": unpaid_total,
+        },
+    )
 
 
 @feature_required("payroll")

@@ -54,9 +54,13 @@ def _unique_sku(tenant, hotel, base: str) -> str:
 @feature_required("inventory")
 def stock_list(request):
     hotel = _active_hotel(request)
+    q = (request.GET.get("q") or "").strip()
+    flag = (request.GET.get("flag") or "").strip()
     items_qs = StockItem.objects.filter(tenant=request.tenant).select_related("hotel")
     if hotel is not None:
         items_qs = items_qs.filter(hotel=hotel)
+    if q:
+        items_qs = items_qs.filter(name__icontains=q)
     items = list(items_qs)
     low = list(low_stock_items(request.tenant, hotel=hotel))
     low_ids = {i.pk for i in low}
@@ -64,6 +68,15 @@ def stock_list(request):
     soon = list(expiring_soon_stock_items(request.tenant, hotel=hotel))
     expired_ids = {i.pk for i in expired}
     soon_ids = {i.pk for i in soon}
+
+    if flag == "low":
+        items = [i for i in items if i.pk in low_ids]
+    elif flag == "soon":
+        items = [i for i in items if i.pk in soon_ids]
+    elif flag == "expired":
+        items = [i for i in items if i.pk in expired_ids]
+    elif flag == "minibar":
+        items = [i for i in items if i.is_minibar]
 
     def sort_key(item):
         status = item.expiry_status()
@@ -77,6 +90,9 @@ def stock_list(request):
         {
             "items": items,
             "hotel": hotel,
+            "q": q,
+            "flag": flag,
+            "total_count": items_qs.count() if not flag and not q else len(items),
             "low_ids": low_ids,
             "low_count": len(low),
             "expired_ids": expired_ids,
