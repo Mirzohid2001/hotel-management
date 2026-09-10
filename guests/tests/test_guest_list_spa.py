@@ -51,3 +51,51 @@ class GuestListSpaTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "VIP Guest")
         self.assertNotContains(resp, "Ali")
+
+    def test_delete_guest_without_reservations(self):
+        guest = Guest.objects.get(first_name="Ali")
+        resp = self.client.post(reverse("guests:delete", args=[guest.pk]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(Guest.objects.filter(pk=guest.pk).exists())
+
+    def test_cannot_delete_guest_with_reservation(self):
+        from datetime import timedelta
+        from decimal import Decimal
+
+        from bookings.services import create_reservation
+        from django.utils import timezone
+        from properties.models import RatePlan, Room, RoomType
+
+        tenant = self.ctx["tenant"]
+        user = self.ctx["user"]
+        prop = Property.objects.get(tenant=tenant)
+        rt = RoomType.objects.create(
+            tenant=tenant, property=prop, name="Std", code="std", base_price=Decimal("100000")
+        )
+        room = Room.objects.create(
+            tenant=tenant, property=prop, room_type=rt, number="101"
+        )
+        rate = RatePlan.objects.create(
+            tenant=tenant,
+            property=prop,
+            room_type=rt,
+            name="BAR",
+            code="bar",
+            price=Decimal("100000"),
+        )
+        guest = Guest.objects.get(first_name="Ali")
+        today = timezone.localdate()
+        create_reservation(
+            tenant=tenant,
+            user=user,
+            property_obj=prop,
+            guest=guest,
+            room_type=rt,
+            room=room,
+            rate_plan=rate,
+            check_in=today,
+            check_out=today + timedelta(days=1),
+        )
+        resp = self.client.post(reverse("guests:delete", args=[guest.pk]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(Guest.objects.filter(pk=guest.pk).exists())

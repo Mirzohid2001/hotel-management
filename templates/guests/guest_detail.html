@@ -31,6 +31,13 @@
   <a class="btn" href="{{ new_booking_url }}">{% trans "Bron" %}</a>
   {% endif %}
   <a class="btn-ghost" href="{% url 'guests:list' %}">{% trans "Ro‘yxat" %}</a>
+  <form method="post"
+        action="{% url 'guests:delete' guest.pk %}"
+        class="inline-form"
+        onsubmit="return confirm('{% blocktrans with name=guest.full_name %}{{ name }} ni o‘chirishni xohlaysizmi?{% endblocktrans %}');">
+    {% csrf_token %}
+    <button type="submit" class="btn-ghost">{% trans "O‘chirish" %}</button>
+  </form>
 </div>
 
 <section class="section-panel">

@@ -3,7 +3,8 @@ from django.db.models import Exists, OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
+from django.db.models.deletion import ProtectedError
 
 from bookings.models import Reservation
 from core.htmx import oob_select_response, wants_htmx_partial
@@ -181,6 +182,33 @@ def guest_edit(request, pk):
     return render(
         request, "guests/guest_form.html", {"form": form, "title": _("Mehmonni tahrirlash")}
     )
+
+
+@role_required(*FRONT_OFFICE)
+@tenant_login_required
+@require_POST
+def guest_delete(request, pk):
+    guest = get_object_or_404(Guest, pk=pk, tenant=request.tenant)
+    if Reservation.objects.filter(tenant=request.tenant, guest=guest).exists():
+        messages.error(
+            request,
+            _(
+                "Bu mehmonda bron tarixi bor — o‘chirib bo‘lmaydi. "
+                "Kerak bo‘lsa qora ro‘yxatga qo‘ying."
+            ),
+        )
+        return redirect("guests:detail", pk=guest.pk)
+    name = guest.full_name
+    try:
+        guest.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            _("Mehmon bog‘liq yozuvlar tufayli o‘chirilmadi."),
+        )
+        return redirect("guests:detail", pk=pk)
+    messages.success(request, _("Mehmon o‘chirildi: %(name)s") % {"name": name})
+    return redirect("guests:list")
 
 
 @role_required(*FRONT_OFFICE)

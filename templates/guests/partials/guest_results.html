@@ -53,6 +53,13 @@
         {% endif %}
         <a class="btn-ghost btn-sm" href="{% url 'guests:detail' g.pk %}">{% trans "Profil" %}</a>
         <a class="btn-ghost btn-sm" href="{% url 'guests:edit' g.pk %}">{% trans "Tahrirlash" %}</a>
+        <form method="post"
+              action="{% url 'guests:delete' g.pk %}"
+              class="inline-form"
+              onsubmit="return confirm('{% blocktrans with name=g.full_name %}{{ name }} ni o‘chirishni xohlaysizmi?{% endblocktrans %}');">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost btn-sm">{% trans "O‘chirish" %}</button>
+        </form>
       </span>
     </li>
     {% empty %}
