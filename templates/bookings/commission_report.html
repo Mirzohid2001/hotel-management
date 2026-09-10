@@ -125,29 +125,42 @@
       <div class="form-grid app-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:0.65rem;align-items:end">
         <p class="form-field" style="margin:0">
           <label>{% trans "Summa" %}</label>
-          <input type="number" name="amount" step="0.01" min="0.01" required value="{{ group.remaining }}">
+          <input type="number" name="amount" step="0.01" min="0.01" required
+                 value="{{ group.remaining|stringformat:'.2f' }}">
+        </p>
+        <p class="form-field" style="margin:0">
+          <label>{% trans "Valyuta" %}</label>
+          <select name="currency">
+            {% for val, label in pay_form.fields.currency.choices %}
+            <option value="{{ val }}" {% if pay_form.initial.currency == val or pay_form.fields.currency.initial == val %}selected{% endif %}>{{ val }}</option>
+            {% endfor %}
+          </select>
         </p>
         <p class="form-field" style="margin:0">
           <label>{% trans "Sana" %}</label>
-          <input type="date" name="paid_on" value="{{ pay_form.paid_on.value|default:'' }}">
+          <input type="date" name="paid_on" required
+                 value="{% if pay_form.initial.paid_on %}{{ pay_form.initial.paid_on|date:'Y-m-d' }}{% endif %}">
         </p>
         <p class="form-field" style="margin:0">
           <label>{% trans "Usul" %}</label>
           <select name="method">
             {% for val, label in pay_form.fields.method.choices %}
-            <option value="{{ val }}">{{ label }}</option>
+            <option value="{{ val }}" {% if pay_form.fields.method.initial == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </p>
         <p class="form-field" style="margin:0">
           <label>{% trans "Izoh" %}</label>
-          <input type="text" name="note" maxlength="255">
+          <input type="text" name="note" maxlength="255" placeholder="{% trans 'Ixtiyoriy' %}">
         </p>
         <p class="form-field" style="margin:0">
           <label aria-hidden="true">&nbsp;</label>
           <button type="submit" class="btn">{% trans "To‘lash" %}</button>
         </p>
       </div>
+      <p class="muted" style="margin:0.35rem 0 0;font-size:0.82rem">
+        {% trans "Qolgan" %}: {{ group.remaining|money }} {{ current_tenant.currency|default:"UZS" }}
+      </p>
     </form>
     {% else %}
     <p class="muted">{% trans "Shu oy uchun to‘liq to‘langan." %}</p>

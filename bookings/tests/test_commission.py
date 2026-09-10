@@ -177,6 +177,10 @@ class CommissionReportTests(TestCase):
         from folio.services import open_folio_for_deposit
 
         folio = open_folio_for_deposit(reservation, self.user)
+        # Depozit ochishda kecha allaqachon yoziladi
+        self.assertEqual(
+            folio.charges.filter(description__startswith="Night ").count(), 1
+        )
         FolioCharge.objects.create(
             tenant=self.tenant,
             folio=folio,
@@ -188,7 +192,7 @@ class CommissionReportTests(TestCase):
         )
         check_in_reservation(reservation, self.user)
         posted = ensure_stay_nights_posted(reservation, self.user)
-        self.assertEqual(posted, 1)
+        self.assertEqual(posted, 0)
         nights = folio.charges.filter(
             is_void=False, charge_type=FolioCharge.ChargeType.ROOM, description__startswith="Night "
         )

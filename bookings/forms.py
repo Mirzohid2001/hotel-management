@@ -143,7 +143,7 @@ class CommissionPaymentForm(forms.Form):
         label=_("Summa"),
     )
     currency = forms.ChoiceField(
-        choices=[("UZS", "UZS"), ("USD", "USD"), ("EUR", "EUR")],
+        choices=CURRENCY_CHOICES,
         label=_("Valyuta"),
         initial="UZS",
     )
@@ -158,6 +158,11 @@ class CommissionPaymentForm(forms.Form):
         initial=ReferrerCommissionPayment.Method.CASH,
     )
     note = forms.CharField(required=False, max_length=255, label=_("Izoh"))
+
+    def __init__(self, *args, tenant=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if tenant is not None and not self.is_bound:
+            self.fields["currency"].initial = getattr(tenant, "currency", None) or "UZS"
 
 
 class ReservationForm(forms.ModelForm):

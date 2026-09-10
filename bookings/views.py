@@ -1032,7 +1032,10 @@ def commission_report(request):
             "month": month,
             "months": months,
             "years": years,
-            "pay_form": CommissionPaymentForm(initial={"paid_on": today}),
+            "pay_form": CommissionPaymentForm(
+                tenant=request.tenant,
+                initial={"paid_on": today},
+            ),
         },
     )
 
@@ -1155,7 +1158,7 @@ def commission_pay(request, referrer_id):
     except (TypeError, ValueError):
         year, month = today.year, today.month
 
-    form = CommissionPaymentForm(request.POST)
+    form = CommissionPaymentForm(request.POST, tenant=request.tenant)
     if form.is_valid():
         try:
             payment = record_commission_payment(
@@ -1168,15 +1171,27 @@ def commission_pay(request, referrer_id):
                 method=form.cleaned_data["method"],
                 note=form.cleaned_data.get("note") or "",
                 user=request.user,
-                currency=form.cleaned_data.get("currency"),
+                currency=form.cleaned_data.get("currency") or request.tenant.currency or "UZS",
             )
             messages.success(
                 request,
-                _("%(name)s ga %(amount)s to‘landi.")
-                % {"name": referrer.name, "amount": payment.amount},
+                _("%(name)s ga %(amount)s %(cur)s to‘landi.")
+                % {
+                    "name": referrer.name,
+                    "amount": payment.amount,
+                    "cur": payment.currency,
+                },
             )
         except ValidationError as exc:
             messages.error(request, "; ".join(exc.messages))
     else:
-        messages.error(request, _("To‘lov saqlanmadi — maydonlarni tekshiring."))
+        detail = "; ".join(
+            f"{field}: {', '.join(errs)}" for field, errs in form.errors.items()
+        )
+        messages.error(
+            request,
+            _("To‘lov saqlanmadi — %(d)s") % {"d": detail}
+            if detail
+            else _("To‘lov saqlanmadi — maydonlarni tekshiring."),
+        )
     return redirect(f"{reverse('bookings:commission_report')}?year={year}&month={month}")
