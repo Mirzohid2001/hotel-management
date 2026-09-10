@@ -1,0 +1,177 @@
+{% load money_fmt i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "Kunlik hisobot" %} · {{ day|date:"d.m.Y" }}</title>
+  <style>
+    :root {
+      --brand: #c04a00;
+      --ink: #1a1410;
+      --muted: #7a7168;
+      --line: #ddd4c8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      max-width: 720px;
+      margin: 1.5rem auto;
+      padding: 0 1rem 2rem;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    h1 { font-size: 1.4rem; color: var(--brand); margin: 0 0 0.25rem; }
+    h2 {
+      font-size: 1.05rem;
+      margin: 1.25rem 0 0.5rem;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 0.25rem;
+    }
+    .muted { color: var(--muted); }
+    .meta { margin: 0 0 1rem; font-size: 0.95rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.65rem;
+      margin: 1rem 0;
+    }
+    .cell {
+      border: 1px solid var(--line);
+      padding: 0.55rem 0.65rem;
+      border-radius: 6px;
+    }
+    .cell span { display: block; font-size: 0.78rem; color: var(--muted); }
+    .cell strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+    .cell.is-net { border-color: var(--brand); background: #fff8f3; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    th, td { text-align: left; padding: 0.35rem 0.25rem; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .actions { margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button, .actions a {
+      background: var(--brand);
+      color: #fff;
+      border: 0;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .actions a.ghost {
+      background: transparent;
+      color: var(--brand);
+      border: 1px solid var(--brand);
+    }
+    .foot {
+      margin-top: 1.5rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    @media print {
+      .actions { display: none !important; }
+      body { margin: 0; max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button type="button" onclick="window.print()">{% trans "Chop etish" %}</button>
+    <a class="ghost" href="{% url 'reports:flash' %}?day={{ day|date:'Y-m-d' }}">{% trans "Orqaga" %}</a>
+  </div>
+
+  <header>
+    <h1>{{ tenant.name }} — {% trans "Kunlik hisobot (chek)" %}</h1>
+    <p class="meta muted">
+      {{ day|date:"d.m.Y" }}
+      {% if active_hotel %}· {{ active_hotel.display_label }}{% endif %}
+      · {{ tenant.currency|default:"UZS" }}
+    </p>
+  </header>
+
+  <h2>{% trans "Kun ko‘rsatkichlari" %}</h2>
+  <div class="grid">
+    <div class="cell"><span>{% trans "Bandlik" %}</span><strong>{{ flash.stats.occupancy_percent }}%</strong></div>
+    <div class="cell"><span>ADR</span><strong>{{ flash.stats.adr|money }}</strong></div>
+    <div class="cell"><span>RevPAR</span><strong>{{ flash.stats.revpar|money }}</strong></div>
+    <div class="cell"><span>{% trans "Naqd tushum" %}</span><strong>{{ flash.revenue_cash|money }}</strong></div>
+    <div class="cell"><span>{% trans "Hisoblangan" %}</span><strong>{{ flash.revenue_accrual|money }}</strong></div>
+    <div class="cell"><span>{% trans "Rasxod (joriy)" %}</span><strong>{{ flash.expenses_today|money }}</strong></div>
+  </div>
+
+  <h2>{% trans "To‘lov usullari" %}</h2>
+  <div class="grid">
+    <div class="cell"><span>{% trans "Kirim" %}</span><strong>{{ flash.payments.total_in|money }}</strong></div>
+    <div class="cell"><span>{% trans "Chiqim" %}</span><strong>−{{ flash.payments.total_out|money }}</strong></div>
+    <div class="cell is-net"><span>{% trans "Net" %}</span><strong>{{ flash.payments.net|money }}</strong></div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>{% trans "Usul" %}</th>
+        <th class="num">{% trans "Kirim" %}</th>
+        <th class="num">{% trans "Chiqim" %}</th>
+        <th class="num">{% trans "Net" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in flash.payments.rows %}
+      <tr>
+        <td>{{ row.label }}</td>
+        <td class="num">{{ row.in|money }}</td>
+        <td class="num">{{ row.out|money }}</td>
+        <td class="num">{{ row.net|money }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="muted">{% trans "Yo‘q" %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>{% trans "Debitorika" %}</h2>
+  <div class="grid">
+    <div class="cell">
+      <span>{% trans "Mehmon A/R" %} ({{ flash.guest_ar.count }})</span>
+      <strong>{{ flash.guest_ar.total|money }}</strong>
+    </div>
+    <div class="cell">
+      <span>{% trans "Kompaniya A/R" %}</span>
+      <strong>{{ flash.company_ar.grand_total|money }}</strong>
+    </div>
+  </div>
+  {% if flash.guest_ar.rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>{% trans "Bron" %}</th>
+        <th>{% trans "Mehmon" %}</th>
+        <th class="num">{% trans "Qarz" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in flash.guest_ar.rows %}
+      <tr>
+        <td>{{ row.code }}</td>
+        <td>{{ row.guest }}</td>
+        <td class="num">{{ row.balance|money }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h2>{% trans "OYD foyda/zarar" %} ({% trans "naqd" %})</h2>
+  <div class="grid">
+    <div class="cell"><span>{% trans "Tushum" %}</span><strong>{{ flash.mtd.revenue|money }}</strong></div>
+    <div class="cell"><span>{% trans "Xarajat" %}</span><strong>{{ flash.mtd.operating_costs|money }}</strong></div>
+    <div class="cell"><span>{% trans "Mehnat" %}</span><strong>{{ flash.mtd.labor_total|money }}</strong></div>
+    <div class="cell is-net"><span>{% trans "Sof" %}</span><strong>{{ flash.mtd.net|money }}</strong></div>
+  </div>
+
+  <p class="foot">
+    {% trans "Chop etilgan" %}: {{ printed_at|date:"d.m.Y H:i" }}
+    {% if printed_by %}· {{ printed_by }}{% endif %}
+  </p>
+</body>
+</html>

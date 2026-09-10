@@ -148,6 +148,35 @@ def daily_flash(request):
     )
 
 
+@feature_required("pnl")
+@role_required(*ACCOUNTING)
+def daily_flash_print(request):
+    """Kunlik hisobot cheki — chop etish / PDF (brauzer)."""
+    tenant = request.tenant
+    hotel = getattr(request, "active_property", None)
+    day_str = request.GET.get("day")
+    if day_str:
+        try:
+            day = date.fromisoformat(day_str)
+        except ValueError:
+            day = timezone.localdate()
+    else:
+        day = timezone.localdate()
+    flash = build_daily_flash(tenant, day, hotel=hotel)
+    return render(
+        request,
+        "reports/flash_print.html",
+        {
+            "flash": flash,
+            "day": day,
+            "active_hotel": hotel,
+            "tenant": tenant,
+            "printed_at": timezone.localtime(),
+            "printed_by": request.user.get_full_name() or request.user.username,
+        },
+    )
+
+
 @feature_required("reports_advanced")
 @role_required(*ACCOUNTING)
 def audit_log(request):

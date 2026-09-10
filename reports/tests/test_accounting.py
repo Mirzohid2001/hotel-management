@@ -263,6 +263,12 @@ class AccountingReportsTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         resp = self.client.get(reverse("reports:flash"))
         self.assertEqual(resp.status_code, 200)
+        resp = self.client.get(
+            reverse("reports:flash_print"), {"day": self.today.isoformat()}
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Kunlik hisobot")
+        self.assertContains(resp, "Chop etish")
         resp = self.client.get(reverse("reports:export_ar"))
         self.assertEqual(resp.status_code, 200)
         self.assertIn("text/csv", resp["Content-Type"])
