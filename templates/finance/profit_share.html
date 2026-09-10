@@ -9,7 +9,10 @@
       <h1>{% trans "Foyda ulushi" %}</h1>
       <p class="report-hero-sub">
         {% trans "Davr" %}: {{ ledger.start }} → {{ ledger.end }}
-        · {% trans "Sof" %}: <strong class="money">{{ ledger.net|money }}</strong>
+        · {% trans "Taqsimlash" %}: <strong class="money">{{ ledger.net|money }}</strong>
+        {% if ledger.reinvestment %}
+        · {% trans "Reinvest" %}: <strong class="money">−{{ ledger.reinvestment|money }}</strong>
+        {% endif %}
       </p>
     </div>
     <div class="report-hero-actions">
@@ -58,11 +61,15 @@
       <strong class="money">{{ ledger.pnl.operating_costs|money }}</strong>
     </div>
     <div class="dash-pnl-item">
-      <span>{% trans "Mehnat" %}</span>
-      <strong class="money">{{ ledger.pnl.labor_total|money }}</strong>
+      <span>{% trans "Sof (operatsion)" %}</span>
+      <strong class="money">{{ ledger.operating_net|money }}</strong>
+    </div>
+    <div class="dash-pnl-item">
+      <span>{% trans "Reinvestitsiya" %}</span>
+      <strong class="money">−{{ ledger.reinvestment|money }}</strong>
     </div>
     <div class="dash-pnl-item dash-pnl-net">
-      <span>{% trans "Sof foyda" %}</span>
+      <span>{% trans "Taqsimlash" %}</span>
       <strong class="money">{{ ledger.net|money }}</strong>
     </div>
   </div>

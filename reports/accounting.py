@@ -105,10 +105,23 @@ def cash_revenue_in_range(tenant, start: date, end: date, *, hotel=None) -> dict
 
 
 def expenses_in_range(tenant, start: date, end: date, *, hotel=None) -> Decimal:
-    """Naqd asos: faqat to‘langan rasxodlar (paid_at; yo‘q bo‘lsa expense_date)."""
+    """Naqd asos: to‘langan joriy rasxodlar (reinvestitsiya Sofga kirmaydi)."""
     qs = Expense.objects.filter(
         tenant=tenant,
         status=Expense.Status.PAID,
+        funding=Expense.Funding.OPERATING,
+    ).filter(_paid_expense_date_q(start, end))
+    if hotel is not None:
+        qs = qs.filter(hotel=hotel)
+    return qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+
+
+def reinvestment_in_range(tenant, start: date, end: date, *, hotel=None) -> Decimal:
+    """To‘langan reinvestitsiya — Sofdan emas, foyda ulushidan."""
+    qs = Expense.objects.filter(
+        tenant=tenant,
+        status=Expense.Status.PAID,
+        funding=Expense.Funding.REINVESTMENT,
     ).filter(_paid_expense_date_q(start, end))
     if hotel is not None:
         qs = qs.filter(hotel=hotel)
@@ -163,18 +176,22 @@ def cash_revenue_in_month(tenant, year: int, month: int, *, hotel=None) -> dict:
 
 
 def expenses_by_category(tenant, year: int, month: int, *, hotel=None, basis="cash") -> dict:
-    """basis=cash → faqat PAID (paid_at); accrual → APPROVED+PAID (expense_date)."""
+    """basis=cash → faqat PAID (paid_at); accrual → APPROVED+PAID (expense_date).
+    Reinvestitsiya Sof/P&Lga kirmaydi.
+    """
     if basis == "accrual":
         qs = Expense.objects.filter(
             tenant=tenant,
             expense_date__year=year,
             expense_date__month=month,
             status__in=[Expense.Status.APPROVED, Expense.Status.PAID],
+            funding=Expense.Funding.OPERATING,
         )
     else:
         qs = Expense.objects.filter(
             tenant=tenant,
             status=Expense.Status.PAID,
+            funding=Expense.Funding.OPERATING,
         ).filter(_paid_expense_month_q(year, month))
     if hotel is not None:
         qs = qs.filter(hotel=hotel)
@@ -521,6 +538,7 @@ def build_daily_flash(tenant, day: date, *, hotel=None) -> dict:
         tenant=tenant,
         expense_date=day,
         status__in=[Expense.Status.APPROVED, Expense.Status.PAID],
+        funding=Expense.Funding.OPERATING,
     )
     if hotel is not None:
         expenses_today = expenses_today.filter(hotel=hotel)

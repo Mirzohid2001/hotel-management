@@ -53,15 +53,17 @@ def period_bounds(period: ProfitPeriod, *, today: date | None = None) -> tuple[d
 
 def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=None) -> dict:
     """
-    Sof foyda (davr) = tushum − rasxod − oylik − avans − komissiya − ombor (naqd asos).
-    Har sherik: ulush × sof, olingan, qoldiq.
+    Sof (operatsion) = tushum − joriy rasxod − oylik − komissiya − ombor …
+    Reinvestitsiya Sofga kirmaydi; taqsimlash: Sof − reinvestitsiya.
     """
-    from reports.accounting import cash_pnl_for_range
+    from reports.accounting import cash_pnl_for_range, reinvestment_in_range
 
     period = period or ensure_open_period(tenant)
     start, end = period_bounds(period)
     pnl = cash_pnl_for_range(tenant, start, end, hotel=hotel)
-    net = _q(pnl["net"])
+    operating_net = _q(pnl["net"])
+    reinvestment = _q(reinvestment_in_range(tenant, start, end, hotel=hotel))
+    net = _q(operating_net - reinvestment)
 
     withdrawals = (
         ProfitWithdrawal.objects.filter(tenant=tenant, period=period)
@@ -185,7 +187,10 @@ def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=No
         "start": start,
         "end": end,
         "pnl": pnl,
+        "operating_net": operating_net,
+        "reinvestment": reinvestment,
         "net": net,
+        "distributable": net,
         "share_sum": share_sum,
         "share_ok": share_sum == HUNDRED,
         "share_gap": share_gap,

@@ -1,13 +1,23 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n money_fmt %}
 {% block title %}{% trans "Ta’mir" %}{% endblock %}
 {% block body_class %}page-maintenance{% endblock %}
 {% block content %}
 <div class="expense-page">
 {% url 'maintenance:create' as create_url %}
-{% include "includes/page_header.html" with title=_("Ta’mir arizalari") eyebrow=_("Operatsiya") subtitle=_("Nosoz xona / jihoz — biriktirish va yakunlash.") primary_url=create_url primary_label=_("Yangi") %}
+{% url 'maintenance:spend_create' as spend_url %}
+{% include "includes/page_header.html" with title=_("Ta’mir va reinvestitsiya") eyebrow=_("Operatsiya · Moliya") subtitle=_("Arizalar + joriy ta’mir (Sof) / reinvestitsiya (foyda ulushi).") primary_url=create_url primary_label=_("Yangi ariza") secondary_url=spend_url secondary_label=_("Xarajat") %}
 
+<nav class="expense-filter panel" aria-label="{% trans 'Bo‘lim' %}">
+  <div class="expense-filter-actions" style="gap:0.5rem;flex-wrap:wrap">
+    <a class="btn {% if tab == 'tickets' %}{% else %}btn-ghost{% endif %} btn-sm" href="?tab=tickets">{% trans "Arizalar" %}</a>
+    <a class="btn {% if tab == 'costs' %}{% else %}btn-ghost{% endif %} btn-sm" href="?tab=costs">{% trans "Xarajatlar" %}</a>
+  </div>
+</nav>
+
+{% if tab == 'tickets' %}
 <form method="get" class="expense-filter panel">
+  <input type="hidden" name="tab" value="tickets">
   <div class="expense-filter-head">
     <div>
       <p class="eyebrow">{% trans "Filtr" %}</p>
@@ -15,7 +25,7 @@
     </div>
     <div class="expense-filter-actions">
       <button type="submit" class="btn btn-sm">{% trans "Qo‘llash" %}</button>
-      <a class="btn-ghost btn-sm" href="{% url 'maintenance:list' %}">{% trans "Tozalash" %}</a>
+      <a class="btn-ghost btn-sm" href="{% url 'maintenance:list' %}?tab=tickets">{% trans "Tozalash" %}</a>
     </div>
   </div>
   <div class="expense-filter-grid guest-filter-grid">
@@ -72,6 +82,7 @@
       </span>
       <span class="expense-actions row-actions hk-task-actions">
         {% if t.status == 'open' or t.status == 'in_progress' %}
+        <a class="btn-ghost btn-sm" href="{% url 'maintenance:edit' t.pk %}">{% trans "Tahrir" %}</a>
         <form method="post" action="{% url 'maintenance:assign' t.pk %}" class="hk-assign">
           {% csrf_token %}
           <select name="assignee_id" required>
@@ -87,6 +98,9 @@
         <form method="post" action="{% url 'maintenance:complete' t.pk %}">
           {% csrf_token %}<button type="submit" class="btn btn-sm">{% trans "Tayyor" %}</button>
         </form>
+        <form method="post" action="{% url 'maintenance:cancel' t.pk %}" onsubmit="return confirm('{% trans "Bekor qilinsinmi?" %}');">
+          {% csrf_token %}<button type="submit" class="btn-ghost btn-sm">{% trans "Bekor" %}</button>
+        </form>
         {% endif %}
       </span>
     </li>
@@ -95,5 +109,54 @@
     {% endfor %}
   </ul>
 </section>
+
+{% else %}
+<div class="expense-summary">
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "Joriy (Sofdan)" %}</span>
+    <strong class="expense-summary-val money">{{ cost_operating|money }}</strong>
+  </div>
+  <div class="expense-summary-card is-accent">
+    <span class="expense-summary-lbl">{% trans "Reinvestitsiya (foydadan)" %}</span>
+    <strong class="expense-summary-val money">{{ cost_reinvest|money }}</strong>
+  </div>
+</div>
+
+<section class="section-panel expense-list-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Pul" %}</p>
+      <h2>{% trans "Ta’mir / reinvestitsiya xarajatlari" %}</h2>
+    </div>
+    <a class="btn btn-sm" href="{% url 'maintenance:spend_create' %}">{% trans "Xarajat qo‘shish" %}</a>
+  </div>
+  <p class="muted panel mb-md">
+    {% trans "Joriy — mehmonxona Sofidan. Reinvestitsiya — Sofga tegmaydi, «Foyda ulushi»da ayiriladi." %}
+  </p>
+  <ul class="list entity-list">
+    {% for e in costs %}
+    <li class="guest-chip entity-row">
+      <span>
+        <span class="entity-row-main">
+          <strong class="entity-title">{{ e.title }}</strong>
+          {% if e.funding == 'reinvestment' %}
+          <span class="badge">{% trans "Reinvestitsiya" %}</span>
+          {% else %}
+          <span class="status-pill">{% trans "Joriy" %}</span>
+          {% endif %}
+        </span>
+        <span class="entity-meta">
+          {{ e.expense_date }} · {{ e.category.name }}
+          {% if e.maintenance_ticket %} · {% trans "Ariza" %}: {{ e.maintenance_ticket.title }}{% endif %}
+        </span>
+      </span>
+      <span class="money">{{ e.amount_base|default:e.amount|money }}</span>
+    </li>
+    {% empty %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Xarajat yo‘q") hint=_("Texnika, remont yoki mayda ta’mir summasini yozing.") cta_url=spend_url cta_label=_("Xarajat qo‘shish") %}
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
 </div>
 {% endblock %}

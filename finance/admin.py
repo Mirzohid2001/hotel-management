@@ -28,10 +28,19 @@ class VendorAdmin(admin.ModelAdmin):
 
 @admin.register(Expense)
 class ExpenseAdmin(admin.ModelAdmin):
-    list_display = ("title", "hotel", "category", "amount", "expense_date", "status", "tenant")
-    list_filter = ("status", "tenant", "hotel", "category")
+    list_display = (
+        "title",
+        "hotel",
+        "category",
+        "funding",
+        "amount",
+        "expense_date",
+        "status",
+        "tenant",
+    )
+    list_filter = ("status", "funding", "tenant", "hotel", "category")
     search_fields = ("title", "notes")
-    autocomplete_fields = ("tenant", "hotel", "category", "vendor")
+    autocomplete_fields = ("tenant", "hotel", "category", "vendor", "maintenance_ticket")
     date_hierarchy = "expense_date"
     list_select_related = ("tenant", "hotel", "category", "vendor")
 

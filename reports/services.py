@@ -119,6 +119,7 @@ def expenses_in_month(tenant, year: int, month: int, *, hotel=None) -> Decimal:
     qs = Expense.objects.filter(
         tenant=tenant,
         status=Expense.Status.PAID,
+        funding=Expense.Funding.OPERATING,
     ).filter(_paid_expense_month_q(year, month))
     if hotel is not None:
         qs = qs.filter(hotel=hotel)

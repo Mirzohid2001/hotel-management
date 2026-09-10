@@ -19,6 +19,7 @@ class ExpenseForm(forms.ModelForm):
             "currency",
             "expense_date",
             "payment_method",
+            "funding",
             "receipt",
             "notes",
         )
@@ -30,8 +31,14 @@ class ExpenseForm(forms.ModelForm):
             "currency": _("Valyuta"),
             "expense_date": _("Sana"),
             "payment_method": _("To‘lov usuli"),
+            "funding": _("Moliyalashtirish"),
             "receipt": _("Chek"),
             "notes": _("Izoh"),
+        }
+        help_texts = {
+            "funding": _(
+                "Joriy — Sofdan. Reinvestitsiya — Sofga tegmaydi, uchreditel foydasidan."
+            ),
         }
         widgets = {"expense_date": forms.DateInput(attrs={"type": "date"})}
 

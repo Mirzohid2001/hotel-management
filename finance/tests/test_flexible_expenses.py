@@ -51,6 +51,7 @@ class FlexibleExpenseTests(TestCase):
                 "currency": "UZS",
                 "expense_date": self.today.isoformat(),
                 "payment_method": "transfer",
+                "funding": "operating",
                 "notes": "oylik",
             },
         )

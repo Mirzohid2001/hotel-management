@@ -47,6 +47,12 @@ class Expense(MoneyFieldsMixin, TenantOwnedModel):
         CARD = "card", _("Karta")
         TRANSFER = "transfer", _("O‘tkazma")
 
+    class Funding(models.TextChoices):
+        """Joriy → Sof (P&L); reinvestitsiya → faqat uchreditel foyda ulushi."""
+
+        OPERATING = "operating", _("Joriy (Sofdan)")
+        REINVESTMENT = "reinvestment", _("Reinvestitsiya (foydadan)")
+
     hotel = models.ForeignKey(
         "properties.Property",
         on_delete=models.CASCADE,
@@ -59,6 +65,24 @@ class Expense(MoneyFieldsMixin, TenantOwnedModel):
     )
     vendor = models.ForeignKey(
         Vendor, on_delete=models.SET_NULL, null=True, blank=True, related_name="expenses"
+    )
+    maintenance_ticket = models.ForeignKey(
+        "maintenance.MaintenanceTicket",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="expenses",
+        verbose_name=_("Ta’mir arizasi"),
+    )
+    funding = models.CharField(
+        max_length=20,
+        choices=Funding.choices,
+        default=Funding.OPERATING,
+        verbose_name=_("Moliyalashtirish"),
+        help_text=_(
+            "Joriy — mehmonxona Sofidan. Reinvestitsiya — Sofga tegmaydi, "
+            "uchreditel/foyda ulushidan ayiriladi."
+        ),
     )
     title = models.CharField(max_length=200)
     amount = models.DecimalField(max_digits=14, decimal_places=2)
