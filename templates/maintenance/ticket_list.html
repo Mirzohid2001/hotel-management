@@ -102,6 +102,11 @@
           {% csrf_token %}<button type="submit" class="btn-ghost btn-sm">{% trans "Bekor" %}</button>
         </form>
         {% endif %}
+        <form method="post" action="{% url 'maintenance:delete' t.pk %}"
+              onsubmit="return confirm('{% trans "O‘chirilsinmi? Bu amalni qaytarib bo‘lmaydi." %}');">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost btn-sm expense-danger">{% trans "O‘chirish" %}</button>
+        </form>
       </span>
     </li>
     {% empty %}
@@ -155,11 +160,18 @@
       <span class="expense-actions row-actions">
         <span class="money">{{ e.amount_base|default:e.amount|money }}</span>
         {% if e.status == 'paid' %}
+        <a class="btn-ghost btn-sm" href="{% url 'maintenance:spend_edit' e.pk %}">{% trans "Tahrir" %}</a>
         <form method="post" action="{% url 'maintenance:spend_void' e.pk %}"
               onsubmit="return confirm('{% trans "Hisobdan chiqarilsinmi?" %}');">
           {% csrf_token %}
           <input type="hidden" name="reason" value="{% trans 'Xato yozuv — bekor' %}">
           <button type="submit" class="btn-ghost btn-sm">{% trans "Bekor" %}</button>
+        </form>
+        {% elif e.status == 'rejected' or e.status == 'draft' %}
+        <form method="post" action="{% url 'maintenance:spend_delete' e.pk %}"
+              onsubmit="return confirm('{% trans "O‘chirilsinmi?" %}');">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost btn-sm expense-danger">{% trans "O‘chirish" %}</button>
         </form>
         {% endif %}
       </span>

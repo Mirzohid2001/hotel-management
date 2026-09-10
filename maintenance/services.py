@@ -195,3 +195,87 @@ def void_maintenance_spend(expense: Expense, user, *, reason: str = "") -> Expen
         },
     )
     return expense
+
+
+@transaction.atomic
+def update_maintenance_spend(
+    expense: Expense,
+    user,
+    *,
+    title: str,
+    amount: Decimal,
+    expense_date,
+    funding: str,
+    payment_method: str,
+    ticket: MaintenanceTicket | None = None,
+    notes: str = "",
+    currency: str | None = None,
+) -> Expense:
+    """To‘langan Remont xarajatini tahrirlash (Sof / foyda ulushi qayta hisoblanadi)."""
+    if expense.status != Expense.Status.PAID:
+        raise ValidationError(_("Faqat to‘langan xarajat tahrirlanadi."))
+    if amount is None or Decimal(amount) <= 0:
+        raise ValidationError(_("Summa 0 dan katta bo‘lishi kerak."))
+    if funding not in dict(Expense.Funding.choices):
+        raise ValidationError(_("Moliyalashtirish turi noto‘g‘ri."))
+    if ticket is not None and ticket.tenant_id != expense.tenant_id:
+        raise ValidationError(_("Ariza topilmadi."))
+
+    assert_day_open(
+        expense.tenant,
+        expense_date or timezone.localdate(),
+        user,
+        hotel=expense.hotel,
+    )
+    cat_op, cat_re = ensure_maintenance_categories(expense.tenant)
+    expense.category = cat_re if funding == Expense.Funding.REINVESTMENT else cat_op
+    expense.maintenance_ticket = ticket
+    expense.funding = funding
+    expense.title = title.strip()
+    expense.amount = Decimal(amount)
+    expense.currency = currency or expense.currency or expense.tenant.currency or "UZS"
+    expense.expense_date = expense_date or expense.expense_date
+    expense.payment_method = payment_method
+    expense.notes = notes or ""
+    expense.save()
+    log_activity(
+        tenant=expense.tenant,
+        user=user,
+        action="maintenance_spend_update",
+        model="Expense",
+        object_id=expense.pk,
+        payload={
+            "amount": str(expense.amount),
+            "funding": funding,
+            "title": expense.title,
+        },
+    )
+    return expense
+
+
+@transaction.atomic
+def delete_ticket(ticket: MaintenanceTicket, user=None) -> None:
+    """Arizani o‘chirish — bog‘langan to‘langan xarajat bo‘lsa taqiqlanadi."""
+    paid = ticket.expenses.filter(status=Expense.Status.PAID).exists()
+    if paid:
+        raise ValidationError(
+            _("Avval bog‘langan to‘langan xarajatlarni bekor qiling yoki o‘chiring.")
+        )
+    if ticket.set_room_ooo and ticket.room_id:
+        room = ticket.room
+        if room.status == Room.Status.OUT_OF_ORDER:
+            set_room_status(
+                room, Room.Status.DIRTY, user=user, note="Maintenance ticket deleted"
+            )
+    pk = ticket.pk
+    title = ticket.title
+    tenant = ticket.tenant
+    ticket.delete()
+    log_activity(
+        tenant=tenant,
+        user=user,
+        action="maintenance_ticket_delete",
+        model="MaintenanceTicket",
+        object_id=pk,
+        payload={"title": title},
+    )

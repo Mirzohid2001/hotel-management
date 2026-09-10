@@ -1,13 +1,12 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% trans "Ta’mir / reinvestitsiya xarajati" %}{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 {% block content %}
-{% url 'maintenance:list' as list_url %}
-{% include "includes/page_header.html" with title=_("Xarajat yozish") eyebrow=_("Ta’mir") subtitle=_("Joriy = Sofdan. Reinvestitsiya = foyda ulushidan.") %}
+{% include "includes/page_header.html" with title=title eyebrow=_("Ta’mir") subtitle=_("Joriy = Sofdan. Reinvestitsiya = foyda ulushidan.") %}
 
 <section class="section-panel">
-  <p class="muted mb-md">{% trans "Filial" %}: <strong>{{ hotel.name }}</strong></p>
+  {% if hotel %}<p class="muted mb-md">{% trans "Filial" %}: <strong>{{ hotel.name }}</strong></p>{% endif %}
   {% url 'maintenance:list' as cancel_url %}
-  {% include "includes/app_form.html" with form=form cancel_url=cancel_url submit_label=_("Yozish") %}
+  {% include "includes/app_form.html" with form=form cancel_url=cancel_url submit_label=_("Saqlash") %}
 </section>
 {% endblock %}

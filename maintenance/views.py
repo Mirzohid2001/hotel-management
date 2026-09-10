@@ -23,10 +23,13 @@ from .services import (
     assign_ticket,
     cancel_ticket,
     complete_ticket,
+    delete_ticket,
     open_ticket,
     record_maintenance_spend,
+    update_maintenance_spend,
     void_maintenance_spend,
 )
+from finance.services import delete_expense
 
 User = get_user_model()
 
@@ -198,6 +201,19 @@ def ticket_cancel(request, pk):
 
 @feature_required("maintenance")
 @role_required(*OPS_MANAGER)
+@require_POST
+def ticket_delete(request, pk):
+    ticket = get_object_or_404(MaintenanceTicket, pk=pk, tenant=request.tenant)
+    try:
+        delete_ticket(ticket, user=request.user)
+        messages.success(request, _("Ariza o‘chirildi."))
+    except ValidationError as exc:
+        messages.error(request, "; ".join(exc.messages))
+    return redirect("maintenance:list")
+
+
+@feature_required("maintenance")
+@role_required(*OPS_MANAGER)
 @require_http_methods(["GET", "POST"])
 def spend_create(request):
     hotel = _active_hotel(request)
@@ -231,7 +247,64 @@ def spend_create(request):
     return render(
         request,
         "maintenance/spend_form.html",
-        {"form": form, "hotel": hotel},
+        {"form": form, "hotel": hotel, "title": _("Xarajat yozish")},
+    )
+
+
+@feature_required("maintenance")
+@role_required(*OPS_MANAGER)
+@require_http_methods(["GET", "POST"])
+def spend_edit(request, pk):
+    expense = get_object_or_404(Expense, pk=pk, tenant=request.tenant)
+    hotel = _active_hotel(request)
+    if hotel is not None and expense.hotel_id and expense.hotel_id != hotel.pk:
+        messages.error(request, _("Bu xarajat boshqa filialga tegishli."))
+        return redirect(reverse("maintenance:list") + "?tab=costs")
+    if expense.status != Expense.Status.PAID:
+        messages.error(request, _("Faqat to‘langan xarajat tahrirlanadi."))
+        return redirect(reverse("maintenance:list") + "?tab=costs")
+    form = MaintenanceSpendForm(
+        request.POST or None,
+        tenant=request.tenant,
+        hotel=expense.hotel or hotel,
+        initial={
+            "title": expense.title,
+            "amount": expense.amount,
+            "currency": expense.currency,
+            "expense_date": expense.expense_date,
+            "funding": expense.funding,
+            "payment_method": expense.payment_method,
+            "ticket": expense.maintenance_ticket_id,
+            "notes": expense.notes,
+        },
+    )
+    if request.method == "POST" and form.is_valid():
+        try:
+            update_maintenance_spend(
+                expense,
+                request.user,
+                title=form.cleaned_data["title"],
+                amount=form.cleaned_data["amount"],
+                expense_date=form.cleaned_data["expense_date"],
+                funding=form.cleaned_data["funding"],
+                payment_method=form.cleaned_data["payment_method"],
+                ticket=form.cleaned_data.get("ticket"),
+                notes=form.cleaned_data.get("notes") or "",
+                currency=form.cleaned_data.get("currency"),
+            )
+            messages.success(request, _("Xarajat yangilandi."))
+            return redirect(reverse("maintenance:list") + "?tab=costs")
+        except ValidationError as exc:
+            messages.error(request, "; ".join(exc.messages))
+    return render(
+        request,
+        "maintenance/spend_form.html",
+        {
+            "form": form,
+            "hotel": expense.hotel or hotel,
+            "title": _("Xarajatni tahrirlash"),
+            "expense": expense,
+        },
     )
 
 
@@ -248,6 +321,23 @@ def spend_void(request, pk):
     try:
         void_maintenance_spend(expense, request.user, reason=reason)
         messages.success(request, _("Xarajat hisobdan chiqarildi."))
+    except ValidationError as exc:
+        messages.error(request, "; ".join(exc.messages))
+    return redirect(reverse("maintenance:list") + "?tab=costs")
+
+
+@feature_required("maintenance")
+@role_required(*OPS_MANAGER)
+@require_POST
+def spend_delete(request, pk):
+    expense = get_object_or_404(Expense, pk=pk, tenant=request.tenant)
+    hotel = _active_hotel(request)
+    if hotel is not None and expense.hotel_id and expense.hotel_id != hotel.pk:
+        messages.error(request, _("Bu xarajat boshqa filialga tegishli."))
+        return redirect(reverse("maintenance:list") + "?tab=costs")
+    try:
+        delete_expense(expense, request.user)
+        messages.success(request, _("Xarajat o‘chirildi."))
     except ValidationError as exc:
         messages.error(request, "; ".join(exc.messages))
     return redirect(reverse("maintenance:list") + "?tab=costs")

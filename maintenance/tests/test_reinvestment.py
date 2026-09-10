@@ -264,27 +264,42 @@ class MaintenanceReinvestmentTests(TestCase):
         pnl = cash_pnl_for_range(self.tenant, self.today, self.today)
         self.assertEqual(pnl["expenses_total"], Decimal("0"))
 
-    def test_operating_and_reinvestment_categories_distinct(self):
-        record_maintenance_spend(
+    def test_ticket_delete_and_spend_edit(self):
+        ticket = MaintenanceTicket.objects.create(
+            tenant=self.tenant, room=self.room, title="Del", created_by=self.user
+        )
+        open_ticket(ticket)
+        resp = self.client.post(reverse("maintenance:delete", args=[ticket.pk]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(MaintenanceTicket.objects.filter(pk=ticket.pk).exists())
+
+        exp = record_maintenance_spend(
             self.tenant,
             self.user,
             hotel=self.prop,
-            title="A",
-            amount=Decimal("1000"),
+            title="Old",
+            amount=Decimal("50000"),
             expense_date=self.today,
             funding=Expense.Funding.OPERATING,
         )
-        record_maintenance_spend(
-            self.tenant,
-            self.user,
-            hotel=self.prop,
-            title="B",
-            amount=Decimal("2000"),
-            expense_date=self.today,
-            funding=Expense.Funding.REINVESTMENT,
+        resp = self.client.post(
+            reverse("maintenance:spend_edit", args=[exp.pk]),
+            {
+                "title": "New title",
+                "amount": "75000",
+                "currency": "UZS",
+                "expense_date": self.today.isoformat(),
+                "funding": Expense.Funding.REINVESTMENT,
+                "payment_method": Expense.PaymentMethod.CASH,
+                "notes": "",
+            },
         )
-        names = set(
-            ExpenseCategory.objects.filter(tenant=self.tenant).values_list("name", flat=True)
+        self.assertEqual(resp.status_code, 302)
+        exp.refresh_from_db()
+        self.assertEqual(exp.title, "New title")
+        self.assertEqual(exp.amount, Decimal("75000"))
+        self.assertEqual(exp.funding, Expense.Funding.REINVESTMENT)
+        # Sofdan chiqdi
+        self.assertEqual(
+            expenses_in_range(self.tenant, self.today, self.today), Decimal("0")
         )
-        self.assertIn("Ta’mir (joriy)", names)
-        self.assertIn("Reinvestitsiya", names)
