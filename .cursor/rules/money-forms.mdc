@@ -1,0 +1,16 @@
+---
+description: Keep money payment forms in sync with Django Form fields (currency, amount, date)
+globs: "**/forms.py,**/templates/**/*.html,**/views.py"
+alwaysApply: false
+---
+
+# Money / to‘lov formalari
+
+When adding or editing payment, deposit, refund, commission, expense, or withdrawal UI:
+
+1. **Template fields must come from the Django Form** (`{% for field in form %}` or `{{ form.field }}`). Do not hand-write `name="amount"` / `name="currency"` inputs that can drift from `forms.py`.
+2. Every money form that has `currency` in `forms.py` must expose it in the template (UZS / USD / EUR).
+3. `<input type="date">` values must be ISO `Y-m-d` (never localized `d.m.Y`).
+4. `<input type="number">` amounts must be unlocalized (`stringformat:".2f"`), never `250 000,00`.
+5. Prefer `currency` `required=False` with `clean_*` defaulting to `tenant.currency` so a missing select does not hard-fail.
+6. Add/keep a test that the page HTML contains `name="<field>"` for every form field (at least amount, currency, method).

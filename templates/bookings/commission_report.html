@@ -123,36 +123,18 @@
       <input type="hidden" name="year" value="{{ year }}">
       <input type="hidden" name="month" value="{{ month }}">
       <div class="form-grid app-form-grid" style="grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:0.65rem;align-items:end">
+        {% for field in pay_form %}
         <p class="form-field" style="margin:0">
-          <label>{% trans "Summa" %}</label>
-          <input type="number" name="amount" step="0.01" min="0.01" required
+          <label for="id_{{ field.name }}_{{ group.referrer.pk }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {% if field.name == "amount" %}
+          <input type="number" name="amount" id="id_amount_{{ group.referrer.pk }}"
+                 step="0.01" min="0.01" required
                  value="{{ group.remaining|stringformat:'.2f' }}">
+          {% else %}
+          {{ field.as_widget }}
+          {% endif %}
         </p>
-        <p class="form-field" style="margin:0">
-          <label>{% trans "Valyuta" %}</label>
-          <select name="currency">
-            {% for val, label in pay_form.fields.currency.choices %}
-            <option value="{{ val }}" {% if pay_form.initial.currency == val or pay_form.fields.currency.initial == val %}selected{% endif %}>{{ val }}</option>
-            {% endfor %}
-          </select>
-        </p>
-        <p class="form-field" style="margin:0">
-          <label>{% trans "Sana" %}</label>
-          <input type="date" name="paid_on" required
-                 value="{% if pay_form.initial.paid_on %}{{ pay_form.initial.paid_on|date:'Y-m-d' }}{% endif %}">
-        </p>
-        <p class="form-field" style="margin:0">
-          <label>{% trans "Usul" %}</label>
-          <select name="method">
-            {% for val, label in pay_form.fields.method.choices %}
-            <option value="{{ val }}" {% if pay_form.fields.method.initial == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </p>
-        <p class="form-field" style="margin:0">
-          <label>{% trans "Izoh" %}</label>
-          <input type="text" name="note" maxlength="255" placeholder="{% trans 'Ixtiyoriy' %}">
-        </p>
+        {% endfor %}
         <p class="form-field" style="margin:0">
           <label aria-hidden="true">&nbsp;</label>
           <button type="submit" class="btn">{% trans "To‘lash" %}</button>

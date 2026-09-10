@@ -146,6 +146,7 @@ class CommissionPaymentForm(forms.Form):
         choices=CURRENCY_CHOICES,
         label=_("Valyuta"),
         initial="UZS",
+        required=False,
     )
     paid_on = forms.DateField(
         label=_("Sana"),
@@ -161,8 +162,19 @@ class CommissionPaymentForm(forms.Form):
 
     def __init__(self, *args, tenant=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.tenant = tenant
         if tenant is not None and not self.is_bound:
             self.fields["currency"].initial = getattr(tenant, "currency", None) or "UZS"
+            self.fields["paid_on"].initial = timezone.localdate()
+
+    def clean_currency(self):
+        currency = (self.cleaned_data.get("currency") or "").strip().upper()
+        if not currency:
+            tenant = getattr(self, "tenant", None)
+            currency = getattr(tenant, "currency", None) or "UZS"
+        if currency not in {c[0] for c in CURRENCY_CHOICES}:
+            raise forms.ValidationError(_("Valyuta noto‘g‘ri."))
+        return currency
 
 
 class ReservationForm(forms.ModelForm):

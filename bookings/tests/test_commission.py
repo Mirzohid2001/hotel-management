@@ -302,6 +302,78 @@ class CommissionReportTests(TestCase):
         )
         self.assertEqual(report3["groups"][0]["remaining"], Decimal("0"))
 
+    def test_commission_pay_form_fields_present_on_page(self):
+        """Template must expose every CommissionPaymentForm field (anti-drift)."""
+        from django.urls import reverse
+
+        from bookings.forms import CommissionPaymentForm
+
+        check_out = self.today.replace(day=15) if self.today.day >= 2 else self.today
+        check_in = check_out - timedelta(days=1)
+        create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=check_in,
+            check_out=check_out,
+            referrer=self.vali,
+            commission_percent=Decimal("10"),
+        )
+        self.client.force_login(self.user)
+        resp = self.client.get(
+            reverse("bookings:commission_report"),
+            {"year": check_out.year, "month": check_out.month},
+        )
+        self.assertEqual(resp.status_code, 200)
+        for name in CommissionPaymentForm.base_fields:
+            self.assertContains(resp, f'name="{name}"')
+
+    def test_commission_pay_works_without_currency_posted(self):
+        """Missing currency must default to tenant currency, not fail silently."""
+        from django.urls import reverse
+
+        check_out = self.today.replace(day=15) if self.today.day >= 2 else self.today
+        check_in = check_out - timedelta(days=1)
+        create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=check_in,
+            check_out=check_out,
+            referrer=self.vali,
+            commission_percent=Decimal("10"),
+        )
+        self.client.force_login(self.user)
+        report = build_commission_report(
+            self.tenant, year=check_out.year, month=check_out.month
+        )
+        remaining = report["groups"][0]["remaining"]
+        resp = self.client.post(
+            reverse("bookings:commission_pay", args=[self.vali.pk]),
+            {
+                "year": check_out.year,
+                "month": check_out.month,
+                "amount": str(remaining),
+                "paid_on": check_out.isoformat(),
+                "method": "cash",
+            },
+            follow=True,
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotContains(resp, "saqlanmadi")
+        report2 = build_commission_report(
+            self.tenant, year=check_out.year, month=check_out.month
+        )
+        self.assertEqual(report2["groups"][0]["remaining"], Decimal("0"))
+
     def test_commission_statement_page(self):
         from django.urls import reverse
 
