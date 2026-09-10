@@ -264,24 +264,28 @@ class AccountingReportsTests(TestCase):
 
     def test_payment_methods_refunds_are_out_not_in(self):
         from folio.models import GuestPayment
-        from folio.services import add_payment, open_cash_shift, refund_overpayment
 
-        open_cash_shift(self.tenant, self.user, Decimal("0"), hotel=self.prop)
-        folio = self.reservation.folio
-        add_payment(
-            folio,
-            self.user,
+        GuestPayment.objects.create(
+            tenant=self.tenant,
+            folio=self.reservation.folio,
             amount=Decimal("150000"),
             method=GuestPayment.Method.CASH,
+            kind=GuestPayment.Kind.PAYMENT,
+            received_by=self.user,
+            currency="UZS",
         )
-        refund_overpayment(
-            folio,
-            self.user,
+        GuestPayment.objects.create(
+            tenant=self.tenant,
+            folio=self.reservation.folio,
             amount=Decimal("50000"),
             method=GuestPayment.Method.CASH,
+            kind=GuestPayment.Kind.REFUND,
+            received_by=self.user,
+            currency="UZS",
+            note="Sdachi test",
         )
         breakdown = payment_method_breakdown(self.tenant, self.today, self.today)
-        cash = next(r for r in breakdown["rows"] if r["key"] == "cash")
+        cash = next(r for r in breakdown["rows"] if r["method"] == "cash")
         self.assertEqual(cash["in"], Decimal("150000"))
         # Sdachi 50k + setUp rasxod 200k (cash)
         self.assertEqual(cash["out"], Decimal("250000"))
