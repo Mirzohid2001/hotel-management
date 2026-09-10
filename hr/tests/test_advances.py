@@ -10,6 +10,7 @@ from hr.services import (
     create_advance,
     generate_payroll,
     mark_item_paid,
+    open_advance_total,
     pay_employee_salary,
     settle_advance,
 )
@@ -31,7 +32,7 @@ class SalaryAdvancePayrollTests(TestCase):
         today = timezone.localdate()
         self.year, self.month = today.year, today.month
 
-    def test_advance_applies_on_generate_and_settle_on_finalize(self):
+    def test_advance_applies_on_generate_and_settle_on_pay(self):
         create_advance(
             self.tenant,
             self.emp,
@@ -44,13 +45,14 @@ class SalaryAdvancePayrollTests(TestCase):
         self.assertEqual(item.advance, Decimal("500000"))
         self.assertEqual(item.net_amount, Decimal("4500000"))
         adv = SalaryAdvance.objects.get(employee=self.emp)
-        self.assertEqual(adv.applied_to_period_id, period.pk)
         self.assertFalse(adv.is_settled)
+        self.assertEqual(adv.open_amount, Decimal("500000"))
 
-        # To‘lash qoralamadan ham ishlaydi: avtomatik yakunlaydi
         mark_item_paid(item)
         adv.refresh_from_db()
         self.assertTrue(adv.is_settled)
+        self.assertEqual(adv.recovered_amount, Decimal("500000"))
+        self.assertEqual(adv.open_amount, Decimal("0"))
         period.refresh_from_db()
         self.assertEqual(period.status, PayrollPeriod.Status.PAID)
         self.assertTrue(SalaryPayment.objects.filter(item=item).exists())
@@ -67,11 +69,9 @@ class SalaryAdvancePayrollTests(TestCase):
 
         resp = self.client.post(reverse("hr:employee_pay", args=[self.emp.pk]))
         self.assertEqual(resp.status_code, 302)
-        # ikkinchi marta — xato xabar, lekin redirect
         self.assertEqual(SalaryPayment.objects.filter(item__employee=self.emp).count(), 1)
 
     def test_pay_applies_advance_even_if_period_finalized(self):
-        """Yakunlangan davrda ham avans oylikdan ushlanadi."""
         period = generate_payroll(self.tenant, self.year, self.month)
         from hr.services import finalize_payroll
 
@@ -84,9 +84,11 @@ class SalaryAdvancePayrollTests(TestCase):
         self.assertEqual(payment.amount, Decimal("4000000"))
         item.refresh_from_db()
         self.assertEqual(item.advance, Decimal("1000000"))
-        self.assertTrue(SalaryAdvance.objects.get(employee=self.emp).is_settled)
+        adv = SalaryAdvance.objects.get(employee=self.emp)
+        self.assertTrue(adv.is_settled)
+        self.assertEqual(adv.recovered_amount, Decimal("1000000"))
 
-    def test_advance_larger_than_salary_zeros_net(self):
+    def test_advance_larger_than_salary_partial_recover(self):
         create_advance(
             self.tenant, self.emp, amount=Decimal("9000000"), note="Big"
         )
@@ -94,8 +96,33 @@ class SalaryAdvancePayrollTests(TestCase):
         self.assertEqual(payment.amount, Decimal("0"))
         item = payment.item
         self.assertEqual(item.advance, Decimal("5000000"))
-        # Butun 9mln yozuv ochiq qoladi — keyingi oyda yana ushlanadi
-        self.assertFalse(SalaryAdvance.objects.get(employee=self.emp).is_settled)
+        adv = SalaryAdvance.objects.get(employee=self.emp)
+        self.assertFalse(adv.is_settled)
+        self.assertEqual(adv.recovered_amount, Decimal("5000000"))
+        self.assertEqual(adv.open_amount, Decimal("4000000"))
+        self.assertEqual(open_advance_total(self.emp), Decimal("4000000"))
+
+        # Keyingi oy — qolgan 4mln ushlanadi
+        nxt = self.month + 1
+        nxt_year = self.year
+        if nxt > 12:
+            nxt = 1
+            nxt_year += 1
+        pay2 = pay_employee_salary(
+            self.tenant, self.emp, year=nxt_year, month=nxt
+        )
+        self.assertEqual(pay2.amount, Decimal("1000000"))
+        adv.refresh_from_db()
+        self.assertTrue(adv.is_settled)
+        self.assertEqual(adv.open_amount, Decimal("0"))
+
+    def test_inactive_employee_cannot_get_advance(self):
+        self.emp.is_active = False
+        self.emp.save(update_fields=["is_active"])
+        from django.core.exceptions import ValidationError
+
+        with self.assertRaises(ValidationError):
+            create_advance(self.tenant, self.emp, amount=Decimal("100000"))
 
     def test_payroll_bonus_deduction_edit(self):
         from hr.services import generate_payroll, update_payroll_item_amounts
@@ -140,6 +167,7 @@ class SalaryAdvancePayrollTests(TestCase):
         settle_advance(adv)
         adv.refresh_from_db()
         self.assertTrue(adv.is_settled)
+        self.assertEqual(adv.open_amount, Decimal("0"))
 
         resp = self.client.get(reverse("hr:advances"))
         self.assertEqual(resp.status_code, 200)

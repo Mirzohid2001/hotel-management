@@ -21,6 +21,7 @@ from .services import (
     pay_employee_salary,
     salary_due_preview,
     settle_advance,
+    sync_item_advances,
     update_payroll_item_amounts,
 )
 
@@ -136,6 +137,14 @@ def employee_pay(request, pk):
 def payroll_list(request):
     from decimal import Decimal
     from django.db.models import Sum
+
+    # To‘lanmagan qatorlarda avans ushlanmasini yangilash
+    unpaid_items = PayrollItem.objects.filter(
+        tenant=request.tenant, payment__isnull=True
+    ).select_related("employee", "period")
+    for item in unpaid_items:
+        if item.period.status != PayrollPeriod.Status.PAID:
+            sync_item_advances(item)
 
     periods = PayrollPeriod.objects.filter(tenant=request.tenant).prefetch_related(
         Prefetch(

@@ -32,8 +32,15 @@
           {% if a.applied_to_period %} · {{ a.applied_to_period }}{% endif %}
         </span>
       </span>
-      <span class="expense-actions">
-        <span class="money">{{ a.amount|money }}</span>
+        <span class="expense-actions">
+        <span class="money">
+          {% if a.is_settled %}
+          {{ a.amount|money }}
+          {% else %}
+          {{ a.open_amount|money }}
+          <span class="muted">/ {{ a.amount|money }}</span>
+          {% endif %}
+        </span>
         {% if not a.is_settled %}
         <form method="post" action="{% url 'hr:advance_settle' a.pk %}">
           {% csrf_token %}<button type="submit" class="btn-ghost btn-sm">{% trans "Yopish" %}</button>

@@ -68,7 +68,8 @@ class PayrollItem(TenantOwnedModel):
         unique_together = ("period", "employee")
 
     def recompute(self):
-        self.net_amount = self.base_amount + self.bonus - self.deduction - self.advance
+        raw = self.base_amount + self.bonus - self.deduction - self.advance
+        self.net_amount = raw if raw > 0 else Decimal("0")
 
     def save(self, *args, **kwargs):
         self.recompute()
@@ -84,6 +85,12 @@ class SalaryAdvance(MoneyFieldsMixin, TenantOwnedModel):
     advance_date = models.DateField()
     note = models.CharField(max_length=255, blank=True)
     is_settled = models.BooleanField(default=False)
+    recovered_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=Decimal("0"),
+        help_text=_("Oylikdan ushlangan qism (qisman qoplash)."),
+    )
     applied_to_period = models.ForeignKey(
         PayrollPeriod,
         on_delete=models.SET_NULL,
@@ -98,6 +105,16 @@ class SalaryAdvance(MoneyFieldsMixin, TenantOwnedModel):
     def save(self, *args, **kwargs):
         apply_money(self, on_date=self.advance_date)
         super().save(*args, **kwargs)
+
+    @property
+    def principal(self) -> Decimal:
+        return self.amount_base if self.amount_base is not None else self.amount
+
+    @property
+    def open_amount(self) -> Decimal:
+        """Hali oylikdan ushlanmagan qoldiq."""
+        left = self.principal - (self.recovered_amount or Decimal("0"))
+        return left if left > 0 else Decimal("0")
 
     def __str__(self) -> str:
         return f"{self.employee} · {self.amount} {self.currency}"
