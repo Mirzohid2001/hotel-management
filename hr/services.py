@@ -50,6 +50,53 @@ def _advances_for_employee(employee: Employee, period: PayrollPeriod):
     ).filter(Q(applied_to_period__isnull=True) | Q(applied_to_period=period))
 
 
+def _max_advance_deduction(item: PayrollItem) -> Decimal:
+    due = (item.base_amount or Decimal("0")) + (item.bonus or Decimal("0")) - (
+        item.deduction or Decimal("0")
+    )
+    return due if due > 0 else Decimal("0")
+
+
+@transaction.atomic
+def sync_item_advances(item: PayrollItem) -> PayrollItem:
+    """
+    Ochiq avanslarni oylik qatoriga bog‘lash (sof >= 0).
+    To‘lovdan oldin chaqiriladi — yakunlangan davrda ham.
+    """
+    if SalaryPayment.objects.filter(item=item).exists():
+        return item
+
+    period = item.period
+    SalaryAdvance.objects.filter(
+        employee_id=item.employee_id,
+        applied_to_period=period,
+        is_settled=False,
+    ).update(applied_to_period=None)
+
+    max_deduct = _max_advance_deduction(item)
+    open_qs = _advances_for_employee(item.employee, period).order_by(
+        "advance_date", "pk"
+    )
+    open_total = open_qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+    to_apply = min(open_total, max_deduct)
+
+    linked = Decimal("0")
+    for adv in open_qs:
+        if linked >= to_apply:
+            break
+        amt = adv.amount_base if adv.amount_base is not None else adv.amount
+        if linked + amt > to_apply:
+            # Katta avans: ushlanma raqamda bo‘ladi, yozuv ochiq qoladi (keyingi oy)
+            continue
+        adv.applied_to_period = period
+        adv.save(update_fields=["applied_to_period", "updated_at"])
+        linked += amt
+
+    item.advance = to_apply
+    item.save()
+    return item
+
+
 @transaction.atomic
 def generate_payroll(tenant, year: int, month: int) -> PayrollPeriod:
     period, _created = PayrollPeriod.objects.get_or_create(
@@ -71,12 +118,10 @@ def generate_payroll(tenant, year: int, month: int) -> PayrollPeriod:
         )
         if item.base_amount == 0 and emp.base_salary:
             item.base_amount = emp.base_salary
-
-        advances = _advances_for_employee(emp, period)
-        total_adv = advances.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
-        advances.update(applied_to_period=period)
-        item.advance = total_adv
-        item.save()
+            item.save(update_fields=["base_amount", "updated_at"])
+        if SalaryPayment.objects.filter(item=item).exists():
+            continue
+        sync_item_advances(item)
 
     return period
 
@@ -128,21 +173,39 @@ def update_payroll_item_amounts(
             raise ValidationError(_("Ushlama manfiy bo‘lmasligi kerak."))
         item.deduction = Decimal(deduction)
     item.save()
-    return item
+    return sync_item_advances(item)
 
 
 @transaction.atomic
 def mark_item_paid(item: PayrollItem, amount=None, method="cash") -> SalaryPayment:
     period = item.period
+    if SalaryPayment.objects.filter(item=item).exists():
+        raise ValidationError(_("Bu qator allaqachon to‘langan."))
+
+    # Avanslarni to‘lovdan oldin yangilash (yakunlangan davrda ham)
     if period.status == PayrollPeriod.Status.DRAFT:
         generate_payroll(period.tenant, period.year, period.month)
+        item.refresh_from_db()
+        sync_item_advances(item)
         item.refresh_from_db()
         finalize_payroll(period)
         period.refresh_from_db()
         item.refresh_from_db()
-    if SalaryPayment.objects.filter(item=item).exists():
-        raise ValidationError(_("Bu qator allaqachon to‘langan."))
-    amount = amount if amount is not None else item.net_amount
+    else:
+        sync_item_advances(item)
+        item.refresh_from_db()
+        # Bog‘langan avanslarni yopish (finalize o‘tkazilmagan bo‘lsa)
+        SalaryAdvance.objects.filter(
+            applied_to_period=period,
+            employee_id=item.employee_id,
+            is_settled=False,
+        ).update(is_settled=True)
+
+    if amount is None:
+        amount = item.net_amount if item.net_amount > 0 else Decimal("0")
+    elif Decimal(amount) < 0:
+        raise ValidationError(_("To‘lov summasi manfiy bo‘lmasligi kerak."))
+
     payment, _created = SalaryPayment.objects.update_or_create(
         item=item,
         defaults={

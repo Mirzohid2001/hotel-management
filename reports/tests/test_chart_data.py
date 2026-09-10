@@ -56,7 +56,7 @@ class ChartDataTests(TestCase):
         }
         data = pnl_charts(report, currency="UZS")
         self.assertEqual(len(data["revenueDonut"]["values"]), 1)
-        self.assertEqual(len(data["summaryBar"]["values"]), 8)
+        self.assertEqual(len(data["summaryBar"]["values"]), 7)
 
     def test_flash_charts_structure(self):
         flash = {

@@ -167,15 +167,16 @@ class AccountingReportsTests(TestCase):
         self.assertEqual(report["payroll"], item.net_amount)
         self.assertEqual(report["inventory_cost"], Decimal("50000"))
         self.assertGreater(report["commission"], Decimal("0"))
+        # Avans sof foydadan ayirilmaydi (xodim qarzi)
         expected_ops = (
             report["expenses_total"]
             + report["payroll"]
-            + report["advances"]
             + report["commission"]
             + report["inventory_cost"]
             + report.get("emehmon_shortfall", Decimal("0"))
         )
         self.assertEqual(report["operating_costs"], expected_ops)
+        self.assertEqual(report["labor_total"], report["payroll"])
         self.assertEqual(report["net"], report["revenue_total"] - expected_ops)
 
         ranged = cash_pnl_for_range(self.tenant, self.today, self.today)

@@ -264,7 +264,8 @@ def _operating_bundle(
     inventory: Decimal,
     emehmon_shortfall: Decimal = Decimal("0"),
 ) -> dict:
-    labor = payroll + advances
+    # Avans — xodim qarzi (aktiv), sof foydadan ayrilmaydi. Mehnat = faqat oylik to‘lovlari.
+    labor = payroll
     operating = expenses + labor + commission + inventory + emehmon_shortfall
     return {
         "expenses_total": expenses,
@@ -279,7 +280,9 @@ def _operating_bundle(
 
 
 def cash_pnl_for_range(tenant, start: date, end: date, *, hotel=None) -> dict:
-    """Naqd sof: tushum − rasxod − oylik − avans − komissiya − ombor − E-mehmon farq."""
+    """Naqd sof: tushum − rasxod − oylik − komissiya − ombor − E-mehmon farq.
+    Xodim avansi (qarz) sofga kirmaydi — alohida `advances` maydonida qaytariladi.
+    """
     from bookings.emehmon import emehmon_shortfall_for_range
 
     rev = cash_revenue_in_range(tenant, start, end, hotel=hotel)
@@ -337,8 +340,6 @@ def build_pnl_report(tenant, year: int, month: int, *, basis="cash", hotel=None)
     cost_breakdown = list(exp["breakdown"])
     if costs["payroll"]:
         cost_breakdown.append({"label": _("Oylik to‘lovlar"), "amount": costs["payroll"]})
-    if costs["advances"]:
-        cost_breakdown.append({"label": _("Xodim avanslari"), "amount": costs["advances"]})
     if costs["commission"]:
         cost_breakdown.append(
             {"label": _("Yo‘naltiruvchi komissiya"), "amount": costs["commission"]}

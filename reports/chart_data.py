@@ -68,7 +68,6 @@ def pnl_charts(report: dict, *, currency: str = "UZS") -> dict:
                 _("Tushum"),
                 _("Rasxod"),
                 _("Oylik"),
-                _("Avans"),
                 _("Komissiya"),
                 _("Ombor"),
                 _("E-mehmon farq"),
@@ -78,7 +77,6 @@ def pnl_charts(report: dict, *, currency: str = "UZS") -> dict:
                 _f(report.get("revenue_total")),
                 _f(report.get("expenses_total")),
                 _f(report.get("payroll")),
-                _f(report.get("advances")),
                 _f(report.get("commission")),
                 _f(report.get("inventory_cost")),
                 _f(report.get("emehmon_shortfall")),
@@ -114,7 +112,6 @@ def flash_charts(flash: dict, *, currency: str = "UZS") -> dict:
                 _f(mtd.get("operating_costs") or (
                     (mtd.get("expenses") or 0)
                     + (mtd.get("payroll") or 0)
-                    + (mtd.get("advances") or 0)
                     + (mtd.get("commission") or 0)
                     + (mtd.get("inventory_cost") or 0)
                 )),

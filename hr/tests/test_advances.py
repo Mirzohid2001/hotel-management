@@ -70,6 +70,33 @@ class SalaryAdvancePayrollTests(TestCase):
         # ikkinchi marta — xato xabar, lekin redirect
         self.assertEqual(SalaryPayment.objects.filter(item__employee=self.emp).count(), 1)
 
+    def test_pay_applies_advance_even_if_period_finalized(self):
+        """Yakunlangan davrda ham avans oylikdan ushlanadi."""
+        period = generate_payroll(self.tenant, self.year, self.month)
+        from hr.services import finalize_payroll
+
+        finalize_payroll(period)
+        create_advance(
+            self.tenant, self.emp, amount=Decimal("1000000"), note="Late"
+        )
+        item = period.items.get(employee=self.emp)
+        payment = mark_item_paid(item)
+        self.assertEqual(payment.amount, Decimal("4000000"))
+        item.refresh_from_db()
+        self.assertEqual(item.advance, Decimal("1000000"))
+        self.assertTrue(SalaryAdvance.objects.get(employee=self.emp).is_settled)
+
+    def test_advance_larger_than_salary_zeros_net(self):
+        create_advance(
+            self.tenant, self.emp, amount=Decimal("9000000"), note="Big"
+        )
+        payment = pay_employee_salary(self.tenant, self.emp)
+        self.assertEqual(payment.amount, Decimal("0"))
+        item = payment.item
+        self.assertEqual(item.advance, Decimal("5000000"))
+        # Butun 9mln yozuv ochiq qoladi — keyingi oyda yana ushlanadi
+        self.assertFalse(SalaryAdvance.objects.get(employee=self.emp).is_settled)
+
     def test_payroll_bonus_deduction_edit(self):
         from hr.services import generate_payroll, update_payroll_item_amounts
 
