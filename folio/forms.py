@@ -38,7 +38,9 @@ class PaymentForm(forms.Form):
         label=_("Summa"),
         widget=forms.NumberInput(attrs={"step": "0.01", "autofocus": True, "placeholder": "0"}),
     )
-    currency = forms.ChoiceField(choices=CURRENCY_CHOICES, label=_("Valyuta"), initial="UZS")
+    currency = forms.ChoiceField(
+        choices=CURRENCY_CHOICES, label=_("Valyuta"), initial="UZS", required=False
+    )
     note = forms.CharField(
         required=False,
         max_length=255,
@@ -51,6 +53,15 @@ class PaymentForm(forms.Form):
         self.tenant = tenant
         if tenant is not None:
             self.fields["currency"].initial = tenant.currency or "UZS"
+
+    def clean_currency(self):
+        currency = (self.cleaned_data.get("currency") or "").strip().upper()
+        if not currency:
+            tenant = getattr(self, "tenant", None)
+            currency = getattr(tenant, "currency", None) or "UZS"
+        if currency not in {c[0] for c in CURRENCY_CHOICES}:
+            raise forms.ValidationError(_("Valyuta noto‘g‘ri."))
+        return currency
 
 
 class RefundForm(forms.Form):
