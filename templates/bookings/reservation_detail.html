@@ -183,9 +183,16 @@
   {% if reservation.status == 'inquiry' %}
   <form method="post" action="{% url 'bookings:confirm' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn">{% trans "So‘rovni tasdiqlash" %}</button></form>
   {% endif %}
-  {% if reservation.status == 'confirmed' or reservation.status == 'inquiry' %}
+  {% if reservation.status == 'inquiry' %}
   <form method="post" action="{% url 'bookings:cancel' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn-ghost">{% trans "Bekor" %}</button></form>
-  <form method="post" action="{% url 'bookings:no_show' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn-ghost">{% trans "Kelmagan" %}</button></form>
+  {% elif reservation.status == 'confirmed' %}
+  <form method="post" action="{% url 'bookings:cancel' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn-ghost">{% trans "Bekor" %}</button></form>
+  <form method="post"
+        action="{% url 'bookings:no_show' reservation.pk %}"
+        onsubmit="return confirm('{% trans "Mehmon kelmadi — Kelmagan deb belgilaysizmi? Jarima (sozlamadagi %) folio ga yoziladi." %}');">
+    {% csrf_token %}
+    <button type="submit" class="btn">{% trans "Kelmagan" %}</button>
+  </form>
   {% endif %}
   {% if reservation.status == 'checked_in' %}
   <form method="post" action="{% url 'bookings:check_out' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn">{% trans "Chiqish" %}</button></form>

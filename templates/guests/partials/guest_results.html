@@ -53,6 +53,7 @@
         {% endif %}
         <a class="btn-ghost btn-sm" href="{% url 'guests:detail' g.pk %}">{% trans "Profil" %}</a>
         <a class="btn-ghost btn-sm" href="{% url 'guests:edit' g.pk %}">{% trans "Tahrirlash" %}</a>
+        {% if not g.has_reservation %}
         <form method="post"
               action="{% url 'guests:delete' g.pk %}"
               class="inline-form"
@@ -60,6 +61,7 @@
           {% csrf_token %}
           <button type="submit" class="btn-ghost btn-sm">{% trans "O‘chirish" %}</button>
         </form>
+        {% endif %}
       </span>
     </li>
     {% empty %}

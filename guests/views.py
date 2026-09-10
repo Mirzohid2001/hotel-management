@@ -43,9 +43,14 @@ def guest_list(request):
         tenant_id=request.tenant.id,
         status=Reservation.Status.CHECKED_IN,
     )
+    any_res_qs = Reservation.objects.filter(
+        guest_id=OuterRef("pk"),
+        tenant_id=request.tenant.id,
+    )
     guests = guests.annotate(
         is_in_house=Exists(in_house_qs),
         in_house_reservation_id=Subquery(in_house_qs.order_by("-check_in").values("pk")[:1]),
+        has_reservation=Exists(any_res_qs),
     )
 
     if flag == "vip":
@@ -140,7 +145,7 @@ def guest_detail(request, pk):
     guest = get_object_or_404(Guest, pk=pk, tenant=request.tenant)
     doc_form = GuestDocumentForm()
     note_form = GuestNoteForm()
-    reservations = (
+    reservations = list(
         Reservation.objects.filter(tenant=request.tenant, guest=guest)
         .select_related("room", "hotel")
         .order_by("-check_in", "-pk")[:30]
@@ -163,6 +168,7 @@ def guest_detail(request, pk):
             "doc_form": doc_form,
             "note_form": note_form,
             "reservations": reservations,
+            "can_delete": not reservations,
             "in_house_reservation_id": in_house_reservation_id,
             "new_booking_url": f"{reverse('bookings:create')}?guest={guest.pk}",
         },
@@ -194,7 +200,7 @@ def guest_delete(request, pk):
             request,
             _(
                 "Bu mehmonda bron tarixi bor — o‘chirib bo‘lmaydi. "
-                "Kerak bo‘lsa qora ro‘yxatga qo‘ying."
+                "Kelmasa: bronni «Kelmagan» qiling. Kerak bo‘lsa qora ro‘yxatga qo‘ying."
             ),
         )
         return redirect("guests:detail", pk=guest.pk)

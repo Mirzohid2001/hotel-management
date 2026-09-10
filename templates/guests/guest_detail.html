@@ -31,6 +31,7 @@
   <a class="btn" href="{{ new_booking_url }}">{% trans "Bron" %}</a>
   {% endif %}
   <a class="btn-ghost" href="{% url 'guests:list' %}">{% trans "Ro‘yxat" %}</a>
+  {% if can_delete %}
   <form method="post"
         action="{% url 'guests:delete' guest.pk %}"
         class="inline-form"
@@ -38,7 +39,14 @@
     {% csrf_token %}
     <button type="submit" class="btn-ghost">{% trans "O‘chirish" %}</button>
   </form>
+  {% endif %}
 </div>
+
+{% if reservations and not can_delete %}
+<p class="muted guest-history-hint">
+  {% trans "Mehmon o‘chirilmaydi — bron tarixi saqlanadi. Kelmasa: pastdagi bronni «Kelmagan» qiling (yoki bekor). Muammoli mehmon — tahrir → qora ro‘yxat." %}
+</p>
+{% endif %}
 
 <section class="section-panel">
   <div class="dash-section-head">
@@ -64,6 +72,15 @@
       <span class="expense-actions row-actions">
         {% if r.status == "checked_in" %}
         <a class="btn btn-sm" href="{% url 'folio:detail' r.pk %}">{% trans "Folio" %}</a>
+        {% endif %}
+        {% if r.status == "confirmed" %}
+        <form method="post"
+              action="{% url 'bookings:no_show' r.pk %}"
+              class="inline-form"
+              onsubmit="return confirm('{% trans "Mehmon kelmadi — bronni Kelmagan deb belgilaysizmi?" %}');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm">{% trans "Kelmagan" %}</button>
+        </form>
         {% endif %}
         <a class="btn-ghost btn-sm" href="{% url 'bookings:detail' r.pk %}">{% trans "Ochish" %}</a>
       </span>
