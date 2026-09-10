@@ -219,6 +219,51 @@ class MaintenanceReinvestmentTests(TestCase):
         ticket.refresh_from_db()
         self.assertEqual(ticket.status, MaintenanceTicket.Status.CANCELLED)
 
+    def test_void_removes_from_sof_and_distributable(self):
+        self._revenue()
+        ProfitPartner.objects.create(
+            tenant=self.tenant, name="Boss", share_percent=Decimal("100")
+        )
+        exp = record_maintenance_spend(
+            self.tenant,
+            self.user,
+            hotel=self.prop,
+            title="Xato reinvest",
+            amount=Decimal("200000"),
+            expense_date=self.today,
+            funding=Expense.Funding.REINVESTMENT,
+        )
+        ledger = build_partner_ledger(self.tenant)
+        self.assertEqual(ledger["reinvestment"], Decimal("200000.00"))
+        from maintenance.services import void_maintenance_spend
+
+        void_maintenance_spend(exp, self.user, reason="xato")
+        ledger2 = build_partner_ledger(self.tenant)
+        self.assertEqual(ledger2["reinvestment"], Decimal("0.00"))
+        self.assertEqual(ledger2["net"], Decimal("1000000.00"))
+        exp.refresh_from_db()
+        self.assertEqual(exp.status, Expense.Status.REJECTED)
+
+    def test_reinvestment_appears_in_payment_method_out(self):
+        from reports.accounting import payment_method_breakdown
+
+        record_maintenance_spend(
+            self.tenant,
+            self.user,
+            hotel=self.prop,
+            title="AC",
+            amount=Decimal("100000"),
+            expense_date=self.today,
+            funding=Expense.Funding.REINVESTMENT,
+            payment_method=Expense.PaymentMethod.CASH,
+        )
+        breakdown = payment_method_breakdown(self.tenant, self.today, self.today)
+        cash = next(r for r in breakdown["rows"] if r["method"] == "cash")
+        self.assertGreaterEqual(cash["out"], Decimal("100000"))
+        # Sofga tegmasin
+        pnl = cash_pnl_for_range(self.tenant, self.today, self.today)
+        self.assertEqual(pnl["expenses_total"], Decimal("0"))
+
     def test_operating_and_reinvestment_categories_distinct(self):
         record_maintenance_spend(
             self.tenant,
@@ -238,6 +283,8 @@ class MaintenanceReinvestmentTests(TestCase):
             expense_date=self.today,
             funding=Expense.Funding.REINVESTMENT,
         )
-        names = set(ExpenseCategory.objects.filter(tenant=self.tenant).values_list("name", flat=True))
+        names = set(
+            ExpenseCategory.objects.filter(tenant=self.tenant).values_list("name", flat=True)
+        )
         self.assertIn("Ta’mir (joriy)", names)
         self.assertIn("Reinvestitsiya", names)

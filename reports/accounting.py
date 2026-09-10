@@ -534,15 +534,7 @@ def build_daily_flash(tenant, day: date, *, hotel=None) -> dict:
     guest_ar = guest_ar_summary(tenant, hotel=hotel)
     company_ar = ar_aging(tenant)
     mtd = pnl_lite(tenant, day.year, day.month, hotel=hotel)
-    expenses_today = Expense.objects.filter(
-        tenant=tenant,
-        expense_date=day,
-        status__in=[Expense.Status.APPROVED, Expense.Status.PAID],
-        funding=Expense.Funding.OPERATING,
-    )
-    if hotel is not None:
-        expenses_today = expenses_today.filter(hotel=hotel)
-    expenses_today = expenses_today.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+    expenses_today = expenses_in_range(tenant, day, day, hotel=hotel)
     return {
         "day": day,
         "stats": stats,

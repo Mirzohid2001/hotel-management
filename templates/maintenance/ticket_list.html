@@ -144,13 +144,25 @@
           {% else %}
           <span class="status-pill">{% trans "Joriy" %}</span>
           {% endif %}
+          <span class="status-pill status-{{ e.status }}">{{ e.get_status_display }}</span>
         </span>
         <span class="entity-meta">
           {{ e.expense_date }} · {{ e.category.name }}
           {% if e.maintenance_ticket %} · {% trans "Ariza" %}: {{ e.maintenance_ticket.title }}{% endif %}
+          {% if e.status == 'rejected' and e.rejection_reason %} · {{ e.rejection_reason }}{% endif %}
         </span>
       </span>
-      <span class="money">{{ e.amount_base|default:e.amount|money }}</span>
+      <span class="expense-actions row-actions">
+        <span class="money">{{ e.amount_base|default:e.amount|money }}</span>
+        {% if e.status == 'paid' %}
+        <form method="post" action="{% url 'maintenance:spend_void' e.pk %}"
+              onsubmit="return confirm('{% trans "Hisobdan chiqarilsinmi?" %}');">
+          {% csrf_token %}
+          <input type="hidden" name="reason" value="{% trans 'Xato yozuv — bekor' %}">
+          <button type="submit" class="btn-ghost btn-sm">{% trans "Bekor" %}</button>
+        </form>
+        {% endif %}
+      </span>
     </li>
     {% empty %}
     {% include "includes/empty_state.html" with as_li=1 title=_("Xarajat yo‘q") hint=_("Texnika, remont yoki mayda ta’mir summasini yozing.") cta_url=spend_url cta_label=_("Xarajat qo‘shish") %}

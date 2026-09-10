@@ -13,7 +13,7 @@ from .models import Expense
 def approve_expense(expense: Expense, user) -> Expense:
     if expense.status != Expense.Status.DRAFT:
         raise ValidationError(_("Faqat qoralama rasxodlar tasdiqlanadi."))
-    assert_day_open(expense.tenant, timezone.localdate(), user)
+    assert_day_open(expense.tenant, timezone.localdate(), user, hotel=expense.hotel)
     expense.status = Expense.Status.APPROVED
     expense.approved_by = user
     expense.save(update_fields=["status", "approved_by", "updated_at"])
@@ -32,7 +32,7 @@ def approve_expense(expense: Expense, user) -> Expense:
 def reject_expense(expense: Expense, user, *, reason: str = "") -> Expense:
     if expense.status not in {Expense.Status.DRAFT, Expense.Status.APPROVED}:
         raise ValidationError(_("Faqat qoralama/tasdiqlangan rasxodlar rad etiladi."))
-    assert_day_open(expense.tenant, timezone.localdate(), user)
+    assert_day_open(expense.tenant, timezone.localdate(), user, hotel=expense.hotel)
     reason = (reason or "").strip()
     if not reason:
         raise ValidationError(_("Rad etish sababi kerak."))
@@ -56,7 +56,7 @@ def reject_expense(expense: Expense, user, *, reason: str = "") -> Expense:
 def mark_expense_paid(expense: Expense, user) -> Expense:
     if expense.status != Expense.Status.APPROVED:
         raise ValidationError(_("Faqat tasdiqlangan rasxodlar to‘langan deb belgilanadi."))
-    assert_day_open(expense.tenant, timezone.localdate(), user)
+    assert_day_open(expense.tenant, timezone.localdate(), user, hotel=expense.hotel)
     expense.status = Expense.Status.PAID
     expense.paid_by = user
     expense.paid_at = timezone.now()
@@ -90,7 +90,7 @@ def reopen_expense(expense: Expense, user) -> Expense:
     """Rad etilgan rasxodni qoralamaga qaytarish — qayta tahrirlash/tasdiqlash uchun."""
     if expense.status != Expense.Status.REJECTED:
         raise ValidationError(_("Faqat rad etilgan rasxodlar qayta ochiladi."))
-    assert_day_open(expense.tenant, timezone.localdate(), user)
+    assert_day_open(expense.tenant, timezone.localdate(), user, hotel=expense.hotel)
     expense.status = Expense.Status.DRAFT
     expense.rejected_by = None
     expense.rejected_at = None
@@ -121,7 +121,7 @@ def reopen_expense(expense: Expense, user) -> Expense:
 def delete_expense(expense: Expense, user) -> None:
     if expense.status not in DELETABLE_STATUSES:
         raise ValidationError(_("Faqat qoralama yoki rad etilgan rasxod o‘chiriladi."))
-    assert_day_open(expense.tenant, timezone.localdate(), user)
+    assert_day_open(expense.tenant, timezone.localdate(), user, hotel=expense.hotel)
     pk = expense.pk
     title = expense.title
     amount = str(expense.amount)

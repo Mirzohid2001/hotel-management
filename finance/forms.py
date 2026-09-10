@@ -62,6 +62,29 @@ class ExpenseForm(forms.ModelForm):
             self.fields["vendor"].queryset = vendors.order_by("name")
             self.fields["vendor"].required = False
 
+    def clean(self):
+        cleaned = super().clean()
+        category = cleaned.get("category")
+        funding = cleaned.get("funding")
+        if category and funding:
+            name = (category.name or "").strip().lower()
+            if "reinvest" in name and funding != Expense.Funding.REINVESTMENT:
+                raise forms.ValidationError(
+                    _(
+                        "«Reinvestitsiya» kategoriyasi uchun moliyalashtirish "
+                        "«Reinvestitsiya (foydadan)» bo‘lishi kerak."
+                    )
+                )
+            if name.startswith("ta’mir") or name.startswith("ta'mir"):
+                if funding != Expense.Funding.OPERATING:
+                    raise forms.ValidationError(
+                        _(
+                            "«Ta’mir (joriy)» kategoriyasi uchun moliyalashtirish "
+                            "«Joriy (Sofdan)» bo‘lishi kerak."
+                        )
+                    )
+        return cleaned
+
 
 class ExpenseCategoryForm(forms.ModelForm):
     class Meta:

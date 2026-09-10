@@ -9,6 +9,9 @@
       <span class="expense-chip">{{ e.expense_date|date:"d.m.Y" }}</span>
       <span class="expense-chip">{{ e.category.name }}</span>
       <span class="expense-chip">{{ e.get_payment_method_display }}</span>
+      {% if e.funding == 'reinvestment' %}
+      <span class="expense-chip">{% trans "Reinvestitsiya" %}</span>
+      {% endif %}
       {% if e.vendor %}<span class="expense-chip">{{ e.vendor.name }}</span>{% endif %}
     </div>
     {% if e.status == 'rejected' and e.rejection_reason %}

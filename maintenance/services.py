@@ -116,7 +116,9 @@ def record_maintenance_spend(
     if ticket is not None and ticket.tenant_id != tenant.id:
         raise ValidationError(_("Ariza topilmadi."))
 
-    assert_day_open(tenant, expense_date or timezone.localdate(), user)
+    assert_day_open(
+        tenant, expense_date or timezone.localdate(), user, hotel=hotel
+    )
     cat_op, cat_re = ensure_maintenance_categories(tenant)
     category = cat_re if funding == Expense.Funding.REINVESTMENT else cat_op
 
@@ -149,6 +151,47 @@ def record_maintenance_spend(
             "funding": funding,
             "title": expense.title,
             "ticket_id": ticket.pk if ticket else None,
+        },
+    )
+    return expense
+
+
+@transaction.atomic
+def void_maintenance_spend(expense: Expense, user, *, reason: str = "") -> Expense:
+    """Xato yozilgan Remont to‘lovini hisobdan chiqarish (PAID → REJECTED)."""
+    if expense.status != Expense.Status.PAID:
+        raise ValidationError(_("Faqat to‘langan xarajat bekor qilinadi."))
+    reason = (reason or "").strip() or _("Remont xarajati bekor qilindi.")
+    assert_day_open(
+        expense.tenant,
+        timezone.localdate(),
+        user,
+        hotel=expense.hotel,
+    )
+    expense.status = Expense.Status.REJECTED
+    expense.rejected_by = user
+    expense.rejected_at = timezone.now()
+    expense.rejection_reason = reason
+    expense.save(
+        update_fields=[
+            "status",
+            "rejected_by",
+            "rejected_at",
+            "rejection_reason",
+            "updated_at",
+        ]
+    )
+    log_activity(
+        tenant=expense.tenant,
+        user=user,
+        action="maintenance_spend_void",
+        model="Expense",
+        object_id=expense.pk,
+        payload={
+            "amount": str(expense.amount),
+            "funding": expense.funding,
+            "title": expense.title,
+            "reason": reason,
         },
     )
     return expense

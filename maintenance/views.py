@@ -25,6 +25,7 @@ from .services import (
     complete_ticket,
     open_ticket,
     record_maintenance_spend,
+    void_maintenance_spend,
 )
 
 User = get_user_model()
@@ -232,3 +233,21 @@ def spend_create(request):
         "maintenance/spend_form.html",
         {"form": form, "hotel": hotel},
     )
+
+
+@feature_required("maintenance")
+@role_required(*OPS_MANAGER)
+@require_POST
+def spend_void(request, pk):
+    expense = get_object_or_404(Expense, pk=pk, tenant=request.tenant)
+    hotel = _active_hotel(request)
+    if hotel is not None and expense.hotel_id and expense.hotel_id != hotel.pk:
+        messages.error(request, _("Bu xarajat boshqa filialga tegishli."))
+        return redirect(reverse("maintenance:list") + "?tab=costs")
+    reason = (request.POST.get("reason") or "").strip()
+    try:
+        void_maintenance_spend(expense, request.user, reason=reason)
+        messages.success(request, _("Xarajat hisobdan chiqarildi."))
+    except ValidationError as exc:
+        messages.error(request, "; ".join(exc.messages))
+    return redirect(reverse("maintenance:list") + "?tab=costs")
