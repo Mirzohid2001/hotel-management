@@ -1046,14 +1046,11 @@ msgid "Chek"
 msgstr "Чек"
 
 #: finance/forms.py:40 maintenance/forms.py:49
-#, fuzzy
-#| msgid ""
-#| "Joriy — Sofdan. Reinvestitsiya — Sofga tegmaydi, uchreditel foydasidan."
 msgid ""
 "Joriy — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, egalar "
 "ulushidan."
 msgstr ""
-"Текущий — из чистой. Реинвестиции — не из чистой, из прибыли учредителей."
+"Текущий — из чистой прибыли. Реинвестиции — не из чистой, из доли владельцев."
 
 #: finance/forms.py:74
 msgid ""
