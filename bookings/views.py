@@ -358,10 +358,12 @@ def reservation_check_in(request, pk):
 @require_http_methods(["GET"])
 def checkout_modal(request, pk):
     reservation = _get_reservation(request, pk)
-    from folio.services import ensure_folio_for_reservation, ensure_stay_nights_posted
+    from folio.services import ensure_folio_for_reservation, ensure_stay_nights_posted, reopen_folio
 
     folio = ensure_folio_for_reservation(reservation)
     if reservation.status == Reservation.Status.CHECKED_IN:
+        if not folio.is_open:
+            reopen_folio(folio)
         ensure_stay_nights_posted(reservation, request.user)
         folio.refresh_from_db()
     from_board = request.GET.get("from") == "board"
@@ -400,11 +402,16 @@ def reservation_check_out(request, pk):
     except ValidationError as exc:
         messages.error(request, "; ".join(exc.messages))
         if request.htmx and from_modal:
-            from folio.services import ensure_folio_for_reservation, ensure_stay_nights_posted
+            from folio.services import ensure_folio_for_reservation, ensure_stay_nights_posted, reopen_folio
 
             folio = ensure_folio_for_reservation(reservation)
             if reservation.status == Reservation.Status.CHECKED_IN:
-                ensure_stay_nights_posted(reservation, request.user)
+                if not folio.is_open:
+                    reopen_folio(folio)
+                try:
+                    ensure_stay_nights_posted(reservation, request.user)
+                except ValidationError:
+                    pass
                 folio.refresh_from_db()
             return render(
                 request,

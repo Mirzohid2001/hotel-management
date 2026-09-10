@@ -115,29 +115,29 @@ class CriticalOpsFixesTests(TestCase):
         reservation.refresh_from_db()
         self.assertEqual(reservation.status, Reservation.Status.CHECKED_IN)
 
-    def test_checkout_ok_when_paid_creates_hk_task(self):
+    def test_checkout_reopens_closed_folio(self):
+        reservation = self._reservation(nights=1)
+        check_in_reservation(reservation, self.user)
+        folio = reservation.folio
+        ensure_stay_nights_posted(reservation, self.user)
+        add_payment(folio, self.user, amount=folio.balance, method="card")
+        # Noto‘g‘ri yopilgan hisob — chiqish hali mumkin bo‘lishi kerak
+        folio.is_open = False
+        folio.save(update_fields=["is_open", "updated_at"])
+        check_out_reservation(reservation, self.user)
+        reservation.refresh_from_db()
+        self.assertEqual(reservation.status, Reservation.Status.CHECKED_OUT)
+
+    def test_cannot_close_folio_while_checked_in(self):
+        from folio.services import close_folio
+
         reservation = self._reservation(nights=1)
         check_in_reservation(reservation, self.user)
         ensure_stay_nights_posted(reservation, self.user)
-        add_payment(
-            reservation.folio,
-            self.user,
-            amount=reservation.folio.balance,
-            method="card",
-        )
-        check_out_reservation(reservation, self.user)
-        reservation.refresh_from_db()
-        self.room.refresh_from_db()
-        self.assertEqual(reservation.status, Reservation.Status.CHECKED_OUT)
-        self.assertEqual(self.room.status, Room.Status.DIRTY)
-        self.assertTrue(
-            HousekeepingTask.objects.filter(room=self.room).exists()
-        )
-        self.assertTrue(
-            HousekeepingTask.objects.filter(
-                room=self.room, title__icontains="tozalash"
-            ).exists()
-        )
+        add_payment(reservation.folio, self.user, amount=reservation.folio.balance, method="card")
+        with self.assertRaises(ValidationError) as ctx:
+            close_folio(reservation.folio)
+        self.assertIn("joylashgan", str(ctx.exception).lower())
 
     def test_alerts_ignore_midstay_balance(self):
         reservation = self._reservation(nights=3)

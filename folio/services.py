@@ -551,12 +551,29 @@ def collect_emehmon_fee(
 
 @transaction.atomic
 def close_folio(folio: Folio) -> Folio:
+    from bookings.models import Reservation
+
+    reservation = getattr(folio, "reservation", None)
+    if reservation is not None and reservation.status == Reservation.Status.CHECKED_IN:
+        raise ValidationError(
+            _("Joylashgan mehmon hisobini yopib bo‘lmaydi — avval chiqish qiling.")
+        )
     if folio.balance != 0:
         raise ValidationError(
             _("Qoldiq %(b)s bo‘lgan mehmon hisobini yopib bo‘lmaydi.") % {"b": folio.balance}
         )
     folio.is_open = False
     folio.closed_at = timezone.now()
+    folio.save(update_fields=["is_open", "closed_at", "updated_at"])
+    return folio
+
+
+def reopen_folio(folio: Folio) -> Folio:
+    """Yopilgan folio ni qayta ochish (masalan, hali joylashgan mehmon)."""
+    if folio.is_open:
+        return folio
+    folio.is_open = True
+    folio.closed_at = None
     folio.save(update_fields=["is_open", "closed_at", "updated_at"])
     return folio
 

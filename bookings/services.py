@@ -389,7 +389,11 @@ def check_out_reservation(reservation: Reservation, user) -> Stay:
     if reservation.status != Reservation.Status.CHECKED_IN:
         raise ValidationError(_("Faqat joylashgan bronlar chiqishi mumkin."))
 
-    from folio.services import ensure_folio_for_reservation, ensure_stay_nights_posted
+    from folio.services import (
+        ensure_folio_for_reservation,
+        ensure_stay_nights_posted,
+        reopen_folio,
+    )
     from housekeeping.models import HousekeepingTask
 
     now = timezone.now()
@@ -398,6 +402,8 @@ def check_out_reservation(reservation: Reservation, user) -> Stay:
     # leaves charges on the folio for the guest to settle.
     with transaction.atomic():
         folio = ensure_folio_for_reservation(reservation)
+        if not folio.is_open:
+            reopen_folio(folio)
         settings = _property_settings(reservation)
         if settings and settings.late_checkout_fee > 0:
             standard = _aware_local(reservation.check_out, settings.checkout_time)
@@ -413,7 +419,7 @@ def check_out_reservation(reservation: Reservation, user) -> Stay:
         ensure_stay_nights_posted(reservation, user)
 
     folio = ensure_folio_for_reservation(reservation)
-    if folio.balance != 0:
+    if folio.balance > 0:
         raise ValidationError(
             _("To‘lanmagan qoldiq %(b)s — chiqish mumkin emas.") % {"b": folio.balance}
         )
@@ -433,6 +439,11 @@ def check_out_reservation(reservation: Reservation, user) -> Stay:
                 room=reservation.room,
                 title=_("Chiqishdan keyin tozalash"),
             )
+        # Chiqishdan keyin hisobni yopamiz (qoldiq 0 yoki ortiqcha avans bo‘lsa ham)
+        if folio.is_open and folio.balance == 0:
+            folio.is_open = False
+            folio.closed_at = now
+            folio.save(update_fields=["is_open", "closed_at", "updated_at"])
     log_activity(
         tenant=reservation.tenant,
         user=user,

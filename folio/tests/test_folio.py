@@ -1,11 +1,12 @@
 from datetime import timedelta
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from bookings.services import check_in_reservation, create_reservation
+from bookings.services import check_in_reservation, check_out_reservation, create_reservation
 from core.tests.helpers import setup_tenant_user
 from folio.services import (
     add_payment,
@@ -66,7 +67,10 @@ class FolioAndHKTests(TestCase):
         self.assertEqual(folio.charges_total, Decimal("100000"))
         add_payment(folio, self.user, amount=Decimal("100000"), method="card")
         self.assertEqual(folio.balance, Decimal("0"))
-        close_folio(folio)
+        # Joylashganda qo‘lda yopib bo‘lmaydi — chiqish yopadi
+        with self.assertRaises(ValidationError):
+            close_folio(folio)
+        check_out_reservation(reservation, self.user)
         folio.refresh_from_db()
         self.assertFalse(folio.is_open)
 
