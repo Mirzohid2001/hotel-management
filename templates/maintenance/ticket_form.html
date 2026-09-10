@@ -1,11 +1,14 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{{ title }}{% endblock %}
+{% block body_class %}page-maintenance{% endblock %}
 {% block content %}
+<div class="expense-page maint-page">
 {% url 'maintenance:list' as cancel_url %}
-{% include "includes/page_header.html" with title=title %}
+{% include "includes/page_header.html" with title=title eyebrow=_("Ta’mir") subtitle=_("Xona, muhimlik va tavsif.") %}
 
-<section class="section-panel">
+<section class="section-panel maint-form-panel">
 {% include "includes/app_form.html" with form=form cancel_url=cancel_url submit_label=_("Saqlash") %}
 </section>
+</div>
 {% endblock %}

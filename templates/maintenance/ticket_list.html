@@ -3,16 +3,14 @@
 {% block title %}{% trans "Ta’mir" %}{% endblock %}
 {% block body_class %}page-maintenance{% endblock %}
 {% block content %}
-<div class="expense-page">
+<div class="expense-page maint-page">
 {% url 'maintenance:create' as create_url %}
 {% url 'maintenance:spend_create' as spend_url %}
-{% include "includes/page_header.html" with title=_("Ta’mir va reinvestitsiya") eyebrow=_("Operatsiya · Moliya") subtitle=_("Arizalar va xarajatlar: joriy ta’mir yoki reinvestitsiya.") primary_url=create_url primary_label=_("Yangi ariza") secondary_url=spend_url secondary_label=_("Xarajat") %}
+{% include "includes/page_header.html" with title=_("Ta’mir") eyebrow=_("Operatsiya") subtitle=_("Arizalar va xarajatlar — joriy ta’mir yoki reinvestitsiya.") primary_url=create_url primary_label=_("Yangi ariza") secondary_url=spend_url secondary_label=_("Xarajat") %}
 
-<nav class="expense-filter panel" aria-label="{% trans 'Bo‘lim' %}">
-  <div class="expense-filter-actions" style="gap:0.5rem;flex-wrap:wrap">
-    <a class="btn {% if tab == 'tickets' %}{% else %}btn-ghost{% endif %} btn-sm" href="?tab=tickets">{% trans "Arizalar" %}</a>
-    <a class="btn {% if tab == 'costs' %}{% else %}btn-ghost{% endif %} btn-sm" href="?tab=costs">{% trans "Xarajatlar" %}</a>
-  </div>
+<nav class="maint-tabs" aria-label="{% trans 'Bo‘lim' %}">
+  <a class="maint-tab {% if tab == 'tickets' %}is-active{% endif %}" href="?tab=tickets">{% trans "Arizalar" %}</a>
+  <a class="maint-tab {% if tab == 'costs' %}is-active{% endif %}" href="?tab=costs">{% trans "Xarajatlar" %}</a>
 </nav>
 
 {% if tab == 'tickets' %}
@@ -28,11 +26,11 @@
       <a class="btn-ghost btn-sm" href="{% url 'maintenance:list' %}?tab=tickets">{% trans "Tozalash" %}</a>
     </div>
   </div>
-  <div class="expense-filter-grid guest-filter-grid">
+  <div class="expense-filter-grid maint-filter-grid">
     <label class="expense-field">
       <span>{% trans "Holat" %}</span>
       <select name="status">
-        <option value="open" {% if status == 'open' %}selected{% endif %}>{% trans "Ochiq" %}</option>
+        <option value="open" {% if status == 'open' %}selected{% endif %}>{% trans "Faol (ochiq + jarayon)" %}</option>
         {% for val, label in statuses %}
         <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
@@ -42,7 +40,7 @@
   </div>
 </form>
 
-<div class="expense-summary">
+<div class="expense-summary maint-summary">
   <div class="expense-summary-card is-accent">
     <span class="expense-summary-lbl">{% trans "Ochiq" %}</span>
     <strong class="expense-summary-val">{{ open_count }}</strong>
@@ -52,7 +50,7 @@
     <strong class="expense-summary-val">{{ in_progress_count }}</strong>
   </div>
   <div class="expense-summary-card {% if high_count %}is-warn{% endif %}">
-    <span class="expense-summary-lbl">{% trans "Yuqori prioritet" %}</span>
+    <span class="expense-summary-lbl">{% trans "Yuqori" %}</span>
     <strong class="expense-summary-val">{{ high_count }}</strong>
   </div>
 </div>
@@ -65,49 +63,67 @@
     </div>
     <span class="muted">{{ tickets|length }}</span>
   </div>
-  <ul class="list entity-list">
+  <ul class="expense-list maint-list">
     {% for t in tickets %}
-    <li class="guest-chip entity-row">
-      <span>
-        <span class="entity-row-main">
-          <strong class="entity-title">{{ t.title }}</strong>
+    <li class="expense-card status-{{ t.status }} maint-card" id="maint-ticket-{{ t.pk }}">
+      <div class="expense-card-main">
+        <div class="expense-card-top">
+          <h3 class="expense-card-title">{{ t.title }}</h3>
           <span class="status-pill status-{{ t.status }}">{{ t.get_status_display }}</span>
           {% if t.priority == 'high' %}<span class="badge badge-blacklist">{% trans "Yuqori" %}</span>{% endif %}
-        </span>
-        <span class="entity-meta">
-          {% if t.room %}{% trans "Xona" %} {{ t.room.number }} · {% endif %}
-          {{ t.get_priority_display }}
-          {% if t.assignee %} · {{ t.assignee.get_full_name|default:t.assignee.username }}{% endif %}
-        </span>
-      </span>
-      <span class="expense-actions row-actions hk-task-actions">
-        {% if t.status == 'open' or t.status == 'in_progress' %}
-        <a class="btn-ghost btn-sm" href="{% url 'maintenance:edit' t.pk %}">{% trans "Tahrir" %}</a>
-        <form method="post" action="{% url 'maintenance:assign' t.pk %}" class="hk-assign">
-          {% csrf_token %}
-          <select name="assignee_id" required>
-            <option value="">{% trans "Biriktirish" %}</option>
-            {% for u in staff %}
-            <option value="{{ u.pk }}" {% if t.assignee_id == u.pk %}selected{% endif %}>
-              {{ u.get_full_name|default:u.username }}
-            </option>
-            {% endfor %}
-          </select>
-          <button type="submit" class="btn-ghost btn-sm">{% trans "Biriktir" %}</button>
-        </form>
-        <form method="post" action="{% url 'maintenance:complete' t.pk %}">
-          {% csrf_token %}<button type="submit" class="btn btn-sm">{% trans "Tayyor" %}</button>
-        </form>
-        <form method="post" action="{% url 'maintenance:cancel' t.pk %}" onsubmit="return confirm('{% trans "Bekor qilinsinmi?" %}');">
-          {% csrf_token %}<button type="submit" class="btn-ghost btn-sm">{% trans "Bekor" %}</button>
-        </form>
-        {% endif %}
-        <form method="post" action="{% url 'maintenance:delete' t.pk %}"
-              onsubmit="return confirm('{% trans "O‘chirilsinmi? Bu amalni qaytarib bo‘lmaydi." %}');">
-          {% csrf_token %}
-          <button type="submit" class="btn-ghost btn-sm expense-danger">{% trans "O‘chirish" %}</button>
-        </form>
-      </span>
+        </div>
+        <div class="expense-card-meta">
+          {% if t.room %}<span class="expense-chip">{% trans "Xona" %} {{ t.room.number }}</span>{% endif %}
+          <span class="expense-chip">{{ t.get_priority_display }}</span>
+          {% if t.assignee %}
+          <span class="expense-chip">{{ t.assignee.get_full_name|default:t.assignee.username }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="expense-card-side">
+        <div class="expense-card-actions maint-card-actions">
+          {% if t.status == 'open' or t.status == 'in_progress' %}
+          <a class="btn-ghost btn-sm" href="{% url 'maintenance:edit' t.pk %}">{% trans "Tahrir" %}</a>
+          <form method="post" action="{% url 'maintenance:complete' t.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm">{% trans "Tayyor" %}</button>
+          </form>
+          <details class="expense-more">
+            <summary class="btn-ghost btn-sm">{% trans "Yana" %}</summary>
+            <div class="expense-more-panel maint-more-panel">
+              <form method="post" action="{% url 'maintenance:assign' t.pk %}" class="hk-assign maint-assign">
+                {% csrf_token %}
+                <select name="assignee_id" required aria-label="{% trans 'Biriktirish' %}">
+                  <option value="">{% trans "Xodim" %}…</option>
+                  {% for u in staff %}
+                  <option value="{{ u.pk }}" {% if t.assignee_id == u.pk %}selected{% endif %}>
+                    {{ u.get_full_name|default:u.username }}
+                  </option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn-ghost btn-sm">{% trans "Biriktir" %}</button>
+              </form>
+              <form method="post" action="{% url 'maintenance:cancel' t.pk %}"
+                    onsubmit="return confirm('{% trans "Bekor qilinsinmi?" %}');">
+                {% csrf_token %}
+                <button type="submit" class="btn-ghost btn-sm">{% trans "Bekor" %}</button>
+              </form>
+              <form method="post" action="{% url 'maintenance:delete' t.pk %}"
+                    onsubmit="return confirm('{% trans "O‘chirilsinmi? Bu amalni qaytarib bo‘lmaydi." %}');">
+                {% csrf_token %}
+                <button type="submit" class="btn-ghost btn-sm expense-danger">{% trans "O‘chirish" %}</button>
+              </form>
+            </div>
+          </details>
+          {% else %}
+          <form method="post" action="{% url 'maintenance:delete' t.pk %}"
+                onsubmit="return confirm('{% trans "O‘chirilsinmi? Bu amalni qaytarib bo‘lmaydi." %}');">
+            {% csrf_token %}
+            <button type="submit" class="btn-ghost btn-sm expense-danger">{% trans "O‘chirish" %}</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
     </li>
     {% empty %}
     {% include "includes/empty_state.html" with as_li=1 title=_("Ariza yo‘q") hint=_("Nosoz xona yoki jihoz uchun yangi ta’mir arizasi oching.") cta_url=create_url cta_label=_("Ariza ochish") %}
@@ -131,53 +147,58 @@
   <div class="dash-section-head">
     <div>
       <p class="eyebrow">{% trans "Pul" %}</p>
-      <h2>{% trans "Ta’mir / reinvestitsiya xarajatlari" %}</h2>
+      <h2>{% trans "Xarajatlar" %}</h2>
     </div>
     <a class="btn btn-sm" href="{% url 'maintenance:spend_create' %}">{% trans "Xarajat qo‘shish" %}</a>
   </div>
-  <p class="muted panel mb-md">
-    {% trans "Joriy ta’mir — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, foyda ulushidan ayiriladi." %}
-  </p>
-  <ul class="list entity-list">
+  <p class="maint-hint muted">{% trans "Joriy — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, ulushdan ayiriladi." %}</p>
+  <ul class="expense-list maint-list">
     {% for e in costs %}
-    <li class="guest-chip entity-row">
-      <span>
-        <span class="entity-row-main">
-          <strong class="entity-title">{{ e.title }}</strong>
+    <li class="expense-card status-{{ e.status }} maint-card {% if e.funding == 'reinvestment' %}is-reinvest{% endif %}">
+      <div class="expense-card-main">
+        <div class="expense-card-top">
+          <h3 class="expense-card-title">{{ e.title }}</h3>
           {% if e.funding == 'reinvestment' %}
-          <span class="badge">{% trans "Reinvestitsiya" %}</span>
+          <span class="maint-funding is-reinvest">{% trans "Reinvestitsiya" %}</span>
           {% else %}
-          <span class="status-pill">{% trans "Joriy" %}</span>
+          <span class="maint-funding is-operating">{% trans "Joriy" %}</span>
           {% endif %}
           <span class="status-pill status-{{ e.status }}">{{ e.get_status_display }}</span>
-        </span>
-        <span class="entity-meta">
-          {{ e.expense_date }} · {{ e.category.name }}
-          {% if e.maintenance_ticket %} · {% trans "Ariza" %}: {{ e.maintenance_ticket.title }}{% endif %}
-          {% if e.status == 'rejected' and e.rejection_reason %} · {{ e.rejection_reason }}{% endif %}
-        </span>
-      </span>
-      <span class="expense-actions row-actions">
-        <span class="money">{{ e.amount_base|default:e.amount|money }}</span>
-        {% if e.status == 'paid' %}
-        <a class="btn-ghost btn-sm" href="{% url 'maintenance:spend_edit' e.pk %}">{% trans "Tahrir" %}</a>
-        <form method="post" action="{% url 'maintenance:spend_void' e.pk %}"
-              onsubmit="return confirm('{% trans "Hisobdan chiqarilsinmi?" %}');">
-          {% csrf_token %}
-          <input type="hidden" name="reason" value="{% trans 'Xato yozuv — bekor' %}">
-          <button type="submit" class="btn-ghost btn-sm">{% trans "Bekor" %}</button>
-        </form>
-        {% elif e.status == 'rejected' or e.status == 'draft' %}
-        <form method="post" action="{% url 'maintenance:spend_delete' e.pk %}"
-              onsubmit="return confirm('{% trans "O‘chirilsinmi?" %}');">
-          {% csrf_token %}
-          <button type="submit" class="btn-ghost btn-sm expense-danger">{% trans "O‘chirish" %}</button>
-        </form>
+        </div>
+        <div class="expense-card-meta">
+          <span class="expense-chip">{{ e.expense_date|date:"d.m.Y" }}</span>
+          <span class="expense-chip">{{ e.get_payment_method_display }}</span>
+          {% if e.maintenance_ticket %}
+          <span class="expense-chip">{% trans "Ariza" %}: {{ e.maintenance_ticket.title }}</span>
+          {% endif %}
+        </div>
+        {% if e.status == 'rejected' and e.rejection_reason %}
+        <p class="expense-reject-note">{{ e.rejection_reason }}</p>
         {% endif %}
-      </span>
+      </div>
+      <div class="expense-card-side">
+        <strong class="expense-card-amount money">{{ e.amount_base|default:e.amount|money }}</strong>
+        <div class="expense-card-actions">
+          {% if e.status == 'paid' %}
+          <a class="btn-ghost btn-sm" href="{% url 'maintenance:spend_edit' e.pk %}">{% trans "Tahrir" %}</a>
+          <form method="post" action="{% url 'maintenance:spend_void' e.pk %}"
+                onsubmit="return confirm('{% trans "Hisobdan chiqarilsinmi?" %}');">
+            {% csrf_token %}
+            <input type="hidden" name="reason" value="{% trans 'Xato yozuv — bekor' %}">
+            <button type="submit" class="btn-ghost btn-sm">{% trans "Bekor" %}</button>
+          </form>
+          {% elif e.status == 'rejected' or e.status == 'draft' %}
+          <form method="post" action="{% url 'maintenance:spend_delete' e.pk %}"
+                onsubmit="return confirm('{% trans "O‘chirilsinmi?" %}');">
+            {% csrf_token %}
+            <button type="submit" class="btn-ghost btn-sm expense-danger">{% trans "O‘chirish" %}</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
     </li>
     {% empty %}
-    {% include "includes/empty_state.html" with as_li=1 title=_("Xarajat yo‘q") hint=_("Texnika, remont yoki mayda ta’mir summasini yozing.") cta_url=spend_url cta_label=_("Xarajat qo‘shish") %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Xarajat yo‘q") hint=_("Texnika yoki ta’mir summasini yozing.") cta_url=spend_url cta_label=_("Xarajat qo‘shish") %}
     {% endfor %}
   </ul>
 </section>

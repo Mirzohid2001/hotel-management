@@ -1,12 +1,17 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{{ title }}{% endblock %}
+{% block body_class %}page-maintenance{% endblock %}
 {% block content %}
+<div class="expense-page maint-page">
 {% include "includes/page_header.html" with title=title eyebrow=_("Ta’mir") subtitle=_("Joriy — sof foydadan. Reinvestitsiya — foyda ulushidan.") %}
 
-<section class="section-panel">
-  {% if hotel %}<p class="muted mb-md">{% trans "Filial" %}: <strong>{{ hotel.name }}</strong></p>{% endif %}
-  {% url 'maintenance:list' as cancel_url %}
-  {% include "includes/app_form.html" with form=form cancel_url=cancel_url submit_label=_("Saqlash") %}
+{% url 'maintenance:list' as list_url %}
+<section class="section-panel maint-form-panel">
+  {% if hotel %}
+  <p class="maint-branch muted">{% trans "Filial" %}: <strong>{{ hotel.name }}</strong></p>
+  {% endif %}
+  {% include "includes/app_form.html" with form=form cancel_url=list_url submit_label=_("Saqlash") %}
 </section>
+</div>
 {% endblock %}

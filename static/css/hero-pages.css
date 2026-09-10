@@ -3170,3 +3170,147 @@ a.cal-new.shax-walkin {
 .payroll-page .page-toolbar form {
   margin: 0;
 }
+
+/* ═══════════════════════════════════════
+   TA’MIR — maintenance / reinvestment UI
+   ═══════════════════════════════════════ */
+.maint-page .maint-tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.28rem;
+  margin: 0 0 1.1rem;
+  border-radius: 999px;
+  background: rgba(26, 20, 16, 0.05);
+  border: 1px solid var(--line-soft);
+}
+
+.maint-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.15rem;
+  padding: 0.4rem 1.05rem;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.maint-tab:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.maint-tab.is-active {
+  color: #fff;
+  background: var(--accent);
+  box-shadow: 0 6px 16px rgba(232, 106, 12, 0.28);
+}
+
+.maint-filter-grid {
+  grid-template-columns: minmax(14rem, 22rem);
+}
+
+.maint-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.maint-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.maint-card.is-reinvest {
+  border-color: rgba(47, 93, 80, 0.22);
+}
+
+.maint-card.is-reinvest::before {
+  background: #2f5d50;
+}
+
+.maint-funding {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.maint-funding.is-operating {
+  background: rgba(232, 106, 12, 0.12);
+  color: #a34a08;
+}
+
+.maint-funding.is-reinvest {
+  background: rgba(47, 93, 80, 0.12);
+  color: #1f463c;
+}
+
+.maint-hint {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.maint-branch {
+  margin: 0 0 1rem;
+}
+
+.maint-form-panel {
+  max-width: 40rem;
+}
+
+.maint-more-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 15rem;
+}
+
+.maint-assign {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.maint-assign select {
+  width: 100%;
+  max-width: none;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+}
+
+@media (max-width: 720px) {
+  .maint-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .maint-tabs {
+    display: flex;
+    width: 100%;
+  }
+
+  .maint-tab {
+    flex: 1;
+  }
+
+  .maint-card .expense-card-side {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .maint-card .expense-card-actions {
+    justify-content: flex-start;
+  }
+}

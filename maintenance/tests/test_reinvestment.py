@@ -205,9 +205,12 @@ class MaintenanceReinvestmentTests(TestCase):
         resp = self.client.get(reverse("maintenance:list"))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Arizalar")
+        self.assertContains(resp, "maint-tabs")
         resp2 = self.client.get(reverse("maintenance:list") + "?tab=costs")
         self.assertEqual(resp2.status_code, 200)
         self.assertContains(resp2, "Reinvestitsiya")
+        self.assertContains(resp2, "maint-hint")
+        self.assertContains(resp2, "expense-summary")
 
     def test_cancel_via_post(self):
         ticket = MaintenanceTicket.objects.create(
