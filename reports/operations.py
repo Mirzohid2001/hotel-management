@@ -33,6 +33,7 @@ def room_status_summary(tenant, *, hotel=None) -> list[dict]:
 
 
 def revenue_trend(tenant, end_day: date, *, days: int = 7, hotel=None) -> list[dict]:
+    """Kunlik sof tushum (kirim − sdachi/refund), dashboard grafik uchun."""
     start = end_day - timedelta(days=days - 1)
     qs = GuestPayment.objects.filter(
         tenant=tenant,
@@ -42,9 +43,21 @@ def revenue_trend(tenant, end_day: date, *, days: int = 7, hotel=None) -> list[d
     )
     if hotel is not None:
         qs = qs.filter(folio__reservation__hotel=hotel)
-    by_day = {
+    incoming = {
         row["created_at__date"]: row["total"] or Decimal("0")
-        for row in qs.values("created_at__date").annotate(total=Sum("amount_base"))
+        for row in qs.exclude(kind=GuestPayment.Kind.REFUND)
+        .values("created_at__date")
+        .annotate(total=Sum("amount_base"))
+    }
+    refunds = {
+        row["created_at__date"]: row["total"] or Decimal("0")
+        for row in qs.filter(kind=GuestPayment.Kind.REFUND)
+        .values("created_at__date")
+        .annotate(total=Sum("amount_base"))
+    }
+    by_day = {
+        d: incoming.get(d, Decimal("0")) - refunds.get(d, Decimal("0"))
+        for d in set(incoming) | set(refunds)
     }
     peak = max(by_day.values(), default=Decimal("0"))
     rows = []

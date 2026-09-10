@@ -101,7 +101,9 @@ def revenue_on(tenant, day: date, *, hotel=None) -> Decimal:
 
 
 def charges_on(tenant, day: date, *, hotel=None) -> Decimal:
-    qs = FolioCharge.objects.filter(tenant=tenant, created_at__date=day)
+    qs = FolioCharge.objects.filter(
+        tenant=tenant, created_at__date=day, is_void=False
+    )
     if hotel is not None:
         qs = qs.filter(folio__reservation__hotel=hotel)
     return qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")

@@ -46,6 +46,55 @@ class DashboardOperationsTests(TestCase):
         self.assertEqual(len(rows), 7)
         self.assertTrue(rows[-1]["is_today"])
 
+    def test_revenue_trend_nets_refunds(self):
+        from folio.models import GuestPayment
+        from folio.services import ensure_folio_for_reservation
+        from bookings.services import create_reservation, check_in_reservation
+
+        rate = RatePlan.objects.create(
+            tenant=self.tenant,
+            property=self.prop,
+            room_type=self.rt,
+            name="BAR",
+            code="bar2",
+            price=Decimal("100000"),
+        )
+        self.room.status = Room.Status.READY
+        self.room.save(update_fields=["status"])
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+        )
+        check_in_reservation(reservation, self.user)
+        folio = ensure_folio_for_reservation(reservation)
+        GuestPayment.objects.create(
+            tenant=self.tenant,
+            folio=folio,
+            amount=Decimal("150000"),
+            method=GuestPayment.Method.CASH,
+            kind=GuestPayment.Kind.PAYMENT,
+            received_by=self.user,
+            currency="UZS",
+        )
+        GuestPayment.objects.create(
+            tenant=self.tenant,
+            folio=folio,
+            amount=Decimal("50000"),
+            method=GuestPayment.Method.CASH,
+            kind=GuestPayment.Kind.REFUND,
+            received_by=self.user,
+            currency="UZS",
+        )
+        rows = revenue_trend(self.tenant, self.today, days=1, hotel=self.prop)
+        self.assertEqual(rows[-1]["amount"], Decimal("100000"))
+
     def test_operations_kpis_open_folio_balance(self):
         from bookings.services import create_reservation, check_in_reservation
 
@@ -84,4 +133,5 @@ class DashboardOperationsTests(TestCase):
         )
         kpis = operations_kpis(self.tenant, self.today, hotel=self.prop)
         self.assertEqual(kpis["open_folio_count"], 1)
-        self.assertEqual(kpis["open_folio_balance"], Decimal("50000"))
+        # Check-in posts stay nights (2 × 100k) + test charge 50k
+        self.assertEqual(kpis["open_folio_balance"], Decimal("250000"))
