@@ -82,14 +82,8 @@ class FullMultiCurrencyAccountingTests(TestCase):
         )
         self.assertEqual(reservation.currency, "USD")
         folio = open_folio_for_deposit(reservation, self.user)
-        add_charge(
-            folio,
-            self.user,
-            charge_type=FolioCharge.ChargeType.ROOM,
-            description="Night USD",
-            unit_price=Decimal("50"),
-            currency="USD",
-        )
+        # open_folio_for_deposit allaqachon kecha to‘lovini yozadi (50 USD)
+        self.assertEqual(folio.charges_total, Decimal("500000"))
         add_payment(
             folio,
             self.user,
@@ -123,14 +117,8 @@ class FullMultiCurrencyAccountingTests(TestCase):
             commission_percent=Decimal("10"),
         )
         folio = open_folio_for_deposit(reservation, self.user)
-        add_charge(
-            folio,
-            self.user,
-            charge_type=FolioCharge.ChargeType.ROOM,
-            description="Room",
-            unit_price=Decimal("50"),
-            currency="USD",
-        )
+        # Kecha allaqachon yozilgan — qo‘shimcha ROOM kerak emas
+        self.assertEqual(folio.charges_total, Decimal("500000"))
         base = reservation_commission_base(reservation)
         self.assertEqual(base, Decimal("500000"))
         self.assertEqual(reservation_commission_amount(reservation), Decimal("50000"))
@@ -174,15 +162,7 @@ class FullMultiCurrencyAccountingTests(TestCase):
             check_out=self.today + timedelta(days=1),
         )
         folio = open_folio_for_deposit(reservation, self.user)
-        add_charge(
-            folio,
-            self.user,
-            charge_type=FolioCharge.ChargeType.ROOM,
-            description="Night",
-            unit_price=Decimal("50"),
-            currency="USD",
-        )
-        # Pay 60 USD → credit 10 USD = 100_000 UZS
+        # 50 USD kecha allaqachon yozilgan; 60 USD to‘lov → credit 10 USD
         add_payment(
             folio,
             self.user,
@@ -247,6 +227,12 @@ class FullMultiCurrencyAccountingTests(TestCase):
             nightly_rate=Decimal("50"),
         )
         folio = open_folio_for_deposit(reservation, self.user)
+        # open_folio_for_deposit kechalarni yozadi — qayta chaqiriq 0 qaytaradi
+        self.assertFalse(folio_has_legacy_prepaid_room(folio))
+        self.assertEqual(folio.charges.filter(description__startswith="Night ").count(), 1)
+        posted = ensure_stay_nights_posted(reservation, self.user)
+        self.assertEqual(posted, 0)
+        # Kichik «beer» ROOM yozuvi night postingni bloklamasligi kerak edi (allaqachon yozilgan)
         add_charge(
             folio,
             self.user,
@@ -256,5 +242,3 @@ class FullMultiCurrencyAccountingTests(TestCase):
             currency="UZS",
         )
         self.assertFalse(folio_has_legacy_prepaid_room(folio))
-        posted = ensure_stay_nights_posted(reservation, self.user)
-        self.assertEqual(posted, 1)
