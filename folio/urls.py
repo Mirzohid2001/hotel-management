@@ -11,6 +11,7 @@ urlpatterns = [
     path("reservation/<int:reservation_id>/emehmon/", views.folio_emehmon, name="emehmon"),
     path("<int:pk>/charges/", views.folio_add_charge, name="add_charge"),
     path("<int:pk>/payments/", views.folio_add_payment, name="add_payment"),
+    path("<int:pk>/refund/", views.folio_refund, name="refund"),
     path("<int:pk>/split/", views.folio_add_split, name="add_split"),
     path("<int:pk>/service/", views.folio_post_service, name="post_service"),
     path("<int:pk>/minibar/", views.folio_post_minibar, name="post_minibar"),

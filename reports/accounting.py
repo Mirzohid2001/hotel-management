@@ -49,6 +49,21 @@ def revenue_by_charge_type(tenant, year: int, month: int, *, hotel=None) -> dict
     return {"breakdown": breakdown, "total": total}
 
 
+def _net_guest_payments(qs) -> Decimal:
+    """Kirim to‘lovlari − sdachi/qaytarish."""
+    from folio.models import GuestPayment
+
+    incoming = (
+        qs.exclude(kind=GuestPayment.Kind.REFUND).aggregate(s=Sum("amount_base"))["s"]
+        or Decimal("0")
+    )
+    refunds = (
+        qs.filter(kind=GuestPayment.Kind.REFUND).aggregate(s=Sum("amount_base"))["s"]
+        or Decimal("0")
+    )
+    return incoming - refunds
+
+
 def cash_revenue_in_range(tenant, start: date, end: date, *, hotel=None) -> dict:
     guest_qs = GuestPayment.objects.filter(
         tenant=tenant,
@@ -65,7 +80,7 @@ def cash_revenue_in_range(tenant, start: date, end: date, *, hotel=None) -> dict
     if hotel is not None:
         guest_qs = guest_qs.filter(folio__reservation__hotel=hotel)
         company_qs = company_qs.filter(invoice__hotel=hotel)
-    guest = guest_qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+    guest = _net_guest_payments(guest_qs)
     company = company_qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
     return {
         "guest_payments": guest,
@@ -113,7 +128,7 @@ def cash_revenue_in_month(tenant, year: int, month: int, *, hotel=None) -> dict:
     if hotel is not None:
         guest_qs = guest_qs.filter(folio__reservation__hotel=hotel)
         company_qs = company_qs.filter(invoice__hotel=hotel)
-    guest = guest_qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+    guest = _net_guest_payments(guest_qs)
     company = company_qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
     return {
         "guest_payments": guest,

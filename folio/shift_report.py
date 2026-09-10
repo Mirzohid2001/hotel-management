@@ -100,16 +100,36 @@ def payments_in_shift(shift: CashShift) -> dict:
         card = card.filter(**hotel_q)
         transfer = transfer.filter(**hotel_q)
 
-    cash_in = (bound_cash.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")) + (
-        legacy_cash.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+    cash_in = (bound_cash.exclude(kind=GuestPayment.Kind.REFUND).aggregate(s=Sum("amount_base"))["s"] or Decimal("0")) + (
+        legacy_cash.exclude(kind=GuestPayment.Kind.REFUND).aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
     )
-    card_total = card.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
-    transfer_total = transfer.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+    cash_refund = (
+        bound_cash.filter(kind=GuestPayment.Kind.REFUND).aggregate(s=Sum("amount_base"))["s"]
+        or Decimal("0")
+    ) + (
+        legacy_cash.filter(kind=GuestPayment.Kind.REFUND).aggregate(s=Sum("amount_base"))["s"]
+        or Decimal("0")
+    )
+    card_total = (
+        card.exclude(kind=GuestPayment.Kind.REFUND).aggregate(s=Sum("amount_base"))["s"]
+        or Decimal("0")
+    ) - (
+        card.filter(kind=GuestPayment.Kind.REFUND).aggregate(s=Sum("amount_base"))["s"]
+        or Decimal("0")
+    )
+    transfer_total = (
+        transfer.exclude(kind=GuestPayment.Kind.REFUND).aggregate(s=Sum("amount_base"))["s"]
+        or Decimal("0")
+    ) - (
+        transfer.filter(kind=GuestPayment.Kind.REFUND).aggregate(s=Sum("amount_base"))["s"]
+        or Decimal("0")
+    )
 
     rows = list(bound_cash.order_by("created_at")) + list(legacy_cash.order_by("created_at"))
 
     return {
-        "cash_in": cash_in,
+        "cash_in": cash_in - cash_refund,
+        "cash_refund": cash_refund,
         "card_total": card_total,
         "transfer_total": transfer_total,
         "non_cash_total": card_total + transfer_total,

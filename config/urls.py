@@ -26,5 +26,4 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-admin.site.site_header = "Hotel PMS Platform"
-admin.site.site_title = "Hotel PMS Admin"
+# site_header / index_title — core.admin_branding.configure_admin() orqali

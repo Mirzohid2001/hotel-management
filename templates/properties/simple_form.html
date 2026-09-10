@@ -35,6 +35,13 @@
 
 <section class="section-panel">
 {% include "includes/app_form.html" with form=form cancel_url=cancel_url %}
+{% if delete_url %}
+<form method="post" action="{{ delete_url }}" class="entity-delete-form" hx-boost="false"
+      onsubmit="return confirm('{{ delete_confirm|default:_("O‘chirishni tasdiqlaysizmi?")|escapejs }}');">
+  {% csrf_token %}
+  <button type="submit" class="btn-ghost btn-danger">{% trans "O‘chirish" %}</button>
+</form>
+{% endif %}
 </section>
 
 {% if room_presets %}

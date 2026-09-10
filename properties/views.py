@@ -1,7 +1,9 @@
 from django.utils.translation import gettext as _
 from django.contrib import messages
+from django.db.models import ProtectedError
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods, require_POST
 
@@ -263,8 +265,25 @@ def room_edit(request, property_id, pk):
     return render(
         request,
         "properties/room_form.html",
-        {"form": form, "title": _("Xonani tahrirlash"), "property_obj": prop, "room": room},
+        {
+            "form": form,
+            "title": _("Xonani tahrirlash"),
+            "property_obj": prop,
+            "room": room,
+            "delete_url": reverse("properties:room_delete", args=[prop.pk, room.pk]),
+            "delete_confirm": _("Bu xonani o‘chirishni xohlaysizmi?"),
+        },
     )
+
+
+@role_required(*PROPERTY_ADMIN)
+@require_POST
+def room_delete(request, property_id, pk):
+    prop = _get_property(request, property_id)
+    room = get_object_or_404(Room, pk=pk, property=prop, tenant=request.tenant)
+    room.delete()
+    messages.success(request, _("Xona o‘chirildi."))
+    return redirect("properties:detail", pk=prop.pk)
 
 
 @role_required(*PROPERTY_ADMIN)
@@ -280,8 +299,43 @@ def room_type_edit(request, property_id, pk):
     return render(
         request,
         "properties/simple_form.html",
-        {"form": form, "title": _("Xona turini tahrirlash"), "property_obj": prop},
+        {
+            "form": form,
+            "title": _("Xona turini tahrirlash"),
+            "property_obj": prop,
+            "delete_url": reverse("properties:room_type_delete", args=[prop.pk, room_type.pk]),
+            "delete_confirm": _(
+                "Bu xona turini o‘chirishni xohlaysizmi? Bog‘langan tariflar ham o‘chadi."
+            ),
+        },
     )
+
+
+@role_required(*PROPERTY_ADMIN)
+@require_POST
+def room_type_delete(request, property_id, pk):
+    prop = _get_property(request, property_id)
+    room_type = get_object_or_404(RoomType, pk=pk, property=prop, tenant=request.tenant)
+    room_count = room_type.rooms.count()
+    if room_count:
+        messages.error(
+            request,
+            _(
+                "Avval shu turga biriktirilgan %(n)s ta xonani boshqa turga o‘tkazing yoki o‘chiring."
+            )
+            % {"n": room_count},
+        )
+        return redirect("properties:detail", pk=prop.pk)
+    try:
+        room_type.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            _("Bu tur bronlarda ishlatilgan — o‘chirib bo‘lmaydi."),
+        )
+        return redirect("properties:detail", pk=prop.pk)
+    messages.success(request, _("Xona turi o‘chirildi."))
+    return redirect("properties:detail", pk=prop.pk)
 
 
 @role_required(*PROPERTY_ADMIN)
@@ -394,6 +448,74 @@ def floor_create(request, property_id):
         "properties/simple_form.html",
         {"form": form, "title": _("Qavat"), "property_obj": prop},
     )
+
+
+@role_required(*PROPERTY_ADMIN)
+@require_http_methods(["GET", "POST"])
+def floor_edit(request, property_id, pk):
+    prop = _get_property(request, property_id)
+    floor = get_object_or_404(Floor, pk=pk, property=prop, tenant=request.tenant)
+    form = FloorForm(request.POST or None, instance=floor)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, _("Qavat yangilandi."))
+        return redirect("properties:detail", pk=prop.pk)
+    return render(
+        request,
+        "properties/simple_form.html",
+        {
+            "form": form,
+            "title": _("Qavatni tahrirlash"),
+            "property_obj": prop,
+            "delete_url": reverse("properties:floor_delete", args=[prop.pk, floor.pk]),
+            "delete_confirm": _("Bu qavatni o‘chirishni xohlaysizmi? Xonalar qavatsiz qoladi."),
+        },
+    )
+
+
+@role_required(*PROPERTY_ADMIN)
+@require_POST
+def floor_delete(request, property_id, pk):
+    prop = _get_property(request, property_id)
+    floor = get_object_or_404(Floor, pk=pk, property=prop, tenant=request.tenant)
+    floor.delete()
+    messages.success(request, _("Qavat o‘chirildi."))
+    return redirect("properties:detail", pk=prop.pk)
+
+
+@role_required(*PROPERTY_ADMIN)
+@require_http_methods(["GET", "POST"])
+def rate_plan_edit(request, property_id, pk):
+    prop = _get_property(request, property_id)
+    rate = get_object_or_404(RatePlan, pk=pk, property=prop, tenant=request.tenant)
+    form = RatePlanForm(request.POST or None, instance=rate, property_obj=prop)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, _("Tarif yangilandi."))
+        return redirect("properties:detail", pk=prop.pk)
+    return render(
+        request,
+        "properties/simple_form.html",
+        {
+            "form": form,
+            "title": _("Tarifni tahrirlash"),
+            "property_obj": prop,
+            "delete_url": reverse("properties:rate_plan_delete", args=[prop.pk, rate.pk]),
+            "delete_confirm": _(
+                "Bu tarifni o‘chirishni xohlaysizmi? Bog‘langan mavsumlar ham o‘chadi."
+            ),
+        },
+    )
+
+
+@role_required(*PROPERTY_ADMIN)
+@require_POST
+def rate_plan_delete(request, property_id, pk):
+    prop = _get_property(request, property_id)
+    rate = get_object_or_404(RatePlan, pk=pk, property=prop, tenant=request.tenant)
+    rate.delete()
+    messages.success(request, _("Tarif o‘chirildi."))
+    return redirect("properties:detail", pk=prop.pk)
 
 
 @feature_required("season_rates")

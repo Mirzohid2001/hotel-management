@@ -41,9 +41,44 @@ class GuestForm(forms.ModelForm):
 
 
 class GuestQuickForm(forms.Form):
+    """Bron/walk-in dan tezkor mehmon — check-in uchun pasport majburiy."""
+
     first_name = forms.CharField(max_length=120, label=_("Ism"))
     last_name = forms.CharField(required=False, max_length=120, label=_("Familiya"))
     phone = forms.CharField(required=False, max_length=32, label=_("Telefon"))
+    nationality = forms.CharField(
+        required=False,
+        max_length=80,
+        label=_("Fuqarolik"),
+        initial="UZ",
+        widget=forms.TextInput(attrs={"placeholder": "UZ"}),
+    )
+    doc_type = forms.ChoiceField(
+        label=_("Hujjat turi"),
+        choices=[
+            (GuestDocument.DocType.PASSPORT, _("Pasport")),
+            (GuestDocument.DocType.ID_CARD, _("ID karta")),
+        ],
+        initial=GuestDocument.DocType.PASSPORT,
+    )
+    doc_number = forms.CharField(
+        max_length=64,
+        label=_("Pasport / ID raqami"),
+        widget=forms.TextInput(attrs={"placeholder": "AA 1234567", "autocomplete": "off"}),
+    )
+    issued_country = forms.CharField(
+        required=False,
+        max_length=80,
+        label=_("Berilgan mamlakat"),
+        initial="UZ",
+        widget=forms.TextInput(attrs={"placeholder": "UZ"}),
+    )
+
+    def clean_doc_number(self):
+        number = (self.cleaned_data.get("doc_number") or "").strip()
+        if not number:
+            raise forms.ValidationError(_("Kirish (zayezd) uchun hujjat raqami kerak."))
+        return number
 
 
 class GuestDocumentForm(forms.ModelForm):

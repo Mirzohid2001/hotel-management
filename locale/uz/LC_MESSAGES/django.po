@@ -2847,9 +2847,8 @@ msgid "Birinchi sherikni qo‘shing"
 msgstr "Birinchi sherikni qo‘shing"
 
 #: templates/finance/profit_share.html:78
-#| msgid "Hisoblangan"
 msgid "Jami olingan"
-msgstr "Hisoblangan"
+msgstr "Jami olingan"
 
 #: templates/finance/profit_share.html:79
 #| msgid "Joriy qoldiq"

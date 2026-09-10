@@ -1,0 +1,203 @@
+{% load money_fmt i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "E-mehmon bayonnomasi" %} · {{ month|stringformat:"02d" }}.{{ year }}</title>
+  <style>
+    :root {
+      --brand: #c04a00;
+      --ink: #1a1410;
+      --muted: #7a7168;
+      --line: #ddd4c8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      max-width: 860px;
+      margin: 1.5rem auto;
+      padding: 0 1rem 2.5rem;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    h1 { font-size: 1.35rem; color: var(--brand); margin: 0 0 0.2rem; }
+    .muted { color: var(--muted); }
+    .head {
+      border-bottom: 2px solid var(--brand);
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .meta { margin: 0.15rem 0; font-size: 0.95rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin: 1rem 0 1.25rem;
+    }
+    .cell {
+      border: 1px solid var(--line);
+      padding: 0.5rem 0.6rem;
+      border-radius: 6px;
+    }
+    .cell span {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .cell strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.5rem 0 1rem; }
+    th, td {
+      text-align: left;
+      padding: 0.4rem 0.3rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .totals td { border-bottom: none; padding-top: 0.55rem; font-weight: 700; }
+    .note {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin: 0.75rem 0 1.5rem;
+    }
+    .signs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    .sign-box {
+      border-top: 1px solid var(--ink);
+      padding-top: 0.45rem;
+      font-size: 0.9rem;
+    }
+    .sign-box .role { color: var(--muted); font-size: 0.8rem; }
+    .actions { margin: 0 0 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button, .actions a {
+      background: var(--brand);
+      color: #fff;
+      border: 0;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .actions a.ghost {
+      background: transparent;
+      color: var(--brand);
+      border: 1px solid var(--brand);
+    }
+    @media print {
+      .actions { display: none !important; }
+      body { margin: 0; max-width: none; padding: 0; }
+    }
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr; }
+      .signs { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button type="button" onclick="window.print()">{% trans "Chop etish" %}</button>
+    <a class="ghost" href="{% url 'bookings:emehmon_report' %}?year={{ year }}&amp;month={{ month }}">{% trans "Hisobotga" %}</a>
+  </div>
+
+  <header class="head">
+    <h1>{% trans "E-mehmon bayonnomasi" %}</h1>
+    <p class="meta"><strong>{{ tenant.name }}</strong>{% if hotel %} · {{ hotel.display_label }}{% endif %}</p>
+    <p class="meta muted">
+      {% trans "Davr" %}: {{ statement.start|date:"d.m.Y" }} — {{ statement.end|date:"d.m.Y" }}
+      · {{ month|stringformat:"02d" }}.{{ year }}
+    </p>
+    <p class="meta muted">
+      {% trans "Chop etilgan" %}: {{ printed_at|date:"d.m.Y H:i" }}
+      {% if printed_by %}· {{ printed_by }}{% endif %}
+    </p>
+  </header>
+
+  <div class="grid">
+    <div class="cell">
+      <span>{% trans "Yozuvlar" %}</span>
+      <strong>{{ statement.count }}</strong>
+    </div>
+    <div class="cell">
+      <span>{% trans "Jami olingan" %}</span>
+      <strong>{{ statement.total_collected|money }} {{ currency }}</strong>
+    </div>
+    <div class="cell">
+      <span>{% trans "E-mehmonga topshirish" %}</span>
+      <strong>{{ statement.total_collected|money }} {{ currency }}</strong>
+    </div>
+  </div>
+
+  <p class="note">
+    {% trans "Ushbu bayonnoma zayezdda mehmondan olingan E-mehmon to‘lovlarini E-mehmon tizimiga / davlatga topshirish uchun sverka hujjatidir. Summalar folio hisobida o‘tkinchi (tushum emas) qilib yozilgan." %}
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>{% trans "Sana" %}</th>
+        <th>{% trans "Mehmon" %}</th>
+        <th>{% trans "Bron" %}</th>
+        <th>{% trans "Yashash" %}</th>
+        <th>{% trans "Usul" %}</th>
+        <th class="num">{% trans "Summa" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in statement.rows %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ row.collected_at|date:"d.m.Y" }}</td>
+        <td>
+          {{ row.guest_name }}
+          <div class="muted">{{ row.hotel_name }}</div>
+        </td>
+        <td>{{ row.code }}</td>
+        <td>
+          {% if row.check_in and row.check_out %}
+          {{ row.check_in|date:"d.m" }} → {{ row.check_out|date:"d.m.Y" }}
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ row.method }}</td>
+        <td class="num">{{ row.amount|money }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="muted">{% trans "Bu oyda olingan E-mehmon yo‘q." %}</td>
+      </tr>
+      {% endfor %}
+      {% if statement.rows %}
+      <tr class="totals">
+        <td colspan="6">{% trans "Jami" %}</td>
+        <td class="num">{{ statement.total_collected|money }} {{ currency }}</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <div class="signs">
+    <div class="sign-box">
+      <div class="role">{% trans "Mehmonxona (topshiruvchi)" %}</div>
+      <div>{% trans "F.I.Sh / imzo" %}: ________________</div>
+    </div>
+    <div class="sign-box">
+      <div class="role">{% trans "E-mehmon (qabul qiluvchi)" %}</div>
+      <div>{% trans "F.I.Sh / imzo" %}: ________________</div>
+    </div>
+  </div>
+</body>
+</html>

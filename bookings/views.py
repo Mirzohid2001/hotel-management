@@ -1,3 +1,4 @@
+from calendar import monthrange
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -18,7 +19,7 @@ from properties.models import Room
 from django.utils.html import format_html
 
 from .commission import active_referrers, build_commission_report, record_commission_payment
-from .emehmon import build_emehmon_report
+from .emehmon import build_emehmon_report, build_emehmon_statement
 from .forms import (
     BookingReferrerForm,
     BookingReferrerQuickForm,
@@ -163,32 +164,12 @@ def reservation_create(request):
                 status=form.cleaned_data["status"],
                 referrer=form.cleaned_data.get("referrer"),
                 commission_percent=form.cleaned_data.get("commission_percent"),
-                emehmon_required=bool(form.cleaned_data.get("collect_emehmon")),
+                emehmon_required=False,
             )
         except (AvailabilityError, ValidationError) as exc:
             messages.error(request, "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc))
         else:
             messages.success(request, _("Bron yaratildi: %(code)s") % {"code": reservation.code})
-            if form.cleaned_data.get("collect_emehmon"):
-                from folio.services import collect_emehmon_fee
-
-                try:
-                    collect_emehmon_fee(
-                        reservation,
-                        request.user,
-                        amount=form.cleaned_data["emehmon_amount"],
-                        method=form.cleaned_data.get("emehmon_method") or "cash",
-                    )
-                    messages.success(request, _("E-mehmon to‘lovi qabul qilindi."))
-                except ValidationError as exc:
-                    messages.warning(
-                        request,
-                        "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
-                    )
-                    from django.urls import reverse
-
-                    url = reverse("bookings:detail", kwargs={"pk": reservation.pk})
-                    return redirect(f"{url}?prompt_emehmon=1")
             return redirect("bookings:detail", pk=reservation.pk)
     return render(
         request,
@@ -262,6 +243,9 @@ def reservation_check_in(request, pk):
     reservation = _get_reservation(request, pk)
     allow_dirty = request.POST.get("allow_dirty") == "1"
     allow_no_docs = request.POST.get("allow_no_docs") == "1"
+    collect_emehmon = request.POST.get("collect_emehmon") == "1"
+    emehmon_amount = request.POST.get("emehmon_amount")
+    emehmon_method = (request.POST.get("emehmon_method") or "cash").strip()
     try:
         check_in_reservation(
             reservation,
@@ -278,6 +262,47 @@ def reservation_check_in(request, pk):
             messages.warning(request, _("Kirish (%(n)s).") % {"n": ", ".join(notes)})
         else:
             messages.success(request, _("Kirish qilindi."))
+
+        # Zayezd paytida E-mehmon: admin tanlaydi
+        reservation.refresh_from_db()
+        if collect_emehmon:
+            from decimal import Decimal, InvalidOperation
+
+            from folio.services import collect_emehmon_fee, default_emehmon_fee
+
+            if not reservation.emehmon_required:
+                reservation.emehmon_required = True
+                reservation.save(update_fields=["emehmon_required", "updated_at"])
+
+            amount = None
+            if emehmon_amount not in (None, ""):
+                try:
+                    amount = Decimal(str(emehmon_amount).replace(",", "."))
+                except (InvalidOperation, ValueError):
+                    amount = None
+            if amount is None or amount <= 0:
+                amount = default_emehmon_fee(reservation)
+            try:
+                collect_emehmon_fee(
+                    reservation,
+                    request.user,
+                    amount=amount,
+                    method=emehmon_method or "cash",
+                )
+                messages.success(request, _("E-mehmon to‘lovi qabul qilindi."))
+            except ValidationError as exc:
+                messages.warning(
+                    request,
+                    "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
+                )
+                from django.urls import reverse
+
+                url = reverse("bookings:detail", kwargs={"pk": reservation.pk})
+                return redirect(f"{url}?prompt_emehmon=1")
+        else:
+            if reservation.emehmon_required:
+                reservation.emehmon_required = False
+                reservation.save(update_fields=["emehmon_required", "updated_at"])
     except DirtyRoomError as exc:
         messages.error(request, "; ".join(exc.messages))
         messages.info(
@@ -595,6 +620,28 @@ def reservation_transfer(request, pk):
 
 
 @role_required(*FRONT_OFFICE)
+def _calendar_view_mode(request) -> str:
+    view = (request.GET.get("view") or "14").strip().lower()
+    return "month" if view in {"month", "oy", "1", "30", "31"} else "14"
+
+
+def _calendar_period(start: date, view: str) -> tuple[date, int, date, date]:
+    """Return (period_start, days_count, prev_start, next_start)."""
+    if view == "month":
+        month_start = start.replace(day=1)
+        days_count = monthrange(month_start.year, month_start.month)[1]
+        if month_start.month == 1:
+            prev_start = date(month_start.year - 1, 12, 1)
+        else:
+            prev_start = date(month_start.year, month_start.month - 1, 1)
+        if month_start.month == 12:
+            next_start = date(month_start.year + 1, 1, 1)
+        else:
+            next_start = date(month_start.year, month_start.month + 1, 1)
+        return month_start, days_count, prev_start, next_start
+    return start, 14, start - timedelta(days=7), start + timedelta(days=7)
+
+
 def calendar(request):
     start_s = request.GET.get("start")
     start = timezone.localdate()
@@ -603,26 +650,35 @@ def calendar(request):
             start = date.fromisoformat(start_s)
         except ValueError:
             pass
+    view = _calendar_view_mode(request)
+    start, days_count, prev_start, next_start = _calendar_period(start, view)
     hotel = _active_hotel(request)
-    timeline = build_room_timeline(request.tenant, hotel, start, days_count=14)
+    timeline = build_room_timeline(
+        request.tenant, hotel, start, days_count=days_count
+    )
     template = (
         "bookings/partials/calendar_page.html"
         if wants_htmx_partial(request, target="calendar-page")
         else "bookings/calendar.html"
     )
+    today = timezone.localdate()
+    today_start = today.replace(day=1) if view == "month" else today
     return render(
         request,
         template,
         {
             "days": timeline["days"],
             "rows": timeline["rows"],
-            "prev": start - timedelta(days=7),
-            "next": start + timedelta(days=7),
+            "prev": prev_start,
+            "next": next_start,
             "start": timeline["start"],
             "end": timeline["end"],
-            "today": timezone.localdate(),
+            "today": today,
+            "today_start": today_start,
             "cal_stats": timeline["stats"],
             "hotel": hotel,
+            "cal_view": view,
+            "days_count": days_count,
         },
     )
 
@@ -935,8 +991,52 @@ def commission_report(request):
 
 
 @role_required(*ACCOUNTING)
+def commission_statement(request, referrer_id):
+    """Komissiyachi uchun oylik bayonnoma / sverka cheki (chop etish)."""
+    today = timezone.localdate()
+    referrer = get_object_or_404(BookingReferrer, pk=referrer_id, tenant=request.tenant)
+    try:
+        year = int(request.GET.get("year", today.year))
+        month = int(request.GET.get("month", today.month))
+        if month < 1 or month > 12:
+            raise ValueError
+    except (TypeError, ValueError):
+        year, month = today.year, today.month
+
+    report = build_commission_report(request.tenant, year=year, month=month)
+    group = next((g for g in report["groups"] if g["referrer"].pk == referrer.pk), None)
+    if group is None:
+        group = {
+            "referrer": referrer,
+            "count": 0,
+            "base_total": Decimal("0"),
+            "commission_total": Decimal("0"),
+            "paid_total": Decimal("0"),
+            "remaining": Decimal("0"),
+            "rows": [],
+            "payments": [],
+        }
+    hotel = getattr(request, "active_property", None)
+    return render(
+        request,
+        "bookings/commission_statement.html",
+        {
+            "report": report,
+            "group": group,
+            "year": year,
+            "month": month,
+            "tenant": request.tenant,
+            "hotel": hotel,
+            "currency": request.tenant.currency or "UZS",
+            "printed_at": timezone.now(),
+            "printed_by": request.user.get_username(),
+        },
+    )
+
+
+@role_required(*ACCOUNTING)
 def emehmon_report(request):
-    """Oylik E-mehmon komissiyasi — mehmon×kecha×tarif."""
+    """Oylik E-mehmon — zayezdda olingan to‘lovlar va farq."""
     today = timezone.localdate()
     try:
         year = int(request.GET.get("year", today.year))
@@ -960,6 +1060,37 @@ def emehmon_report(request):
             "month": month,
             "months": months,
             "years": years,
+        },
+    )
+
+
+@role_required(*ACCOUNTING)
+def emehmon_statement(request):
+    """E-mehmon oylik bayonnoma / topshirish cheki (chop etish)."""
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get("year", today.year))
+        month = int(request.GET.get("month", today.month))
+        if month < 1 or month > 12:
+            raise ValueError
+    except (TypeError, ValueError):
+        year, month = today.year, today.month
+    hotel = getattr(request, "active_property", None)
+    statement = build_emehmon_statement(
+        request.tenant, year=year, month=month, hotel=hotel
+    )
+    return render(
+        request,
+        "bookings/emehmon_statement.html",
+        {
+            "statement": statement,
+            "year": year,
+            "month": month,
+            "tenant": request.tenant,
+            "hotel": hotel,
+            "currency": request.tenant.currency or "UZS",
+            "printed_at": timezone.now(),
+            "printed_by": request.user.get_username(),
         },
     )
 

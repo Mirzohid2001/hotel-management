@@ -127,6 +127,74 @@ class CommissionReportTests(TestCase):
         self.assertEqual(reservation_commission_base(reservation), Decimal("2000000"))
         self.assertEqual(reservation_commission_amount(reservation), Decimal("200000.00"))
 
+    def test_misc_room_charge_does_not_replace_actual_price(self):
+        """Xato ROOM (beer/usluga) komissiyani faktik xona narxidan tortmasin."""
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+            referrer=self.vali,
+            commission_percent=Decimal("15"),
+            nightly_rate=Decimal("2000000"),
+        )
+        folio = Folio.objects.create(tenant=self.tenant, reservation=reservation)
+        FolioCharge.objects.create(
+            tenant=self.tenant,
+            folio=folio,
+            charge_type=FolioCharge.ChargeType.ROOM,
+            description="beer",
+            quantity=Decimal("10"),
+            unit_price=Decimal("25000"),
+            posted_by=self.user,
+        )
+        reservation.refresh_from_db()
+        # 250k beer << 2M quote → baza = faktik xona narxi
+        self.assertEqual(reservation_commission_base(reservation), Decimal("2000000"))
+        self.assertEqual(reservation_commission_amount(reservation), Decimal("300000.00"))
+
+    def test_misc_room_charge_does_not_block_night_posts(self):
+        from bookings.services import check_in_reservation
+        from folio.services import ensure_stay_nights_posted
+
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+            nightly_rate=Decimal("2000000"),
+        )
+        from folio.services import open_folio_for_deposit
+
+        folio = open_folio_for_deposit(reservation, self.user)
+        FolioCharge.objects.create(
+            tenant=self.tenant,
+            folio=folio,
+            charge_type=FolioCharge.ChargeType.ROOM,
+            description="beer",
+            quantity=Decimal("1"),
+            unit_price=Decimal("250000"),
+            posted_by=self.user,
+        )
+        check_in_reservation(reservation, self.user)
+        posted = ensure_stay_nights_posted(reservation, self.user)
+        self.assertEqual(posted, 1)
+        nights = folio.charges.filter(
+            is_void=False, charge_type=FolioCharge.ChargeType.ROOM, description__startswith="Night "
+        )
+        self.assertEqual(nights.count(), 1)
+        self.assertEqual(nights.first().amount, Decimal("2000000"))
+
     def test_monthly_report_groups_by_referrer(self):
         check_out = self.today.replace(day=15) if self.today.day >= 2 else self.today
         check_in = check_out - timedelta(days=1)
@@ -229,3 +297,40 @@ class CommissionReportTests(TestCase):
             self.tenant, year=check_out.year, month=check_out.month
         )
         self.assertEqual(report3["groups"][0]["remaining"], Decimal("0"))
+
+    def test_commission_statement_page(self):
+        from django.urls import reverse
+
+        check_out = self.today.replace(day=15) if self.today.day >= 2 else self.today
+        check_in = check_out - timedelta(days=1)
+        create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=check_in,
+            check_out=check_out,
+            referrer=self.vali,
+            commission_percent=Decimal("10"),
+        )
+        self.client.force_login(self.user)
+        resp = self.client.get(
+            reverse("bookings:commission_statement", args=[self.vali.pk]),
+            {"year": check_out.year, "month": check_out.month},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Komissiya bayonnomasi")
+        self.assertContains(resp, "Vali")
+        self.assertContains(resp, "Chop etish")
+        report_resp = self.client.get(
+            reverse("bookings:commission_report"),
+            {"year": check_out.year, "month": check_out.month},
+        )
+        self.assertContains(report_resp, "Bayonnoma")
+        self.assertContains(
+            report_resp,
+            reverse("bookings:commission_statement", args=[self.vali.pk]),
+        )

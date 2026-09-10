@@ -4,6 +4,7 @@ from unittest import mock
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from bookings.models import Reservation
@@ -206,7 +207,44 @@ class EmehmonFeeTests(TestCase):
         self.assertEqual(report["total_guest_nights"], 4)  # 2 nights × 2 guests
         self.assertEqual(report["total_expected"], Decimal("36000.00"))
         self.assertEqual(report["total_collected"], Decimal("36000.00"))
-        self.assertEqual(report["total_gap"], Decimal("0.00"))
+        self.assertEqual(len(report["collections"]), 1)
+        self.assertEqual(report["collections"][0]["amount"], Decimal("36000.00"))
+
+    def test_emehmon_statement_page(self):
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+            adults=1,
+        )
+        collect_emehmon_fee(reservation, self.user, method=GuestPayment.Method.CARD)
+        self.client.force_login(self.user)
+        resp = self.client.get(
+            reverse("bookings:emehmon_statement"),
+            {"year": self.today.year, "month": self.today.month},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "E-mehmon bayonnomasi")
+        self.assertContains(resp, "9 000")
+        self.assertContains(resp, "Jami olingan")
+        self.assertContains(resp, "E-mehmonga topshirish")
+
+    def test_emehmon_report_hides_tarif_columns(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(
+            reverse("bookings:emehmon_report"),
+            {"year": self.today.year, "month": self.today.month},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotContains(resp, ">Tarif<")
+        self.assertNotContains(resp, ">Hisoblangan<")
+        self.assertContains(resp, "Bayonnoma / chek")
+        self.assertContains(resp, "Olingan")
 
     def test_cross_month_collected_is_prorated(self):
         """Olingan summa oy kechalariga proporsional — P&L farqi to‘g‘ri."""
@@ -293,13 +331,75 @@ class EmehmonFeeTests(TestCase):
         reservation.refresh_from_db()
         self.assertTrue(reservation.emehmon_required)
 
-    def test_form_collect_emehmon_defaults_off(self):
+    def test_form_collect_emehmon_defaults_on(self):
         from bookings.forms import ReservationForm, WalkInForm
 
         rf = ReservationForm(tenant=self.tenant, hotel=self.prop)
         wf = WalkInForm(tenant=self.tenant, hotel=self.prop)
-        self.assertIs(rf.fields["collect_emehmon"].initial, False)
-        self.assertIs(wf.fields["collect_emehmon"].initial, False)
+        self.assertNotIn("collect_emehmon", rf.fields)
+        self.assertIs(wf.fields["collect_emehmon"].initial, True)
+
+    def test_check_in_collects_emehmon_when_checked(self):
+        from folio.models import FolioCharge
+        from folio.services import emehmon_already_posted
+
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+            adults=1,
+            emehmon_required=False,
+        )
+        self.client.force_login(self.user)
+        resp = self.client.post(
+            reverse("bookings:check_in", args=[reservation.pk]),
+            {
+                "collect_emehmon": "1",
+                "emehmon_amount": "9000",
+                "emehmon_method": "card",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        reservation.refresh_from_db()
+        self.assertEqual(reservation.status, Reservation.Status.CHECKED_IN)
+        self.assertTrue(reservation.emehmon_required)
+        self.assertTrue(emehmon_already_posted(reservation.folio))
+        self.assertTrue(
+            reservation.folio.charges.filter(
+                charge_type=FolioCharge.ChargeType.EMEHMON, is_void=False
+            ).exists()
+        )
+
+    def test_check_in_skips_emehmon_when_unchecked(self):
+        from folio.services import emehmon_already_posted
+
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+            adults=1,
+            emehmon_required=True,
+        )
+        self.client.force_login(self.user)
+        resp = self.client.post(
+            reverse("bookings:check_in", args=[reservation.pk]),
+            {},
+        )
+        self.assertEqual(resp.status_code, 302)
+        reservation.refresh_from_db()
+        self.assertEqual(reservation.status, Reservation.Status.CHECKED_IN)
+        self.assertFalse(reservation.emehmon_required)
+        self.assertFalse(emehmon_already_posted(reservation.folio))
 
     def test_emehmon_required_unpaid_counts_shortfall(self):
         from bookings.emehmon import build_emehmon_report

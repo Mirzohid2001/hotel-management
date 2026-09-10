@@ -84,10 +84,20 @@ def occupancy_stats(tenant, day: date, *, hotel=None) -> dict:
 
 
 def revenue_on(tenant, day: date, *, hotel=None) -> Decimal:
+    from folio.models import GuestPayment
+
     qs = GuestPayment.objects.filter(tenant=tenant, created_at__date=day, is_void=False)
     if hotel is not None:
         qs = qs.filter(folio__reservation__hotel=hotel)
-    return qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+    incoming = (
+        qs.exclude(kind=GuestPayment.Kind.REFUND).aggregate(s=Sum("amount_base"))["s"]
+        or Decimal("0")
+    )
+    refunds = (
+        qs.filter(kind=GuestPayment.Kind.REFUND).aggregate(s=Sum("amount_base"))["s"]
+        or Decimal("0")
+    )
+    return incoming - refunds
 
 
 def charges_on(tenant, day: date, *, hotel=None) -> Decimal:

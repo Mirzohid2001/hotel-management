@@ -20,6 +20,12 @@ urlpatterns = [
     path("referrers/<int:pk>/edit/", views.referrer_edit, name="referrer_edit"),
     path("commission/", views.commission_report, name="commission_report"),
     path("emehmon/", views.emehmon_report, name="emehmon_report"),
+    path("emehmon/statement/", views.emehmon_statement, name="emehmon_statement"),
+    path(
+        "commission/<int:referrer_id>/statement/",
+        views.commission_statement,
+        name="commission_statement",
+    ),
     path(
         "commission/<int:referrer_id>/pay/",
         views.commission_pay,

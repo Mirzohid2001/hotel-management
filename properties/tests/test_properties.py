@@ -231,6 +231,128 @@ class PropertyModelTests(TestCase):
         )
         self.assertFalse(RoomType.objects.get(property=prop2, code="suite").is_active)
 
+    def test_floor_and_rate_edit_delete(self):
+        prop = Property.objects.create(tenant=self.ctx["tenant"], name="Edit Hotel")
+        floor = Floor.objects.create(
+            tenant=self.ctx["tenant"], property=prop, number=1, name="Birinchi"
+        )
+        rt = RoomType.objects.create(
+            tenant=self.ctx["tenant"],
+            property=prop,
+            name="Double",
+            code="double",
+            base_price=Decimal("500000"),
+        )
+        rate = RatePlan.objects.create(
+            tenant=self.ctx["tenant"],
+            property=prop,
+            room_type=rt,
+            name="BAR",
+            code="bar-double",
+            price=Decimal("500000"),
+        )
+        client = Client()
+        client.login(username="propowner", password="pass12345")
+
+        detail = client.get(reverse("properties:detail", args=[prop.pk]))
+        self.assertContains(detail, reverse("properties:floor_edit", args=[prop.pk, floor.pk]))
+        self.assertContains(detail, reverse("properties:floor_delete", args=[prop.pk, floor.pk]))
+        self.assertContains(detail, reverse("properties:rate_plan_edit", args=[prop.pk, rate.pk]))
+        self.assertContains(detail, reverse("properties:rate_plan_delete", args=[prop.pk, rate.pk]))
+
+        edit = client.post(
+            reverse("properties:floor_edit", args=[prop.pk, floor.pk]),
+            {"number": "2", "name": "Ikkinchi"},
+        )
+        self.assertEqual(edit.status_code, 302)
+        floor.refresh_from_db()
+        self.assertEqual(floor.number, 2)
+        self.assertEqual(floor.name, "Ikkinchi")
+
+        rate_edit = client.post(
+            reverse("properties:rate_plan_edit", args=[prop.pk, rate.pk]),
+            {
+                "name": "BAR Plus",
+                "code": "bar-double",
+                "room_type": rt.pk,
+                "price": "550000",
+                "extra_adult_price": "0",
+                "currency": "UZS",
+                "is_default": "on",
+                "is_active": "on",
+            },
+        )
+        self.assertEqual(rate_edit.status_code, 302)
+        rate.refresh_from_db()
+        self.assertEqual(rate.name, "BAR Plus")
+        self.assertEqual(rate.price, Decimal("550000"))
+
+        Room.objects.create(
+            tenant=self.ctx["tenant"],
+            property=prop,
+            room_type=rt,
+            floor=floor,
+            number="201",
+        )
+        del_floor = client.post(reverse("properties:floor_delete", args=[prop.pk, floor.pk]))
+        self.assertEqual(del_floor.status_code, 302)
+        self.assertFalse(Floor.objects.filter(pk=floor.pk).exists())
+        self.assertIsNone(Room.objects.get(number="201", property=prop).floor_id)
+
+        del_rate = client.post(reverse("properties:rate_plan_delete", args=[prop.pk, rate.pk]))
+        self.assertEqual(del_rate.status_code, 302)
+        self.assertFalse(RatePlan.objects.filter(pk=rate.pk).exists())
+
+    def test_room_and_room_type_delete(self):
+        prop = Property.objects.create(tenant=self.ctx["tenant"], name="Delete Hotel")
+        rt = RoomType.objects.create(
+            tenant=self.ctx["tenant"],
+            property=prop,
+            name="Orphan Type",
+            code="orphan",
+            base_price=Decimal("100000"),
+        )
+        rt_keep = RoomType.objects.create(
+            tenant=self.ctx["tenant"],
+            property=prop,
+            name="Keep",
+            code="keep",
+            base_price=Decimal("200000"),
+        )
+        room = Room.objects.create(
+            tenant=self.ctx["tenant"],
+            property=prop,
+            room_type=rt_keep,
+            number="301",
+        )
+        RatePlan.objects.create(
+            tenant=self.ctx["tenant"],
+            property=prop,
+            room_type=rt,
+            name="Orphan BAR",
+            code="bar-orphan",
+            price=Decimal("100000"),
+        )
+        client = Client()
+        client.login(username="propowner", password="pass12345")
+
+        detail = client.get(reverse("properties:detail", args=[prop.pk]))
+        self.assertContains(detail, reverse("properties:room_type_delete", args=[prop.pk, rt.pk]))
+        self.assertContains(detail, reverse("properties:room_delete", args=[prop.pk, room.pk]))
+
+        blocked = client.post(reverse("properties:room_type_delete", args=[prop.pk, rt_keep.pk]))
+        self.assertEqual(blocked.status_code, 302)
+        self.assertTrue(RoomType.objects.filter(pk=rt_keep.pk).exists())
+
+        ok_type = client.post(reverse("properties:room_type_delete", args=[prop.pk, rt.pk]))
+        self.assertEqual(ok_type.status_code, 302)
+        self.assertFalse(RoomType.objects.filter(pk=rt.pk).exists())
+        self.assertFalse(RatePlan.objects.filter(code="bar-orphan", property=prop).exists())
+
+        ok_room = client.post(reverse("properties:room_delete", args=[prop.pk, room.pk]))
+        self.assertEqual(ok_room.status_code, 302)
+        self.assertFalse(Room.objects.filter(pk=room.pk).exists())
+
 
 class GuestViewTests(TestCase):
     def setUp(self):

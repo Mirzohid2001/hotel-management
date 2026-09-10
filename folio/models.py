@@ -43,8 +43,14 @@ class Folio(TenantOwnedModel):
 
     @property
     def payments_total(self) -> Decimal:
-        """Bazaviy valyutadagi to‘lovlar jami."""
-        return money_sum(self.payments.filter(is_void=False))
+        """Net to‘lovlar: kirim − sdachi/qaytarish (bazaviy valyuta)."""
+        incoming = money_sum(
+            self.payments.filter(is_void=False).exclude(kind=GuestPayment.Kind.REFUND)
+        )
+        refunds = money_sum(
+            self.payments.filter(is_void=False, kind=GuestPayment.Kind.REFUND)
+        )
+        return incoming - refunds
 
     @property
     def tax_percent(self) -> Decimal:
@@ -69,6 +75,16 @@ class Folio(TenantOwnedModel):
     @property
     def balance(self) -> Decimal:
         return self.grand_total - self.payments_total
+
+    @property
+    def amount_due(self) -> Decimal:
+        """Only the unpaid due part; never negative."""
+        return self.balance if self.balance > 0 else Decimal("0")
+
+    @property
+    def credit_amount(self) -> Decimal:
+        """Guest overpayment / advance currently sitting on the folio."""
+        return -self.balance if self.balance < 0 else Decimal("0")
 
 
 class FolioCharge(MoneyFieldsMixin, TenantOwnedModel):
@@ -126,6 +142,7 @@ class GuestPayment(MoneyFieldsMixin, TenantOwnedModel):
     class Kind(models.TextChoices):
         PAYMENT = "payment", _("To‘lov")
         DEPOSIT = "deposit", _("Depozit")
+        REFUND = "refund", _("Sdachi / qaytarish")
         CITY_LEDGER = "city_ledger", _("Kompaniya hisobi")
 
     folio = models.ForeignKey(Folio, on_delete=models.CASCADE, related_name="payments")
@@ -167,6 +184,15 @@ class GuestPayment(MoneyFieldsMixin, TenantOwnedModel):
 
     def __str__(self) -> str:
         return f"{self.method} {self.amount} {self.currency}"
+
+    @property
+    def is_refund(self) -> bool:
+        return self.kind == self.Kind.REFUND
+
+    @property
+    def signed_amount_base(self) -> Decimal:
+        base = self.amount_base if self.amount_base is not None else self.amount
+        return -base if self.is_refund else base
 
 
 class CashShift(TenantOwnedModel):

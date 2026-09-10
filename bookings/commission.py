@@ -14,28 +14,54 @@ from .models import BookingReferrer, ReferrerCommissionPayment, Reservation
 
 
 def reservation_commission_base(reservation: Reservation) -> Decimal:
-    """Room revenue in tenant base currency: posted ROOM charges if any, else quote."""
+    """
+    Xona tushumi (bazaviy valyuta).
+
+    Tartib:
+    1) «Night …» xona yozuvlari (faktik kecha to‘lovlari)
+    2) Eski uslubdagi bir martalik ROOM (faqat bron summasiga yaqin bo‘lsa)
+    3) Bronning total_amount (quote)
+
+    Minibar/xizmat yoki xato ROOM yozuvlari (masalan beer) komissiya bazasiga
+    kirmaydi — foiz faktik xona narxidan hisoblanadi.
+    """
     from core.currency import to_base_amount
+
+    raw = reservation.total_amount or Decimal("0")
+    quote = Decimal("0")
+    if raw > 0:
+        _c, _r, quote = to_base_amount(
+            reservation.tenant,
+            raw,
+            getattr(reservation, "currency", None) or reservation.tenant.currency,
+        )
 
     folio = getattr(reservation, "folio", None)
     if folio is not None:
-        total = (
+        night_total = (
             folio.charges.filter(
-                is_void=False, charge_type=FolioCharge.ChargeType.ROOM
+                is_void=False,
+                charge_type=FolioCharge.ChargeType.ROOM,
+                description__startswith="Night ",
             ).aggregate(s=Sum("amount_base"))["s"]
             or Decimal("0")
         )
-        if total > 0:
-            return total
-    raw = reservation.total_amount or Decimal("0")
-    if raw <= 0:
-        return Decimal("0")
-    _c, _r, base = to_base_amount(
-        reservation.tenant,
-        raw,
-        getattr(reservation, "currency", None) or reservation.tenant.currency,
-    )
-    return base
+        if night_total > 0:
+            return night_total
+
+        other_total = (
+            folio.charges.filter(
+                is_void=False, charge_type=FolioCharge.ChargeType.ROOM
+            )
+            .exclude(description__startswith="Night ")
+            .aggregate(s=Sum("amount_base"))["s"]
+            or Decimal("0")
+        )
+        # Prepaid/legacy stay: faqat bron narxining kamida yarmini qoplasa
+        if other_total > 0 and (quote <= 0 or other_total >= quote * Decimal("0.5")):
+            return other_total
+
+    return quote
 
 
 def reservation_commission_amount(reservation: Reservation) -> Decimal:

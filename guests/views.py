@@ -19,7 +19,7 @@ from .forms import (
     GuestNoteForm,
     GuestQuickForm,
 )
-from .models import Company, Guest
+from .models import Company, Guest, GuestDocument
 
 
 @role_required(*FRONT_OFFICE)
@@ -72,6 +72,14 @@ def guest_quick_create(request):
             first_name=form.cleaned_data["first_name"],
             last_name=form.cleaned_data.get("last_name") or "",
             phone=form.cleaned_data.get("phone") or "",
+            nationality=(form.cleaned_data.get("nationality") or "").strip(),
+        )
+        GuestDocument.objects.create(
+            tenant=request.tenant,
+            guest=guest,
+            doc_type=form.cleaned_data["doc_type"],
+            number=form.cleaned_data["doc_number"],
+            issued_country=(form.cleaned_data.get("issued_country") or "").strip(),
         )
         qs = Guest.objects.filter(tenant=request.tenant).order_by("first_name", "last_name")
         return oob_select_response(select_id, field_name, qs, guest.pk, required=True)

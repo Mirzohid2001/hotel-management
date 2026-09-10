@@ -53,6 +53,46 @@ class PaymentForm(forms.Form):
             self.fields["currency"].initial = tenant.currency or "UZS"
 
 
+class RefundForm(forms.Form):
+    """Ortib qolgan pulni (sdachi) qaytarish."""
+
+    method = forms.ChoiceField(
+        choices=GuestPayment.Method.choices,
+        initial=GuestPayment.Method.CASH,
+        label=_("Qaytarish usuli"),
+    )
+    amount = forms.DecimalField(
+        min_value=Decimal("0.01"),
+        label=_("Summa"),
+        widget=forms.NumberInput(attrs={"step": "0.01", "autofocus": True}),
+    )
+    currency = forms.ChoiceField(choices=CURRENCY_CHOICES, label=_("Valyuta"), initial="UZS")
+    note = forms.CharField(
+        required=False,
+        max_length=255,
+        label=_("Izoh"),
+        widget=forms.TextInput(attrs={"placeholder": _("Masalan: sdachi naqd")}),
+    )
+
+    def __init__(self, *args, tenant=None, max_amount=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tenant = tenant
+        self.max_amount = max_amount
+        if tenant is not None:
+            self.fields["currency"].initial = tenant.currency or "UZS"
+        if max_amount is not None and max_amount > 0:
+            self.fields["amount"].initial = max_amount
+            self.fields["amount"].widget.attrs["max"] = str(max_amount)
+
+    def clean_amount(self):
+        amount = self.cleaned_data["amount"]
+        if self.max_amount is not None and amount > self.max_amount:
+            raise forms.ValidationError(
+                _("Ortganidan ko‘p: maksimal %(m)s.") % {"m": self.max_amount}
+            )
+        return amount
+
+
 class VoidForm(forms.Form):
     reason = forms.CharField(max_length=255, min_length=3, label=_("Sabab"))
 

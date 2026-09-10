@@ -1,39 +1,39 @@
 {% load i18n %}
-<div id="calendar-page" class="calendar-page">
+<div id="calendar-page" class="calendar-page{% if cal_view == 'month' %} is-month{% endif %}">
   <header class="calendar-hero">
     <div class="calendar-hero-text">
-      <p class="eyebrow">{% trans "Bron rejasi" %} · {% trans "Shaxmatka · 14 kun" %}</p>
+      <p class="eyebrow">{% trans "Bron rejasi" %} · {% if cal_view == 'month' %}{% trans "Shaxmatka · 1 oy" %}{% else %}{% trans "Shaxmatka · 14 kun" %}{% endif %}</p>
       <h1>{% trans "Taqvim" %}</h1>
       {% if hotel %}<p class="calendar-hero-sub">{{ hotel.display_label }}</p>{% endif %}
     </div>
     <nav class="calendar-date-nav" aria-label="{% trans 'Davr' %}">
       <a class="calendar-nav-btn"
-         href="?start={{ today|date:'Y-m-d' }}"
-         hx-get="{% url 'bookings:calendar' %}?start={{ today|date:'Y-m-d' }}"
+         href="?start={{ today_start|date:'Y-m-d' }}&amp;view={{ cal_view }}"
+         hx-get="{% url 'bookings:calendar' %}?start={{ today_start|date:'Y-m-d' }}&amp;view={{ cal_view }}"
          hx-target="#calendar-page"
          hx-select="unset"
          hx-swap="outerHTML"
-         hx-push-url="true">{% trans "Bugun" %}</a>
+         hx-push-url="true">{% if cal_view == 'month' %}{% trans "Shu oy" %}{% else %}{% trans "Bugun" %}{% endif %}</a>
       <a class="board-date-btn"
-         href="?start={{ prev|date:'Y-m-d' }}"
-         hx-get="{% url 'bookings:calendar' %}?start={{ prev|date:'Y-m-d' }}"
+         href="?start={{ prev|date:'Y-m-d' }}&amp;view={{ cal_view }}"
+         hx-get="{% url 'bookings:calendar' %}?start={{ prev|date:'Y-m-d' }}&amp;view={{ cal_view }}"
          hx-target="#calendar-page"
          hx-select="unset"
          hx-swap="outerHTML"
          hx-push-url="true"
-         aria-label="{% trans 'Oldingi hafta' %}">←</a>
+         aria-label="{% if cal_view == 'month' %}{% trans 'Oldingi oy' %}{% else %}{% trans 'Oldingi hafta' %}{% endif %}">←</a>
       <div class="board-date-pill calendar-range-pill">
         <span class="board-date-label">{% trans "Davr" %}</span>
-        <strong>{{ start|date:"d.m" }} — {{ end|date:"d.m.Y" }}</strong>
+        <strong>{% if cal_view == 'month' %}{{ start|date:"F Y" }}{% else %}{{ start|date:"d.m" }} — {{ end|date:"d.m.Y" }}{% endif %}</strong>
       </div>
       <a class="board-date-btn"
-         href="?start={{ next|date:'Y-m-d' }}"
-         hx-get="{% url 'bookings:calendar' %}?start={{ next|date:'Y-m-d' }}"
+         href="?start={{ next|date:'Y-m-d' }}&amp;view={{ cal_view }}"
+         hx-get="{% url 'bookings:calendar' %}?start={{ next|date:'Y-m-d' }}&amp;view={{ cal_view }}"
          hx-target="#calendar-page"
          hx-select="unset"
          hx-swap="outerHTML"
          hx-push-url="true"
-         aria-label="{% trans 'Keyingi hafta' %}">→</a>
+         aria-label="{% if cal_view == 'month' %}{% trans 'Keyingi oy' %}{% else %}{% trans 'Keyingi hafta' %}{% endif %}">→</a>
     </nav>
   </header>
 
@@ -51,12 +51,28 @@
       <span class="board-stat-lbl">VIP</span>
     </div>
     <div class="board-stat">
-      <span class="board-stat-num">14</span>
+      <span class="board-stat-num">{{ days_count }}</span>
       <span class="board-stat-lbl">{% trans "Kun" %}</span>
     </div>
   </div>
 
   <div class="calendar-toolbar">
+    <div class="calendar-view-toggle" role="group" aria-label="{% trans 'Taqvim turi' %}">
+      <a class="cal-view-btn{% if cal_view != 'month' %} is-active{% endif %}"
+         href="?start={{ start|date:'Y-m-d' }}&amp;view=14"
+         hx-get="{% url 'bookings:calendar' %}?start={{ start|date:'Y-m-d' }}&amp;view=14"
+         hx-target="#calendar-page"
+         hx-select="unset"
+         hx-swap="outerHTML"
+         hx-push-url="true">{% trans "14 kun" %}</a>
+      <a class="cal-view-btn{% if cal_view == 'month' %} is-active{% endif %}"
+         href="?start={{ start|date:'Y-m-d' }}&amp;view=month"
+         hx-get="{% url 'bookings:calendar' %}?start={{ start|date:'Y-m-d' }}&amp;view=month"
+         hx-target="#calendar-page"
+         hx-select="unset"
+         hx-swap="outerHTML"
+         hx-push-url="true">{% trans "1 oy" %}</a>
+    </div>
     <div class="board-legend board-legend-pills">
       <span class="board-pill leg-cal-confirmed">{% trans "Tasdiqlangan" %}</span>
       <span class="board-pill leg-cal-inhouse">{% trans "Mehmonxonada" %}</span>
@@ -69,7 +85,7 @@
     </div>
   </div>
 
-  <div class="calendar-wrap calendar-wrap-premium table-scroll">
+  <div class="calendar-wrap calendar-wrap-premium table-scroll{% if cal_view == 'month' %} is-month{% endif %}">
     <table class="board-table calendar-table calendar-table-premium">
       <thead>
         <tr>
@@ -110,7 +126,7 @@
         </tr>
       {% empty %}
         <tr>
-          <td colspan="15" class="calendar-empty">
+          <td colspan="{{ days_count|add:1 }}" class="calendar-empty">
             {% url 'properties:list' as props_url %}
             {% include "includes/empty_state.html" with title=_("Xona yo‘q") hint=_("Avval filial va xonalarni qo‘shing — taqvim to‘ladi.") cta_url=props_url cta_label=_("Filiallar") compact=1 %}
           </td>

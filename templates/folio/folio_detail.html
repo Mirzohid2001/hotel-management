@@ -4,40 +4,27 @@
 {% block content %}
 <div class="folio-page">
 
-  <header class="folio-hero">
+  <header class="folio-hero folio-hero-compact">
     <div class="folio-hero-main">
-      <p class="eyebrow">{% trans "Mehmon hisobi" %} · {{ reservation.get_status_display }}</p>
-      <h1>{{ reservation.guest.full_name }}</h1>
-      <p class="folio-hero-code">{{ reservation.code }}</p>
+      <p class="eyebrow">{% trans "Mehmon hisobi" %} · {{ reservation.get_status_display }}{% if reservation.room %} · {% trans "Xona" %} {{ reservation.room.number }}{% endif %}</p>
+      <h1>{{ reservation.guest.full_name }} <span class="folio-hero-code">{{ reservation.code }}</span></h1>
       {% if reservation.room %}
-      <p class="folio-hero-sub">
-        {% trans "Xona" %} {{ reservation.room.number }}
-        · {{ reservation.check_in|date:"d.m" }} — {{ reservation.check_out|date:"d.m.Y" }}
-      </p>
+      <p class="folio-hero-sub">{{ reservation.check_in|date:"d.m" }} — {{ reservation.check_out|date:"d.m.Y" }}</p>
       {% endif %}
-      <div class="folio-hero-badges">
-        {% if folio.is_open %}
-        <span class="folio-badge is-open">{% trans "Ochiq" %}</span>
-        {% else %}
-        <span class="folio-badge is-closed">{% trans "Yopilgan" %}</span>
-        {% endif %}
-        {% if folio.balance > 0 %}
-        <span class="folio-badge is-due">{% trans "Qoldiq" %} {{ folio.balance|money }}</span>
-        {% else %}
-        <span class="folio-badge is-paid">{% trans "To‘langan" %}</span>
-        {% endif %}
-      </div>
     </div>
     <div class="folio-hero-side">
-      <div class="folio-balance-card {% if folio.balance > 0 %}has-balance{% endif %}">
-        <span class="folio-balance-lbl">{% trans "Qoldiq" %}</span>
-        <strong class="money folio-balance-num">{{ folio.balance|money }}</strong>
-        <span class="folio-balance-meta">{{ current_tenant.currency }}</span>
+      <div class="folio-balance-card {% if folio.amount_due > 0 %}has-balance{% elif folio.credit_amount > 0 %}is-credit{% endif %}">
+        <span class="folio-balance-lbl">
+          {% if folio.credit_amount > 0 %}{% trans "Ortgan" %}{% elif folio.amount_due > 0 %}{% trans "Qoldiq" %}{% else %}{% trans "To‘langan" %}{% endif %}
+        </span>
+        <strong class="money folio-balance-num">
+          {% if folio.credit_amount > 0 %}{{ folio.credit_amount|money }}{% else %}{{ folio.amount_due|money }}{% endif %}
+        </strong>
       </div>
       <div class="folio-hero-actions">
-        <a class="btn-ghost" href="{% url 'bookings:detail' reservation.pk %}">{% trans "Bron" %}</a>
-        <a class="btn-ghost" href="{% url 'folio:receipt' folio.pk %}" target="_blank" hx-boost="false">{% trans "Chek" %}</a>
-        <a class="btn" href="{% url 'folio:pdf' folio.pk %}" target="_blank" hx-boost="false">{% trans "PDF" %}</a>
+        <a class="btn-ghost btn-sm" href="{% url 'bookings:detail' reservation.pk %}">{% trans "Bron" %}</a>
+        <a class="btn-ghost btn-sm" href="{% url 'folio:receipt' folio.pk %}" target="_blank" hx-boost="false">{% trans "Chek" %}</a>
+        <a class="btn btn-sm" href="{% url 'folio:pdf' folio.pk %}" target="_blank" hx-boost="false">{% trans "PDF" %}</a>
       </div>
     </div>
   </header>

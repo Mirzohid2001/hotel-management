@@ -6,13 +6,16 @@
   <header class="report-hero pnl-hero">
     <div class="report-hero-text">
       <p class="eyebrow">{% trans "Moliya" %} · E-mehmon</p>
-      <h1>{% trans "Oylik E-mehmon komissiyasi" %}</h1>
+      <h1>{% trans "Oylik E-mehmon" %}</h1>
       <p class="report-hero-sub">
         {{ report.start|date:"d.m.Y" }} → {{ report.end|date:"d.m.Y" }}
-        · {% trans "1 mehmon × 1 kecha" %}
+        · {% trans "Zayezdda olingan to‘lovlar" %}
       </p>
     </div>
     <div class="report-hero-actions">
+      <a class="btn"
+         href="{% url 'bookings:emehmon_statement' %}?year={{ year }}&amp;month={{ month }}"
+         target="_blank" hx-boost="false">{% trans "Bayonnoma / chek" %}</a>
       <a class="btn-ghost" href="{% url 'bookings:commission_report' %}">{% trans "Yo‘naltiruvchi komissiya" %}</a>
     </div>
   </header>
@@ -48,21 +51,21 @@
       <strong>{{ report.total_guest_nights }}</strong>
     </div>
     <div class="dash-pnl-item">
-      <span class="muted">{% trans "E-mehmonga berilishi kerak" %}</span>
-      <strong class="money">{{ report.total_expected|money }}</strong>
-    </div>
-    <div class="dash-pnl-item">
       <span class="muted">{% trans "Mehmondan olingan" %}</span>
       <strong class="money">{{ report.total_collected|money }}</strong>
     </div>
+    <div class="dash-pnl-item">
+      <span class="muted">{% trans "E-mehmonga o‘tkazish" %}</span>
+      <strong class="money">{{ report.posted_in_month|money }}</strong>
+    </div>
     <div class="dash-pnl-item dash-pnl-net">
-      <span class="muted">{% trans "Farq" %}</span>
+      <span class="muted">{% trans "Farq (P&L)" %}</span>
       <strong class="money">{{ report.total_gap|money }}</strong>
     </div>
   </div>
 
   <p class="muted" style="margin:0.5rem 0 1rem">
-    {% trans "Hisob: mehmanxonadagi tarif × oy ichidagi kechalar × mehmonlar soni. Olingan summa kechalar ulushiga bo‘linadi. Farq > 0 — mehmondan to‘liq olinmagan; P&L da shu farq (faqat boshlangan bronlar) rasxod." %}
+    {% trans "Zayezdda olingan E-mehmon folio va kassaga yoziladi (o‘tkinchi — tushum emas). Bayonnoma bo‘yicha E-mehmonga topshiriladi. Farq > 0 — belgilangan, lekin olinmagan; P&L da rasxod." %}
   </p>
 
   <section class="section-panel">
@@ -75,8 +78,6 @@
             <th>{% trans "Mehmon" %}</th>
             <th>{% trans "Oy kechalari" %}</th>
             <th>{% trans "Mehmon-kecha" %}</th>
-            <th>{% trans "Tarif" %}</th>
-            <th>{% trans "Hisoblangan" %}</th>
             <th>{% trans "Olingan" %}</th>
             <th>{% trans "Holat" %}</th>
           </tr>
@@ -92,8 +93,6 @@
             <td>{{ row.guests }}</td>
             <td>{{ row.nights_in_month }}</td>
             <td>{{ row.guest_nights }}</td>
-            <td class="money">{{ row.unit|money }}</td>
-            <td class="money">{{ row.expected|money }}</td>
             <td class="money">{{ row.collected|money }}</td>
             <td>
               {% if row.posted %}
@@ -105,7 +104,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="9" class="muted empty-row">{% trans "Bu oyda yashash yo‘q." %}</td>
+            <td colspan="7" class="muted empty-row">{% trans "Bu oyda yashash yo‘q." %}</td>
           </tr>
           {% endfor %}
         </tbody>

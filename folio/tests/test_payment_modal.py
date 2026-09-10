@@ -52,7 +52,7 @@ class FolioPaymentModalTests(TestCase):
     def test_payment_modal_prefills_amount(self):
         resp = self.client.get(reverse("folio:payment_modal", args=[self.reservation.pk]))
         balance = self.reservation.folio.balance
-        self.assertContains(resp, f'value="{balance.quantize(Decimal("1"))}"')
+        self.assertContains(resp, f'value="{balance.quantize(Decimal("0.01"))}"')
 
     def test_payment_modal_invalid_amount_rerenders(self):
         folio = self.reservation.folio

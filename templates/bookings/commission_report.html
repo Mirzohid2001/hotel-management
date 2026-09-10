@@ -75,6 +75,11 @@
           · {% trans "Qolgan" %}: <strong class="money">{{ group.remaining|money }}</strong>
         </p>
       </div>
+      <a class="btn-ghost btn-sm"
+         href="{% url 'bookings:commission_statement' group.referrer.pk %}?year={{ year }}&amp;month={{ month }}"
+         target="_blank" hx-boost="false">
+        {% trans "Bayonnoma / chek" %}
+      </a>
     </div>
     <table class="data-table">
       <thead>

@@ -51,7 +51,6 @@
           <a href="{% url 'bookings:board' %}" data-nav="board" class="{% if request.resolver_match.url_name == 'board' %}is-active{% endif %}">{% trans "Doska" %}</a>
           <a href="{% url 'bookings:calendar' %}" data-nav="calendar" class="{% if request.resolver_match.url_name == 'calendar' %}is-active{% endif %}">{% trans "Taqvim" %}</a>
           <a href="{% url 'bookings:list' %}" data-nav="list" class="{% if request.resolver_match.namespace == 'bookings' and request.resolver_match.url_name == 'list' %}is-active{% endif %}">{% trans "Bronlar" %}</a>
-          <a href="{% url 'bookings:inquiries' %}" data-nav="inquiries" class="{% if request.resolver_match.url_name == 'inquiries' %}is-active{% endif %}">{% trans "So‘rov" %}</a>
           <a href="{% url 'bookings:walk_in' %}" data-nav="walk_in" class="{% if request.resolver_match.url_name == 'walk_in' %}is-active{% endif %}">{% trans "Darhol joylash" %}</a>
           {% if "company_group" in plan_features %}
           <a href="{% url 'bookings:group_list' %}" data-nav="group" class="{% if request.resolver_match.url_name == 'group_list' or request.resolver_match.url_name == 'group_create' or request.resolver_match.url_name == 'group_detail' %}is-active{% endif %}">{% trans "Guruh" %}</a>

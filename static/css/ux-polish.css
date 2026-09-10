@@ -888,17 +888,58 @@ th.num {
 
 .folio-summary-premium .folio-stat,
 .folio-summary .stat {
-  border-radius: 16px;
-  padding: 0.95rem 1rem;
-  background: linear-gradient(165deg, #fff, #faf7f3);
+  border-radius: 10px;
+  padding: 0.4rem 0.65rem;
+  background: rgba(255, 255, 255, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .folio-summary-premium .folio-stat.warn,
 .folio-summary .stat.warn {
-  background: linear-gradient(165deg, #fff8ef, #fff);
+  background: rgba(255, 248, 239, 0.95);
   border-color: rgba(196, 122, 18, 0.25);
+}
+
+.folio-hero {
+  border-radius: 14px;
+  margin-bottom: 0.65rem;
+}
+
+.folio-balance-card {
+  border-radius: 10px;
+  padding: 0.4rem 0.7rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+}
+
+.folio-balance-card.has-balance {
+  background: rgba(255, 178, 92, 0.16);
+  border-color: rgba(255, 178, 92, 0.35);
+}
+
+.folio-guide {
+  display: none;
+}
+
+.folio-mini-form {
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: none;
+}
+
+.folio-mini-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.86rem;
+}
+
+.folio-page .section-panel {
+  padding: 0.55rem 0.65rem;
+  margin-bottom: 0.55rem;
+  border-radius: 10px;
 }
 
 .empty-row {
@@ -1188,6 +1229,69 @@ th.num {
   padding: 0.55rem 0.2rem;
 }
 
+.calendar-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.18rem;
+  border-radius: 12px;
+  background: rgba(26, 20, 16, 0.06);
+  border: 1px solid rgba(26, 20, 16, 0.08);
+}
+
+.cal-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9px;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--ink-muted, #6b635c);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.cal-view-btn:hover {
+  color: var(--ink, #1a1410);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.cal-view-btn.is-active {
+  color: #fff;
+  background: var(--accent, #e86a0c);
+  box-shadow: 0 4px 12px rgba(232, 106, 12, 0.28);
+}
+
+.calendar-wrap.is-month .calendar-table th,
+.calendar-wrap.is-month .calendar-table td {
+  min-width: 34px;
+  font-size: 0.72rem;
+  padding-left: 0.1rem;
+  padding-right: 0.1rem;
+}
+
+.calendar-wrap.is-month .cal-day-wd {
+  font-size: 0.62rem;
+  letter-spacing: 0.01em;
+}
+
+.calendar-wrap.is-month .cal-code {
+  display: none;
+}
+
+.calendar-wrap.is-month .cal-name {
+  font-size: 0.68rem;
+  line-height: 1.15;
+}
+
+.calendar-wrap.is-month td.cal-empty .cal-new {
+  width: 1.35rem;
+  height: 1.35rem;
+  font-size: 0.85rem;
+}
+
 .calendar-nav-btn {
   display: inline-flex;
   align-items: center;
@@ -1210,46 +1314,6 @@ th.num {
 /* ═══════════════════════════════════════
    FOLIO + DETAIL
    ═══════════════════════════════════════ */
-.folio-hero {
-  border-radius: 22px;
-  margin-bottom: 1.15rem;
-}
-
-.folio-balance-card {
-  border-radius: 18px;
-  padding: 1rem 1.15rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(8px);
-}
-
-.folio-balance-card.has-balance {
-  background: rgba(255, 178, 92, 0.16);
-  border-color: rgba(255, 178, 92, 0.35);
-}
-
-.folio-guide {
-  gap: 0.65rem;
-  margin-bottom: 1.15rem;
-  padding: 0.85rem 1rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-}
-
-.folio-mini-form {
-  border-radius: 16px;
-  padding: 1rem;
-  background: linear-gradient(165deg, #fff, #faf7f3);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: var(--shadow-card);
-}
-
-.folio-mini-title {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
-}
-
 .kv-list {
   list-style: none;
   margin: 0;

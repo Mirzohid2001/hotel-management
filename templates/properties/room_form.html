@@ -59,5 +59,12 @@
     <a class="btn-ghost" href="{{ cancel_url }}">{% trans "Bekor" %}</a>
   </div>
 </form>
+{% if delete_url %}
+<form method="post" action="{{ delete_url }}" class="entity-delete-form" hx-boost="false"
+      onsubmit="return confirm('{{ delete_confirm|default:_("O‘chirishni tasdiqlaysizmi?")|escapejs }}');">
+  {% csrf_token %}
+  <button type="submit" class="btn-ghost btn-danger">{% trans "O‘chirish" %}</button>
+</form>
+{% endif %}
 </section>
 {% endblock %}

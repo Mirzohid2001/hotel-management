@@ -22,12 +22,42 @@ urlpatterns = [
         views.room_type_edit,
         name="room_type_edit",
     ),
+    path(
+        "<int:property_id>/room-types/<int:pk>/delete/",
+        views.room_type_delete,
+        name="room_type_delete",
+    ),
     path("<int:property_id>/room-types/quick/", views.room_type_quick, name="room_type_quick"),
     path("<int:property_id>/floors/new/", views.floor_create, name="floor_create"),
+    path(
+        "<int:property_id>/floors/<int:pk>/edit/",
+        views.floor_edit,
+        name="floor_edit",
+    ),
+    path(
+        "<int:property_id>/floors/<int:pk>/delete/",
+        views.floor_delete,
+        name="floor_delete",
+    ),
     path("<int:property_id>/floors/quick/", views.floor_quick, name="floor_quick"),
     path("<int:property_id>/rooms/new/", views.room_create, name="room_create"),
     path("<int:property_id>/rooms/<int:pk>/edit/", views.room_edit, name="room_edit"),
+    path(
+        "<int:property_id>/rooms/<int:pk>/delete/",
+        views.room_delete,
+        name="room_delete",
+    ),
     path("<int:property_id>/rates/new/", views.rate_plan_create, name="rate_plan_create"),
+    path(
+        "<int:property_id>/rates/<int:pk>/edit/",
+        views.rate_plan_edit,
+        name="rate_plan_edit",
+    ),
+    path(
+        "<int:property_id>/rates/<int:pk>/delete/",
+        views.rate_plan_delete,
+        name="rate_plan_delete",
+    ),
     path("rates/<int:rate_id>/matrix/", views.rate_matrix, name="rate_matrix"),
     path("rates/<int:rate_id>/seasons/new/", views.season_create, name="season_create"),
 ]

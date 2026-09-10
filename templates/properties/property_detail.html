@@ -15,7 +15,17 @@
   </div>
   <ul class="list entity-list">
     {% for f in floors %}
-    <li class="entity-row"><span class="entity-meta">{{ f.number }}{% if f.name %} · {{ f.name }}{% endif %}</span></li>
+    <li class="entity-row guest-chip">
+      <span class="entity-meta">{{ f.number }}{% if f.name %} · {{ f.name }}{% endif %}</span>
+      <span class="detail-actions">
+        <a class="btn-ghost btn-sm" href="{% url 'properties:floor_edit' property_obj.pk f.pk %}">{% trans "Tahrirlash" %}</a>
+        <form method="post" action="{% url 'properties:floor_delete' property_obj.pk f.pk %}" class="inline-form" hx-boost="false"
+              onsubmit="return confirm('{% trans "Bu qavatni o‘chirishni xohlaysizmi?" %}');">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost btn-sm">{% trans "O‘chirish" %}</button>
+        </form>
+      </span>
+    </li>
     {% empty %}<li class="muted empty-row">{% trans "Bo‘sh" %}</li>{% endfor %}
   </ul>
 </section>
@@ -86,7 +96,14 @@
           · <span class="money">{{ rt.base_price|money }}</span> {{ rt.currency|default:current_tenant.currency }}
         </span>
       </span>
-      <a class="btn-ghost btn-sm" href="{% url 'properties:room_type_edit' property_obj.pk rt.pk %}">{% trans "Tahrirlash" %}</a>
+      <span class="detail-actions">
+        <a class="btn-ghost btn-sm" href="{% url 'properties:room_type_edit' property_obj.pk rt.pk %}">{% trans "Tahrirlash" %}</a>
+        <form method="post" action="{% url 'properties:room_type_delete' property_obj.pk rt.pk %}" class="inline-form" hx-boost="false"
+              onsubmit="return confirm('{% trans "Bu xona turini o‘chirishni xohlaysizmi?" %}');">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost btn-sm">{% trans "O‘chirish" %}</button>
+        </form>
+      </span>
     </li>
     {% empty %}
     {% include "includes/empty_state.html" with as_li=1 title=_("Xona turi yo‘q") hint=_("Yuqoridagi standart to‘plamni qo‘shing yoki qo‘lda yarating.") %}
@@ -112,7 +129,14 @@
         </span>
         <span class="entity-meta">{{ room.room_type.name }}{% if room.floor %} · {% trans "qavat" %} {{ room.floor.number }}{% endif %}</span>
       </span>
-      <a class="btn-ghost btn-sm" href="{% url 'properties:room_edit' property_obj.pk room.pk %}">{% trans "Tahrirlash" %}</a>
+      <span class="detail-actions">
+        <a class="btn-ghost btn-sm" href="{% url 'properties:room_edit' property_obj.pk room.pk %}">{% trans "Tahrirlash" %}</a>
+        <form method="post" action="{% url 'properties:room_delete' property_obj.pk room.pk %}" class="inline-form" hx-boost="false"
+              onsubmit="return confirm('{% trans "Bu xonani o‘chirishni xohlaysizmi?" %}');">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost btn-sm">{% trans "O‘chirish" %}</button>
+        </form>
+      </span>
     </li>
     {% empty %}<li class="muted empty-row">{% trans "Bo‘sh" %}</li>{% endfor %}
   </ul>
@@ -134,8 +158,14 @@
         <span class="entity-meta">{{ rate.room_type.name }} · <span class="money">{{ rate.price|money }}</span></span>
       </span>
       <span class="detail-actions">
+        <a class="btn-ghost btn-sm" href="{% url 'properties:rate_plan_edit' property_obj.pk rate.pk %}">{% trans "Tahrirlash" %}</a>
         <a class="btn-ghost btn-sm" href="{% url 'properties:rate_matrix' rate.pk %}">{% trans "Jadval" %}</a>
         <a class="btn-ghost btn-sm" href="{% url 'properties:season_create' rate.pk %}">+ {% trans "mavsum" %}</a>
+        <form method="post" action="{% url 'properties:rate_plan_delete' property_obj.pk rate.pk %}" class="inline-form" hx-boost="false"
+              onsubmit="return confirm('{% trans "Bu tarifni o‘chirishni xohlaysizmi?" %}');">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost btn-sm">{% trans "O‘chirish" %}</button>
+        </form>
       </span>
       {% for s in rate.seasons.all %}
       <div class="entity-meta">{{ s.name }}: {{ s.date_from }}–{{ s.date_to }} · <span class="money">{{ s.price|money }}</span></div>

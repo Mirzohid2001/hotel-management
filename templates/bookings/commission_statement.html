@@ -1,0 +1,229 @@
+{% load money_fmt i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "Komissiya bayonnomasi" %} — {{ group.referrer.name }} · {{ month|stringformat:"02d" }}.{{ year }}</title>
+  <style>
+    :root {
+      --brand: #c04a00;
+      --ink: #1a1410;
+      --muted: #7a7168;
+      --line: #ddd4c8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      max-width: 820px;
+      margin: 1.5rem auto;
+      padding: 0 1rem 2.5rem;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    h1 { font-size: 1.35rem; color: var(--brand); margin: 0 0 0.2rem; }
+    h2 { font-size: 1.1rem; margin: 0 0 0.35rem; }
+    .muted { color: var(--muted); }
+    .head {
+      border-bottom: 2px solid var(--brand);
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .meta { margin: 0.15rem 0; font-size: 0.95rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin: 1rem 0 1.25rem;
+    }
+    .cell {
+      border: 1px solid var(--line);
+      padding: 0.5rem 0.6rem;
+      border-radius: 6px;
+    }
+    .cell span { display: block; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .cell strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.5rem 0 1rem; }
+    th, td { text-align: left; padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .totals td { border-bottom: none; padding-top: 0.55rem; font-weight: 700; }
+    .note {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin: 0.75rem 0 1.5rem;
+    }
+    .signs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    .sign-box {
+      border-top: 1px solid var(--ink);
+      padding-top: 0.45rem;
+      font-size: 0.9rem;
+    }
+    .sign-box .role { color: var(--muted); font-size: 0.8rem; }
+    .actions { margin: 0 0 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button, .actions a {
+      background: var(--brand);
+      color: #fff;
+      border: 0;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .actions a.ghost {
+      background: transparent;
+      color: var(--brand);
+      border: 1px solid var(--brand);
+    }
+    @media print {
+      .actions { display: none !important; }
+      body { margin: 0; max-width: none; padding: 0; }
+    }
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+      .signs { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button type="button" onclick="window.print()">{% trans "Chop etish" %}</button>
+    <a class="ghost" href="{% url 'bookings:commission_report' %}?year={{ year }}&amp;month={{ month }}">{% trans "Hisobotga" %}</a>
+  </div>
+
+  <header class="head">
+    <h1>{% trans "Komissiya bayonnomasi" %}</h1>
+    <p class="meta"><strong>{{ tenant.name }}</strong>{% if hotel %} · {{ hotel.display_label }}{% endif %}</p>
+    <p class="meta muted">
+      {% trans "Davr" %}: {{ report.start|date:"d.m.Y" }} — {{ report.end|date:"d.m.Y" }}
+      · {{ month|stringformat:"02d" }}.{{ year }}
+    </p>
+  </header>
+
+  <section>
+    <h2>{{ group.referrer.name }}</h2>
+    <p class="meta muted">
+      {% if group.referrer.phone %}{{ group.referrer.phone }} · {% endif %}
+      {% trans "Yo‘naltiruvchi / komissiyachi" %}
+      {% if group.referrer.default_commission_percent %}
+      · {% trans "Standart" %}: {{ group.referrer.default_commission_percent }}%
+      {% endif %}
+    </p>
+  </section>
+
+  <div class="grid">
+    <div class="cell">
+      <span>{% trans "Bronlar" %}</span>
+      <strong>{{ group.count }}</strong>
+    </div>
+    <div class="cell">
+      <span>{% trans "Hisoblangan" %}</span>
+      <strong>{{ group.commission_total|money }}</strong>
+    </div>
+    <div class="cell">
+      <span>{% trans "To‘langan" %}</span>
+      <strong>{{ group.paid_total|money }}</strong>
+    </div>
+    <div class="cell">
+      <span>{% trans "Qolgan" %}</span>
+      <strong>{{ group.remaining|money }}</strong>
+    </div>
+  </div>
+
+  <h2 style="font-size:1rem;border-bottom:1px solid var(--line);padding-bottom:0.3rem">{% trans "Bronlar bo‘yicha hisob" %}</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>{% trans "Bron" %}</th>
+        <th>{% trans "Mehmon" %}</th>
+        <th>{% trans "Kirish" %}</th>
+        <th>{% trans "Chiqish" %}</th>
+        <th class="num">{% trans "Asos" %}</th>
+        <th class="num">%</th>
+        <th class="num">{% trans "Komissiya" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in group.rows %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ row.reservation.code }}</td>
+        <td>{{ row.reservation.guest.full_name }}</td>
+        <td>{{ row.reservation.check_in|date:"d.m.Y" }}</td>
+        <td>{{ row.reservation.check_out|date:"d.m.Y" }}</td>
+        <td class="num">{{ row.base|money }}</td>
+        <td class="num">{{ row.percent }}%</td>
+        <td class="num"><strong>{{ row.commission|money }}</strong></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="muted">{% trans "Bu oyda bron yo‘q" %}</td></tr>
+      {% endfor %}
+      {% if group.rows %}
+      <tr class="totals">
+        <td colspan="5">{% trans "Jami" %}</td>
+        <td class="num">{{ group.base_total|money }}</td>
+        <td></td>
+        <td class="num">{{ group.commission_total|money }}</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  {% if group.payments %}
+  <h2 style="font-size:1rem;border-bottom:1px solid var(--line);padding-bottom:0.3rem">{% trans "To‘lovlar" %}</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>{% trans "Sana" %}</th>
+        <th>{% trans "Usul" %}</th>
+        <th>{% trans "Izoh" %}</th>
+        <th class="num">{% trans "Summa" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in group.payments %}
+      <tr>
+        <td>{{ p.paid_on|date:"d.m.Y" }}</td>
+        <td>{{ p.get_method_display }}</td>
+        <td>{% if p.note %}{{ p.note }}{% else %}—{% endif %}</td>
+        <td class="num">{{ p.amount|money }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="totals">
+        <td colspan="3">{% trans "To‘langan jami" %}</td>
+        <td class="num">{{ group.paid_total|money }}</td>
+      </tr>
+    </tbody>
+  </table>
+  {% endif %}
+
+  <p class="note">
+    {% trans "Komissiya bazasi — xona tushumi (Night / xona yozuvlari yoki bron summasi). Minibar va qo‘shimcha xizmatlar bazaga kirmaydi." %}
+    {% trans "Ushbu bayonnoma sverka uchun: tomonlar imzolab tasdiqlaydi." %}
+    · {{ currency }}
+  </p>
+
+  <div class="signs">
+    <div class="sign-box">
+      <div class="role">{% trans "Mehmonxona vakili" %}</div>
+      <div>{% trans "F.I.Sh. / imzo" %}</div>
+    </div>
+    <div class="sign-box">
+      <div class="role">{% trans "Komissiyachi" %} — {{ group.referrer.name }}</div>
+      <div>{% trans "F.I.Sh. / imzo" %}</div>
+    </div>
+  </div>
+
+  <p class="muted" style="margin-top:1.75rem;font-size:0.8rem">
+    {% trans "Chop etilgan" %}: {{ printed_at|date:"d.m.Y H:i" }}
+    {% if printed_by %} · {{ printed_by }}{% endif %}
+  </p>
+</body>
+</html>

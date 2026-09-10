@@ -24,18 +24,18 @@ def _hotel_emehmon_unit(hotel) -> Decimal:
 
 
 def _add_emehmon_payment_fields(form, *, hotel=None, nights=1, guests=1):
-    """Bron/walk-in formalariga E-mehmon to‘lov maydonlari."""
+    """Walk-in / zayezd formalariga E-mehmon to‘lov maydonlari."""
     from folio.services import calc_emehmon_fee
 
     unit = _hotel_emehmon_unit(hotel)
     default_fee = calc_emehmon_fee(unit, nights=nights, guests=guests)
     form.fields["collect_emehmon"] = forms.BooleanField(
         required=False,
-        initial=False,
+        initial=True,
         label=_("E-mehmon komissiyasini olish"),
         help_text=_(
-            "Ixtiyoriy. Belgilanmasa — bu mehmondan olinmaydi. "
-            "Belgilansa: %(u)s so‘m × kechalar × mehmonlar."
+            "Standart: yoqilgan. Hisob = %(u)s so‘m × kechalar × mehmonlar. "
+            "O‘chirsangiz — bu mehmondan E-mehmon olinmaydi."
         )
         % {"u": unit if unit > 0 else Decimal("9000")},
     )
@@ -247,7 +247,6 @@ class ReservationForm(forms.ModelForm):
                         "hx-swap": "outerHTML",
                     }
                 )
-        _add_emehmon_payment_fields(self, hotel=hotel, nights=1, guests=1)
         if not self.is_bound and not self.instance.pk:
             today = timezone.localdate()
             self.fields["check_in"].initial = today
@@ -268,14 +267,6 @@ class ReservationForm(forms.ModelForm):
         nightly = cleaned.get("nightly_rate")
         if nightly is None or nightly <= 0:
             self.add_error("nightly_rate", _("1 kecha narxini kiriting."))
-
-        check_in = cleaned.get("check_in")
-        check_out = cleaned.get("check_out")
-        nights = 1
-        if check_in and check_out and check_out > check_in:
-            nights = (check_out - check_in).days
-        guests = max(1, int(cleaned.get("adults") or 1) + int(cleaned.get("children") or 0))
-        cleaned = _fill_emehmon_amount(self, cleaned, nights=nights, guests=guests)
         return cleaned
 
 

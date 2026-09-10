@@ -94,6 +94,31 @@ class CalendarQuickBookTests(TestCase):
         self.assertContains(resp, 'id="spa-root"')
         self.assertContains(resp, 'id="calendar-page"')
 
+    def test_calendar_month_view(self):
+        from calendar import monthrange
+
+        resp = self.client.get(reverse("bookings:calendar"), {"view": "month"})
+        self.assertEqual(resp.status_code, 200)
+        days_in_month = monthrange(self.today.year, self.today.month)[1]
+        self.assertEqual(resp.context["cal_view"], "month")
+        self.assertEqual(resp.context["days_count"], days_in_month)
+        self.assertEqual(len(resp.context["days"]), days_in_month)
+        self.assertEqual(resp.context["start"].day, 1)
+        self.assertContains(resp, "view=month")
+        self.assertContains(resp, "1 oy")
+        self.assertContains(resp, "14 kun")
+
+    def test_calendar_month_nav_steps_by_month(self):
+        resp = self.client.get(
+            reverse("bookings:calendar"),
+            {"view": "month", "start": "2026-09-15"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context["start"].isoformat(), "2026-09-01")
+        self.assertEqual(resp.context["prev"].isoformat(), "2026-08-01")
+        self.assertEqual(resp.context["next"].isoformat(), "2026-10-01")
+        self.assertEqual(resp.context["days_count"], 30)
+
 
 class CheckoutReceiptTests(TestCase):
     def setUp(self):

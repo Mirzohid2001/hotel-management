@@ -174,11 +174,89 @@ def emehmon_totals_for_range(
     }
 
 
+def emehmon_collection_rows(
+    tenant,
+    start: date,
+    end: date,
+    *,
+    hotel=None,
+) -> list[dict]:
+    """Zayezdda olingan E-mehmon yozuvlari (bayonnoma / chek uchun)."""
+    from folio.models import GuestPayment
+    from folio.services import EMEHMON_LEGACY_MARKERS
+
+    charge_qs = (
+        FolioCharge.objects.filter(
+            tenant=tenant,
+            is_void=False,
+            charge_type=FolioCharge.ChargeType.EMEHMON,
+            created_at__date__gte=start,
+            created_at__date__lte=end,
+        )
+        .select_related(
+            "folio",
+            "folio__reservation",
+            "folio__reservation__guest",
+            "folio__reservation__hotel",
+        )
+        .order_by("created_at", "pk")
+    )
+    if hotel is not None:
+        charge_qs = charge_qs.filter(folio__reservation__hotel=hotel)
+
+    rows = []
+    for charge in charge_qs:
+        folio = charge.folio
+        res = getattr(folio, "reservation", None)
+        pay_q = Q()
+        for marker in EMEHMON_LEGACY_MARKERS:
+            pay_q |= Q(note__icontains=marker)
+        payment = (
+            GuestPayment.objects.filter(folio=folio, is_void=False)
+            .filter(pay_q)
+            .order_by("created_at")
+            .first()
+        )
+        rows.append(
+            {
+                "charge": charge,
+                "payment": payment,
+                "reservation": res,
+                "guest_name": str(res.guest) if res and res.guest_id else "—",
+                "hotel_name": res.hotel.name if res and res.hotel_id else "—",
+                "code": res.code if res else "—",
+                "check_in": res.check_in if res else None,
+                "check_out": res.check_out if res else None,
+                "amount": charge.amount_base or charge.amount,
+                "method": payment.get_method_display() if payment else "—",
+                "collected_at": charge.created_at,
+                "note": (payment.note if payment else charge.description) or "",
+            }
+        )
+    return rows
+
+
+def build_emehmon_statement(tenant, *, year: int, month: int, hotel=None) -> dict:
+    """Oylik E-mehmon bayonnomasi — zayezdda olingan pullar."""
+    start, end = _month_bounds(year, month)
+    rows = emehmon_collection_rows(tenant, start, end, hotel=hotel)
+    total = sum((r["amount"] for r in rows), Decimal("0"))
+    return {
+        "year": year,
+        "month": month,
+        "start": start,
+        "end": end,
+        "rows": rows,
+        "total_collected": total,
+        "count": len(rows),
+    }
+
+
 def build_emehmon_report(tenant, *, year: int, month: int, hotel=None) -> dict:
     """
     Oylik E-mehmon:
-    - hisoblangan: oy ichidagi mehmon-kechalar × tarif (E-mehmonga berilishi kerak)
-    - olingan: folio dagi EMEHMON charge (mehmondan)
+    - olingan: zayezdda / folio dagi EMEHMON
+    - farq: kerak bo‘lgan − olingan (P&L)
     """
     start, end = _month_bounds(year, month)
     data = emehmon_totals_for_range(tenant, start, end, hotel=hotel, realized_only=False)
@@ -187,6 +265,7 @@ def build_emehmon_report(tenant, *, year: int, month: int, hotel=None) -> dict:
         "month": month,
         **data,
         "posted_in_month": data["posted_in_period"],
+        "collections": emehmon_collection_rows(tenant, start, end, hotel=hotel),
     }
 
 

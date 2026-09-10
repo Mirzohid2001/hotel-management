@@ -143,7 +143,7 @@ def create_reservation(
     status=Reservation.Status.CONFIRMED,
     referrer=None,
     commission_percent=None,
-    emehmon_required=False,
+    emehmon_required=True,
 ) -> Reservation:
     assert_room_available(room, check_in, check_out)
     if guest is not None and getattr(guest, "is_blacklisted", False):

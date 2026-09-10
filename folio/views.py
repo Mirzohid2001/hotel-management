@@ -29,6 +29,7 @@ from .forms import (
     CompanyPaymentForm,
     OpenShiftForm,
     PaymentForm,
+    RefundForm,
     SplitPaymentForm,
     StayMinibarForm,
     StayServiceForm,
@@ -47,6 +48,7 @@ from .services import (
     open_cash_shift,
     open_folio_for_deposit,
     collect_emehmon_fee,
+    refund_overpayment,
     void_charge,
     void_payment,
 )
@@ -60,11 +62,18 @@ def _folio_context(folio, reservation, tenant=None):
     billing_company = reservation.company or (
         reservation.guest.company if reservation.guest_id else None
     )
+    credit = folio.credit_amount
+    charges = list(folio.charges.all())
+    payments = list(folio.payments.all())
     return {
         "folio": folio,
         "reservation": reservation,
+        "active_charges": [c for c in charges if not c.is_void],
+        "voided_charges": [c for c in charges if c.is_void],
+        "active_payments": [p for p in payments if not p.is_void],
         "charge_form": ChargeForm(initial={"currency": t.currency or "UZS"}),
         "payment_form": PaymentForm(tenant=t),
+        "refund_form": RefundForm(tenant=t, max_amount=credit if credit > 0 else None),
         "service_form": StayServiceForm(tenant=t),
         "minibar_form": StayMinibarForm(tenant=t, hotel=reservation.hotel),
         "city_ledger_form": CityLedgerTransferForm(folio=folio),
@@ -197,6 +206,34 @@ def folio_add_payment(request, pk):
                     "from_board": request.POST.get("from_board") == "1",
                 },
             )
+    if request.htmx:
+        folio.refresh_from_db()
+        return render(
+            request,
+            "folio/partials/folio_body.html",
+            _folio_context(folio, folio.reservation, request.tenant),
+        )
+    return redirect("folio:detail", reservation_id=folio.reservation_id)
+
+
+@role_required(*FRONT_DESK_MONEY)
+@require_http_methods(["POST"])
+def folio_refund(request, pk):
+    """Ortib qolgan to‘lovni (sdachi) mehmonga qaytarish."""
+    folio = get_object_or_404(Folio, pk=pk, tenant=request.tenant)
+    form = RefundForm(
+        request.POST,
+        tenant=request.tenant,
+        max_amount=folio.credit_amount if folio.credit_amount > 0 else None,
+    )
+    if form.is_valid():
+        try:
+            refund_overpayment(folio, request.user, **form.cleaned_data)
+            messages.success(request, _("Sdachi qaytarildi — ortiqcha to‘lov yozildi."))
+        except ValidationError as exc:
+            messages.error(request, "; ".join(exc.messages))
+    else:
+        messages.error(request, _("Qaytarish formasi noto‘g‘ri."))
     if request.htmx:
         folio.refresh_from_db()
         return render(

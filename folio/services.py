@@ -57,15 +57,25 @@ def night_charge_description(day) -> str:
 
 
 def folio_has_legacy_prepaid_room(folio: Folio) -> bool:
-    """True if folio has a non-nightly room charge (old prepaid stay model)."""
-    return (
-        FolioCharge.objects.filter(
-            folio=folio, charge_type=FolioCharge.ChargeType.ROOM, is_void=False
-        )
-        .exclude(description__startswith="Night ")
-        .exists()  # nightly posts always start with "Night "
+    """
+    True if folio already has a bulk prepaid stay ROOM charge.
 
-    )
+    Oddiy xato ROOM yozuvlari (masalan minibar «beer») kecha to‘lovlarini
+    bloklamasligi kerak — faqat bron summasiga yaqin bir martalik xona yozuvi.
+    """
+    from django.db.models import Sum
+
+    other = FolioCharge.objects.filter(
+        folio=folio, charge_type=FolioCharge.ChargeType.ROOM, is_void=False
+    ).exclude(description__startswith="Night ")
+    total = other.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+    if total <= 0:
+        return False
+    res = getattr(folio, "reservation", None)
+    quote = Decimal(getattr(res, "total_amount", None) or 0) if res else Decimal("0")
+    if quote > 0:
+        return total >= quote * Decimal("0.5")
+    return True
 
 
 def night_amount_for(reservation, day) -> Decimal:
@@ -207,6 +217,61 @@ def add_payment(
             "amount": str(amount),
             "amount_base": str(payment.amount_base),
             "currency": payment.currency,
+            "method": method,
+            "kind": payment.kind,
+            "folio": folio.pk,
+        },
+    )
+    return payment
+
+
+@transaction.atomic
+def refund_overpayment(
+    folio,
+    user,
+    *,
+    amount=None,
+    method=GuestPayment.Method.CASH,
+    note="",
+    currency=None,
+    fx_rate=None,
+) -> GuestPayment:
+    """
+    Ortib qolgan pulni (avans/sdachi) mehmonga qaytarish.
+    Folio credit_amount dan ortiq qaytarib bo‘lmaydi.
+    """
+    if not folio.is_open:
+        raise ValidationError(_("Mehmon hisobi yopilgan."))
+    credit = folio.credit_amount
+    if credit <= 0:
+        raise ValidationError(_("Qaytarish uchun ortiqcha to‘lov yo‘q."))
+    fee = Decimal(amount) if amount is not None else credit
+    if fee <= 0:
+        raise ValidationError(_("Qaytarish summasi musbat bo‘lishi kerak."))
+    if fee > credit:
+        raise ValidationError(
+            _("Ortganidan ko‘p qaytarib bo‘lmaydi: avans %(c)s.") % {"c": credit}
+        )
+    refund_note = (note or "").strip() or _("Sdachi — ortiqcha to‘lovni qaytarish")
+    payment = add_payment(
+        folio,
+        user,
+        amount=fee,
+        method=method,
+        note=refund_note,
+        kind=GuestPayment.Kind.REFUND,
+        currency=currency,
+        fx_rate=fx_rate,
+    )
+    log_activity(
+        tenant=folio.tenant,
+        user=user,
+        action="payment_refunded",
+        model="GuestPayment",
+        object_id=payment.pk,
+        payload={
+            "amount": str(fee),
+            "amount_base": str(payment.amount_base),
             "method": method,
             "folio": folio.pk,
         },

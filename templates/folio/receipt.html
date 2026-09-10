@@ -155,18 +155,24 @@
     </thead>
     <tbody>
       {% for p in folio.payments.all %}
+      {% if not p.is_void %}
       <tr>
         <td>{{ p.get_method_display }} · {{ p.get_kind_display }}{% if p.note %} · {{ p.note }}{% endif %}</td>
-        <td class="num">{{ p.amount|money }}</td>
+        <td class="num">{% if p.is_refund %}−{% endif %}{{ p.amount|money }}</td>
       </tr>
+      {% endif %}
       {% endfor %}
-      <tr class="total"><td>{% trans "To‘langan" %}</td><td class="num">{{ folio.payments_total|money }}</td></tr>
+      <tr class="total"><td>{% trans "To‘langan (sof)" %}</td><td class="num">{{ folio.payments_total|money }}</td></tr>
     </tbody>
   </table>
   {% endif %}
 
   <table>
-    <tr class="total"><td>{% trans "Qoldiq" %}</td><td class="num">{{ folio.balance|money }}</td></tr>
+    {% if folio.credit_amount > 0 %}
+    <tr class="total"><td>{% trans "Avans / qaytarilishi kerak" %}</td><td class="num">{{ folio.credit_amount|money }}</td></tr>
+    {% else %}
+    <tr class="total"><td>{% trans "Qoldiq" %}</td><td class="num">{{ folio.amount_due|money }}</td></tr>
+    {% endif %}
   </table>
 
   <footer class="receipt-foot">
