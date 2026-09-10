@@ -46,7 +46,7 @@ class MaintenanceSpendForm(forms.Form):
         label=_("Qayerdan"),
         initial=Expense.Funding.OPERATING,
         help_text=_(
-            "Joriy — Sofdan. Reinvestitsiya — Sofga tegmaydi, uchreditel foydasidan."
+            "Joriy — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, egalar ulushidan."
         ),
     )
     payment_method = forms.ChoiceField(

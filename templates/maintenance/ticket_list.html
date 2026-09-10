@@ -6,7 +6,7 @@
 <div class="expense-page">
 {% url 'maintenance:create' as create_url %}
 {% url 'maintenance:spend_create' as spend_url %}
-{% include "includes/page_header.html" with title=_("Ta’mir va reinvestitsiya") eyebrow=_("Operatsiya · Moliya") subtitle=_("Arizalar + joriy ta’mir (Sof) / reinvestitsiya (foyda ulushi).") primary_url=create_url primary_label=_("Yangi ariza") secondary_url=spend_url secondary_label=_("Xarajat") %}
+{% include "includes/page_header.html" with title=_("Ta’mir va reinvestitsiya") eyebrow=_("Operatsiya · Moliya") subtitle=_("Arizalar va xarajatlar: joriy ta’mir yoki reinvestitsiya.") primary_url=create_url primary_label=_("Yangi ariza") secondary_url=spend_url secondary_label=_("Xarajat") %}
 
 <nav class="expense-filter panel" aria-label="{% trans 'Bo‘lim' %}">
   <div class="expense-filter-actions" style="gap:0.5rem;flex-wrap:wrap">
@@ -118,11 +118,11 @@
 {% else %}
 <div class="expense-summary">
   <div class="expense-summary-card">
-    <span class="expense-summary-lbl">{% trans "Joriy (Sofdan)" %}</span>
+    <span class="expense-summary-lbl">{% trans "Joriy (sof foydadan)" %}</span>
     <strong class="expense-summary-val money">{{ cost_operating|money }}</strong>
   </div>
   <div class="expense-summary-card is-accent">
-    <span class="expense-summary-lbl">{% trans "Reinvestitsiya (foydadan)" %}</span>
+    <span class="expense-summary-lbl">{% trans "Reinvestitsiya (ulushdan)" %}</span>
     <strong class="expense-summary-val money">{{ cost_reinvest|money }}</strong>
   </div>
 </div>
@@ -136,7 +136,7 @@
     <a class="btn btn-sm" href="{% url 'maintenance:spend_create' %}">{% trans "Xarajat qo‘shish" %}</a>
   </div>
   <p class="muted panel mb-md">
-    {% trans "Joriy — mehmonxona Sofidan. Reinvestitsiya — Sofga tegmaydi, «Foyda ulushi»da ayiriladi." %}
+    {% trans "Joriy ta’mir — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, foyda ulushidan ayiriladi." %}
   </p>
   <ul class="list entity-list">
     {% for e in costs %}

@@ -37,7 +37,7 @@ class ExpenseForm(forms.ModelForm):
         }
         help_texts = {
             "funding": _(
-                "Joriy — Sofdan. Reinvestitsiya — Sofga tegmaydi, uchreditel foydasidan."
+                "Joriy — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, egalar ulushidan."
             ),
         }
         widgets = {"expense_date": forms.DateInput(attrs={"type": "date"})}

@@ -80,8 +80,8 @@ class Expense(MoneyFieldsMixin, TenantOwnedModel):
         default=Funding.OPERATING,
         verbose_name=_("Moliyalashtirish"),
         help_text=_(
-            "Joriy — mehmonxona Sofidan. Reinvestitsiya — Sofga tegmaydi, "
-            "uchreditel/foyda ulushidan ayiriladi."
+            "Joriy — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, "
+            "egalar / foyda ulushidan ayiriladi."
         ),
     )
     title = models.CharField(max_length=200)
