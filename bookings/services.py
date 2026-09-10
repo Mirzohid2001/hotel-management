@@ -134,6 +134,7 @@ def create_reservation(
     room=None,
     rate_plan=None,
     nightly_rate=None,
+    currency=None,
     adults=1,
     children=0,
     source=Reservation.Source.PHONE,
@@ -178,7 +179,8 @@ def create_reservation(
         created_by=user,
         code=generate_reservation_code(tenant, property_obj, check_in),
         currency=(
-            getattr(rate_plan, "currency", None)
+            currency
+            or getattr(rate_plan, "currency", None)
             or getattr(room_type, "currency", None)
             or getattr(tenant, "currency", None)
             or "UZS"
@@ -253,6 +255,7 @@ def create_group_booking(
                 room=item.get("room"),
                 rate_plan=item.get("rate_plan"),
                 nightly_rate=item.get("nightly_rate"),
+                currency=item.get("currency"),
                 check_in=check_in,
                 check_out=check_out,
                 adults=item.get("adults") or 1,
@@ -474,6 +477,7 @@ def apply_amendment(reservation: Reservation, user, data: dict) -> Reservation:
         ("room", reservation.room_id, new_room.pk if new_room else None),
         ("rate_plan", reservation.rate_plan_id, new_rate.pk if new_rate else None),
         ("nightly_rate", reservation.nightly_rate, new_nightly),
+        ("currency", reservation.currency, data.get("currency")),
         ("adults", reservation.adults, new_adults),
         ("children", reservation.children, new_children),
     ]
@@ -493,6 +497,8 @@ def apply_amendment(reservation: Reservation, user, data: dict) -> Reservation:
             reservation.rate_plan = new_rate
     elif new_rate is not None:
         reservation.rate_plan = new_rate
+    if data.get("currency"):
+        reservation.currency = data["currency"]
     if new_room:
         old_type_id = reservation.room_type_id
         reservation.room_type = new_room.room_type

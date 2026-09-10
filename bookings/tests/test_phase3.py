@@ -60,6 +60,7 @@ class CalendarQuickBookTests(TestCase):
                 "check_out": check_out.isoformat(),
                 "guest": self.guest.pk,
                 "nightly_rate": "100000",
+                "currency": "UZS",
                 "adults": 2,
                 "status": Reservation.Status.CONFIRMED,
             },

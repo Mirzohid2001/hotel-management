@@ -81,7 +81,7 @@
     </div>
     <div class="form-grid app-form-grid">
       {% for field in form %}
-        {% if field.name == "check_in" or field.name == "check_out" or field.name == "room_type" or field.name == "room" or field.name == "nightly_rate" or field.name == "adults" or field.name == "children" %}
+        {% if field.name == "check_in" or field.name == "check_out" or field.name == "room_type" or field.name == "room" or field.name == "nightly_rate" or field.name == "currency" or field.name == "adults" or field.name == "children" %}
         <p class="form-field">
           <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
           {{ field }}

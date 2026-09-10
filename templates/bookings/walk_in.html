@@ -216,9 +216,14 @@
     if (!hidden) return;
     hidden.value = card.getAttribute("data-room-id");
     var rateInput = form.querySelector('[name="nightly_rate"]');
+    var currencyInput = form.querySelector('[name="currency"]');
     var base = card.getAttribute("data-base-price");
+    var cur = card.getAttribute("data-currency");
     if (rateInput && base) {
       rateInput.value = base;
+    }
+    if (currencyInput && cur) {
+      currencyInput.value = cur;
     }
     syncRoomCards();
   });

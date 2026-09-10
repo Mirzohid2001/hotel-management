@@ -103,6 +103,7 @@ class WalkInDepositPromptTests(TestCase):
                 "phone": "99890",
                 "room": self.room.pk,
                 "nightly_rate": "100000",
+                "currency": "UZS",
                 "nights": 1,
                 "adults": 1,
             },

@@ -1,11 +1,13 @@
 """Walk-in — band xonalar ro'yxatda ko'rinadi, tanlash mumkin emas."""
 
 from datetime import timedelta
+from decimal import Decimal
 
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from bookings.models import Reservation
 from bookings.services import check_in_reservation, create_reservation
 from core.tests.helpers import make_property_stack, setup_tenant_user
 from guests.models import Guest
@@ -65,6 +67,7 @@ class WalkInRoomAvailabilityTests(TestCase):
                 "first_name": "Fail",
                 "room": self.room_busy.pk,
                 "nightly_rate": "100000",
+                "currency": "UZS",
                 "nights": 1,
                 "adults": 1,
             },
@@ -79,11 +82,15 @@ class WalkInRoomAvailabilityTests(TestCase):
                 "first_name": "Ok",
                 "room": self.room_free.pk,
                 "nightly_rate": "100000",
+                "currency": "USD",
                 "nights": 1,
                 "adults": 1,
             },
         )
         self.assertEqual(resp.status_code, 302)
+        res = Reservation.objects.get(guest__first_name="Ok")
+        self.assertEqual(res.currency, "USD")
+        self.assertEqual(res.nightly_rate, Decimal("100000"))
 
     def test_nights_htmx_partial_updates_rooms(self):
         resp = self.client.get(

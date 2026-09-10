@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from django.urls import reverse
 from django.utils import timezone
+from core.currency import CURRENCY_CHOICES
 from django.utils.translation import gettext_lazy as _
 
 from guests.models import Company, Guest
@@ -170,6 +171,7 @@ class ReservationForm(forms.ModelForm):
             "room_type",
             "room",
             "nightly_rate",
+            "currency",
             "check_in",
             "check_out",
             "adults",
@@ -186,6 +188,7 @@ class ReservationForm(forms.ModelForm):
             "room_type": _("Xona turi"),
             "room": _("Xona"),
             "nightly_rate": _("Narx (1 kecha)"),
+            "currency": _("Valyuta"),
             "check_in": _("Kirish"),
             "check_out": _("Chiqish"),
             "adults": _("Kattalar"),
@@ -196,6 +199,7 @@ class ReservationForm(forms.ModelForm):
         }
         help_texts = {
             "nightly_rate": _("Kelishilgan bir kechalik summa. Jami = narx × kechalar."),
+            "currency": _("Narx shu valyutada — UZS, USD yoki EUR."),
         }
         widgets = {
             "check_in": forms.DateInput(attrs={"type": "date"}),
@@ -235,6 +239,9 @@ class ReservationForm(forms.ModelForm):
             self.fields["company"].required = False
             self.fields["room"].required = False
             self.fields["nightly_rate"].required = True
+            self.fields["currency"].choices = CURRENCY_CHOICES
+            if not self.is_bound and not self.instance.pk:
+                self.fields["currency"].initial = getattr(tenant, "currency", None) or "UZS"
             avail_url = reverse("bookings:availability")
             for name in ("check_in", "check_out", "room", "room_type"):
                 self.fields[name].widget.attrs.update(
@@ -257,7 +264,6 @@ class ReservationForm(forms.ModelForm):
         referrer = cleaned.get("referrer")
         percent = cleaned.get("commission_percent")
         if not referrer:
-            # Mehmon o‘zi kelgan — foiz kerak emas
             cleaned["commission_percent"] = None
         elif percent is None:
             cleaned["commission_percent"] = referrer.default_commission_percent
@@ -267,6 +273,15 @@ class ReservationForm(forms.ModelForm):
         nightly = cleaned.get("nightly_rate")
         if nightly is None or nightly <= 0:
             self.add_error("nightly_rate", _("1 kecha narxini kiriting."))
+
+        currency = cleaned.get("currency")
+        if not currency:
+            room_type = cleaned.get("room_type")
+            cleaned["currency"] = (
+                getattr(room_type, "currency", None)
+                or getattr(self.tenant, "currency", None)
+                or "UZS"
+            )
         return cleaned
 
 
@@ -297,6 +312,11 @@ class ReservationAmendForm(forms.Form):
         label=_("Narx (1 kecha)"),
         widget=forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
     )
+    currency = forms.ChoiceField(
+        choices=CURRENCY_CHOICES,
+        label=_("Valyuta"),
+        initial="UZS",
+    )
     adults = forms.IntegerField(min_value=1, label=_("Kattalar"))
     children = forms.IntegerField(min_value=0, label=_("Bolalar"))
     reason = forms.CharField(required=False, max_length=255, label=_("Sabab"))
@@ -324,6 +344,9 @@ class ReservationAmendForm(forms.Form):
                 reservation.nightly_rate
                 if reservation.nightly_rate
                 else room_nightly_price(reservation)
+            )
+            self.fields["currency"].initial = (
+                reservation.currency or reservation.tenant.currency or "UZS"
             )
             self.fields["adults"].initial = reservation.adults
             self.fields["children"].initial = reservation.children
@@ -378,6 +401,12 @@ class WalkInForm(forms.Form):
             attrs={"step": "0.01", "min": "0", "placeholder": "0"}
         ),
     )
+    currency = forms.ChoiceField(
+        choices=CURRENCY_CHOICES,
+        label=_("Valyuta"),
+        initial="UZS",
+        help_text=_("Narx shu valyutada — UZS, USD yoki EUR."),
+    )
     nights = forms.IntegerField(
         min_value=1,
         initial=1,
@@ -423,6 +452,7 @@ class WalkInForm(forms.Form):
         self.stay_check_out = self.stay_check_in + timedelta(days=1)
         if tenant is not None:
             self.fields["referrer"].queryset = active_referrers(tenant)
+            self.fields["currency"].initial = getattr(tenant, "currency", None) or "UZS"
             nights = self._walk_in_nights()
             today = timezone.localdate()
             check_out = today + timedelta(days=nights)
@@ -530,6 +560,11 @@ class CalendarQuickBookForm(forms.Form):
         label=_("Narx (1 kecha)"),
         widget=forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
     )
+    currency = forms.ChoiceField(
+        choices=CURRENCY_CHOICES,
+        label=_("Valyuta"),
+        initial="UZS",
+    )
     adults = forms.IntegerField(min_value=1, initial=2, label=_("Kattalar"))
     status = forms.ChoiceField(
         choices=[
@@ -551,6 +586,8 @@ class CalendarQuickBookForm(forms.Form):
             self.fields["guest"].queryset = Guest.objects.filter(tenant=tenant).order_by(
                 "last_name", "first_name"
             )
+            if not self.is_bound:
+                self.fields["currency"].initial = getattr(tenant, "currency", None) or "UZS"
 
 
 class TransferForm(forms.Form):
@@ -685,6 +722,11 @@ class GroupRoomForm(forms.Form):
         label=_("Narx (1 kecha)"),
         widget=forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
     )
+    currency = forms.ChoiceField(
+        choices=CURRENCY_CHOICES,
+        label=_("Valyuta"),
+        initial="UZS",
+    )
     adults = forms.IntegerField(min_value=1, initial=1, label=_("Kattalar"))
     children = forms.IntegerField(min_value=0, initial=0, label=_("Bolalar"))
 
@@ -692,6 +734,7 @@ class GroupRoomForm(forms.Form):
         super().__init__(*args, **kwargs)
         if tenant is not None:
             self.fields["guest"].queryset = Guest.objects.filter(tenant=tenant)
+            self.fields["currency"].initial = getattr(tenant, "currency", None) or "UZS"
             room_types = RoomType.objects.filter(tenant=tenant, is_active=True)
             rooms = Room.objects.filter(
                 tenant=tenant, is_active=True, room_type__is_active=True
@@ -705,6 +748,9 @@ class GroupRoomForm(forms.Form):
 
 def _bind_group_room_form(form, tenant, hotel=None):
     form.fields["guest"].queryset = Guest.objects.filter(tenant=tenant)
+    form.fields["currency"].choices = CURRENCY_CHOICES
+    if not form.is_bound:
+        form.fields["currency"].initial = getattr(tenant, "currency", None) or "UZS"
     room_types = RoomType.objects.filter(tenant=tenant, is_active=True)
     rooms = Room.objects.filter(tenant=tenant, is_active=True, room_type__is_active=True)
     if hotel is not None:

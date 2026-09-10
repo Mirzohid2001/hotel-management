@@ -155,7 +155,7 @@ def reservation_create(request):
         return redirect("properties:list")
     initial = {}
     if request.method == "GET":
-        for key in ("guest", "room_type", "room", "nightly_rate", "check_in", "check_out", "status"):
+        for key in ("guest", "room_type", "room", "nightly_rate", "currency", "check_in", "check_out", "status"):
             val = request.GET.get(key)
             if val:
                 initial[key] = val
@@ -169,8 +169,11 @@ def reservation_create(request):
                 initial.setdefault("room_type", room.room_type_id)
                 if room.room_type_id and room.room_type.base_price:
                     initial.setdefault("nightly_rate", room.room_type.base_price)
+                if room.room_type_id and getattr(room.room_type, "currency", None):
+                    initial.setdefault("currency", room.room_type.currency)
             except (Room.DoesNotExist, ValueError, TypeError):
                 pass
+        initial.setdefault("currency", getattr(request.tenant, "currency", None) or "UZS")
     form = ReservationForm(
         request.POST or None, tenant=request.tenant, hotel=hotel, initial=initial
     )
@@ -185,6 +188,7 @@ def reservation_create(request):
                 room_type=form.cleaned_data["room_type"],
                 room=form.cleaned_data.get("room"),
                 nightly_rate=form.cleaned_data.get("nightly_rate"),
+                currency=form.cleaned_data.get("currency"),
                 check_in=form.cleaned_data["check_in"],
                 check_out=form.cleaned_data["check_out"],
                 adults=form.cleaned_data["adults"],
@@ -550,6 +554,7 @@ def walk_in(request):
                 room_type=room.room_type,
                 room=room,
                 nightly_rate=data.get("nightly_rate"),
+                currency=data.get("currency"),
                 check_in=today,
                 check_out=today + timedelta(days=data["nights"]),
                 adults=data["adults"],
@@ -739,6 +744,10 @@ def calendar_quick_book(request):
     initial = {}
     if room.room_type_id and room.room_type.base_price:
         initial["nightly_rate"] = room.room_type.base_price
+    if room.room_type_id and getattr(room.room_type, "currency", None):
+        initial["currency"] = room.room_type.currency
+    else:
+        initial["currency"] = getattr(request.tenant, "currency", None) or "UZS"
 
     form = CalendarQuickBookForm(
         request.POST or None,
@@ -756,6 +765,7 @@ def calendar_quick_book(request):
                 room_type=room.room_type,
                 room=room,
                 nightly_rate=form.cleaned_data.get("nightly_rate"),
+                currency=form.cleaned_data.get("currency"),
                 check_in=check_in,
                 check_out=check_out,
                 adults=form.cleaned_data["adults"],
