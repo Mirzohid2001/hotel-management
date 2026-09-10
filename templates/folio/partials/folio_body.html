@@ -20,13 +20,14 @@
     <strong class="money">{{ folio.payments_total|money }} {{ current_tenant.currency }}</strong>
   </div>
   <div class="folio-strip-item {% if folio.amount_due > 0 %}is-due{% elif folio.credit_amount > 0 %}is-credit{% endif %}">
-    <span>{% if folio.credit_amount > 0 %}{% trans "Ortgan" %}{% else %}{% trans "Qoldiq" %}{% endif %}</span>
+    <span>{% if folio.credit_amount > 0 %}{% if reservation.status == 'checked_out' %}{% trans "Ortgan" %}{% else %}{% trans "Depozit" %}{% endif %}{% else %}{% trans "Qoldiq" %}{% endif %}</span>
     <strong class="money">{% if folio.credit_amount > 0 %}{{ folio.credit_amount|money }}{% else %}{{ folio.amount_due|money }}{% endif %} {{ current_tenant.currency }}</strong>
   </div>
 </div>
 
-{# —— Sdachi: bitta qator —— #}
+{# —— Ortgan pul: chiqishdan oldin depozit, keyin sdachi —— #}
 {% if folio.credit_amount > 0 and folio.is_open %}
+  {% if reservation.status == 'checked_out' %}
 <section class="folio-refund-bar">
   <div class="folio-refund-label">
     <strong>{% trans "Sdachi qaytarish" %}</strong>
@@ -59,9 +60,20 @@
     {% endfor %}
   </form>
 </section>
+  {% else %}
+<section class="folio-refund-bar is-deposit-hold">
+  <div class="folio-refund-label">
+    <strong>{% trans "Depozit / avans" %}</strong>
+    <span class="money">{{ folio.credit_amount|money }} {{ current_tenant.currency }}</span>
+  </div>
+  <p class="muted" style="margin:0;font-size:0.85rem">
+    {% trans "Bu pul mehmon hisobida saqlanadi — chiqishda qarzga o‘tadi. Faqat ortiqcha bo‘lsa sdachi bering." %}
+  </p>
+</section>
+  {% endif %}
 {% elif folio.credit_amount > 0 %}
 <div class="folio-refund-bar is-readonly">
-  <strong>{% trans "Ortib qolgan to‘lov" %}</strong>
+  <strong>{% if reservation.status == 'checked_out' %}{% trans "Ortib qolgan to‘lov" %}{% else %}{% trans "Depozit / avans" %}{% endif %}</strong>
   <span class="money">{{ folio.credit_amount|money }} {{ current_tenant.currency }}</span>
 </div>
 {% endif %}

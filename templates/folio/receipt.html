@@ -171,7 +171,7 @@
 
   <table>
     {% if folio.credit_amount > 0 %}
-    <tr class="total"><td>{% trans "Avans / qaytarilishi kerak" %}</td><td class="num">{{ folio.credit_amount|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
+    <tr class="total"><td>{% if folio.reservation.status == 'checked_out' %}{% trans "Avans / qaytarilishi kerak" %}{% else %}{% trans "Depozit / avans (hisobda)" %}{% endif %}</td><td class="num">{{ folio.credit_amount|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
     {% else %}
     <tr class="total"><td>{% trans "Qoldiq" %}</td><td class="num">{{ folio.amount_due|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
     {% endif %}

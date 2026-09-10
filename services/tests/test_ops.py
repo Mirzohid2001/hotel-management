@@ -103,8 +103,12 @@ class OpsModulesTests(TestCase):
         self.assertEqual(self.room.status, Room.Status.DIRTY)
 
     def test_night_audit_posts_once(self):
+        # Check-in allaqachon kechalarni yozgan
+        self.assertGreaterEqual(
+            self.reservation.folio.charges.filter(charge_type="room").count(), 1
+        )
         run = run_night_audit(self.tenant, self.user, audit_date=self.today, hotel=self.prop)
-        self.assertGreaterEqual(run.posted_room_charges, 1)
+        self.assertEqual(run.posted_room_charges, 0)
         with self.assertRaises(ValidationError):
             run_night_audit(self.tenant, self.user, audit_date=self.today, hotel=self.prop)
 

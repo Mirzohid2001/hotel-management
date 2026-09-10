@@ -495,16 +495,22 @@ class DepositSplitGroupTests(TestCase):
             room=self.room1,
             check_in=self.today,
             check_out=self.today + timedelta(days=2),
+            nightly_rate=Decimal("100000"),
         )
         folio = open_folio_for_deposit(reservation, self.user)
+        # Kechalar depozitdan oldin yoziladi — 2 kecha × 100000
+        self.assertEqual(folio.charges_total, Decimal("200000"))
         add_payment(
             folio,
             self.user,
-            amount=Decimal("30000"),
+            amount=Decimal("200000"),
             kind=GuestPayment.Kind.DEPOSIT,
             method=GuestPayment.Method.CARD,
         )
+        folio.refresh_from_db()
         self.assertEqual(folio.payments.filter(kind=GuestPayment.Kind.DEPOSIT).count(), 1)
+        self.assertEqual(folio.balance, Decimal("0"))
+        self.assertEqual(folio.credit_amount, Decimal("0"))
         from bookings.models import Stay
 
         self.assertFalse(Stay.objects.filter(reservation=reservation).exists())

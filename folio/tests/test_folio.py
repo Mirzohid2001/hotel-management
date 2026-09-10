@@ -111,14 +111,16 @@ class FolioAndHKTests(TestCase):
             check_out=self.today + timedelta(days=1),
         )
         check_in_reservation(reservation, self.user)
-        add_payment(reservation.folio, self.user, amount=Decimal("50000"), method="card")
+        # Xona 100000 + ortiqcha to‘lov → credit 50000
+        add_payment(reservation.folio, self.user, amount=Decimal("150000"), method="card")
 
         resp = self.client.get(reverse("folio:detail", args=[reservation.pk]))
 
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "Sdachi qaytarish")
-        self.assertContains(resp, "Ortgan")
-        self.assertContains(resp, reverse("folio:refund", args=[reservation.folio.pk]))
+        # Joylashganda ortiqcha pul — depozit/avans (sdachi faqat chiqishdan keyin)
+        self.assertContains(resp, "Depozit")
+        self.assertNotContains(resp, "Sdachi qaytarish")
+        self.assertContains(resp, "50 000")
 
     def test_refund_overpayment_clears_credit(self):
         from folio.models import GuestPayment

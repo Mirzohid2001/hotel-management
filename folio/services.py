@@ -191,6 +191,16 @@ def add_payment(
         raise ValidationError(_("To‘lov summasi musbat bo‘lishi kerak."))
     if not folio.is_open:
         raise ValidationError(_("Mehmon hisobi yopilgan."))
+    # To‘lov/depozit oldin xona kechalari yozilsin — aks holda to‘liq summa
+    # «sdachi» bo‘lib ko‘rinadi va kassir qaytarib yuboradi.
+    from bookings.models import Reservation
+
+    reservation = getattr(folio, "reservation", None)
+    if reservation is not None and reservation.status not in {
+        Reservation.Status.CANCELLED,
+        Reservation.Status.NO_SHOW,
+    }:
+        ensure_stay_nights_posted(reservation, user)
     assert_day_open(folio.tenant, timezone.localdate(), user, hotel=_folio_hotel(folio))
     cash_shift = None
     if method == GuestPayment.Method.CASH and folio.tenant.has_feature("cash_shift"):
@@ -389,8 +399,14 @@ def add_split_payments(folio, user, lines: list[dict]) -> list[GuestPayment]:
 
 @transaction.atomic
 def open_folio_for_deposit(reservation, user) -> Folio:
-    """Open folio before check-in so deposit can be taken."""
-    return ensure_folio_for_reservation(reservation, allow_pre_checkin=True)
+    """Open folio before check-in so deposit can be taken.
+
+    Xona kechalari shu zahoti yoziladi — depozit «qaytariladigan avans»
+    emas, bron qarziga kirim bo‘lib tushadi.
+    """
+    folio = ensure_folio_for_reservation(reservation, allow_pre_checkin=True)
+    ensure_stay_nights_posted(reservation, user)
+    return folio
 
 
 EMEHMON_MARKER = "E-mehmon"

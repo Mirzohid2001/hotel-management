@@ -354,13 +354,14 @@ def check_in_reservation(
         stay.checked_in_by = user
         stay.save(update_fields=["actual_check_in", "checked_in_by", "updated_at"])
 
-    from folio.services import ensure_folio_for_reservation
+    from folio.services import ensure_folio_for_reservation, ensure_stay_nights_posted
 
     folio = ensure_folio_for_reservation(reservation)
     if folio.stay_id is None:
         folio.stay = stay
         folio.save(update_fields=["stay", "updated_at"])
-    # Room revenue is posted per night via night audit / checkout backfill — not prepaid total.
+    # Joylashganda kecha to‘lovlarini yozamiz — depozit/to‘lov qarzga tushadi.
+    ensure_stay_nights_posted(reservation, user)
 
     if settings and settings.early_checkin_fee > 0:
         standard = _aware_local(reservation.check_in, settings.checkin_time)

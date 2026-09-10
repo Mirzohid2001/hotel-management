@@ -90,7 +90,8 @@ class NightAuditCodTests(TestCase):
 
         run = run_night_audit(self.tenant, self.user, audit_date=self.today, hotel=self.prop)
         self.assertEqual(run.no_shows_marked, 1)
-        self.assertGreaterEqual(run.posted_room_charges, 1)
+        # Check-in allaqachon kechalarni yozgan — night audit qayta yozmaydi
+        self.assertEqual(run.posted_room_charges, 0)
         self.assertGreaterEqual(run.dirty_rooms, 1)
         missed.refresh_from_db()
         self.assertEqual(missed.status, Reservation.Status.NO_SHOW)

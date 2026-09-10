@@ -73,17 +73,16 @@ class CriticalOpsFixesTests(TestCase):
         reservation = self._reservation(nights=2)
         check_in_reservation(reservation, self.user)
         folio = reservation.folio
+        # Check-in endi barcha kechalarni yozadi; night audit qayta yozmaydi.
         self.assertEqual(
-            folio.charges.filter(charge_type=FolioCharge.ChargeType.ROOM).count(), 0
+            folio.charges.filter(charge_type=FolioCharge.ChargeType.ROOM).count(), 2
         )
         run = run_night_audit(self.tenant, self.user, audit_date=self.today, hotel=self.prop)
-        self.assertEqual(run.posted_room_charges, 1)
+        self.assertEqual(run.posted_room_charges, 0)
         self.assertEqual(
-            folio.charges.filter(charge_type=FolioCharge.ChargeType.ROOM).count(), 1
+            folio.charges.filter(charge_type=FolioCharge.ChargeType.ROOM).count(), 2
         )
-        self.assertEqual(folio.charges_total, Decimal("100000"))
-        # second night via backfill on checkout path helper — not double today
-        run_night_audit  # already once for today
+        self.assertEqual(folio.charges_total, Decimal("200000"))
         self.assertEqual(
             folio.charges.filter(description__contains=self.today.isoformat()).count(), 1
         )
@@ -92,6 +91,8 @@ class CriticalOpsFixesTests(TestCase):
         reservation = self._reservation(nights=1)
         check_in_reservation(reservation, self.user)
         folio = reservation.folio
+        # Check-in yozgan Night yozuvlarini olib, eski uslubdagi prepaid ROOM qoldiramiz
+        folio.charges.filter(charge_type=FolioCharge.ChargeType.ROOM).delete()
         FolioCharge.objects.create(
             tenant=self.tenant,
             folio=folio,
