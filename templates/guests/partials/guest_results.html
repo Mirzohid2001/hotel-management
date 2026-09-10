@@ -1,18 +1,70 @@
 {% load i18n %}
-<ul class="list entity-list">
-  {% for g in guests %}
-  <li class="guest-chip entity-row">
-    <span>
-      <span class="entity-row-main">
-        <a href="{% url 'guests:detail' g.pk %}" class="entity-title">{{ g.full_name }}</a>
-        {% if g.is_vip %}<span class="badge badge-vip">VIP</span>{% endif %}
-        {% if g.is_blacklisted %}<span class="badge badge-blacklist" title="{{ g.blacklist_reason }}">{% trans "Qora ro‘yxat" %}</span>{% endif %}
+<div class="expense-summary guest-summary">
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "Topildi" %}</span>
+    <strong class="expense-summary-val">{{ filter_count }}</strong>
+  </div>
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "VIP" %}</span>
+    <strong class="expense-summary-val">{{ vip_count }}</strong>
+  </div>
+  <div class="expense-summary-card {% if blacklist_count %}is-warn{% endif %}">
+    <span class="expense-summary-lbl">{% trans "Qora ro‘yxat" %}</span>
+    <strong class="expense-summary-val">{{ blacklist_count }}</strong>
+  </div>
+  <div class="expense-summary-card is-accent">
+    <span class="expense-summary-lbl">{% trans "Joylashgan" %}</span>
+    <strong class="expense-summary-val">{{ in_house_count }}</strong>
+  </div>
+</div>
+
+<section class="section-panel expense-list-panel">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Ro‘yxat" %}</p>
+      <h2>{% trans "Mehmonlar" %}</h2>
+    </div>
+    <span class="muted">{{ guests|length }} / {{ filter_count }}</span>
+  </div>
+  <ul class="list entity-list guest-entity-list">
+    {% for g in guests %}
+    <li class="guest-chip entity-row {% if g.is_blacklisted %}is-blacklist{% endif %}">
+      <span>
+        <span class="entity-row-main">
+          <a href="{% url 'guests:detail' g.pk %}" class="entity-title">{{ g.full_name }}</a>
+          {% if g.in_house_reservation_id %}
+          <span class="status-pill status-checked_in">{% trans "Joylashgan" %}</span>
+          {% endif %}
+          {% if g.is_vip %}<span class="badge badge-vip">VIP</span>{% endif %}
+          {% if g.is_blacklisted %}<span class="badge badge-blacklist" title="{{ g.blacklist_reason }}">{% trans "Qora ro‘yxat" %}</span>{% endif %}
+        </span>
+        <span class="entity-meta">
+          {% if g.phone %}{{ g.phone }}{% else %}<span class="muted">{% trans "Telefon yo‘q" %}</span>{% endif %}
+          {% if g.email %} · {{ g.email }}{% endif %}
+          {% if g.company %} · {{ g.company.name }}{% endif %}
+          {% if g.nationality %} · {{ g.nationality }}{% endif %}
+        </span>
       </span>
-      <span class="entity-meta">{{ g.phone }}{% if g.email %} · {{ g.email }}{% endif %}</span>
-    </span>
-  </li>
-  {% empty %}
-  {% url 'guests:create' as guest_create %}
-  {% include "includes/empty_state.html" with as_li=1 title=_("Mehmon yo‘q") hint=_("Yangi mehmon profilini qo‘shing — bron va hisob uchun.") cta_url=guest_create cta_label=_("Mehmon qo‘shish") %}
-  {% endfor %}
-</ul>
+      <span class="expense-actions row-actions">
+        {% if g.in_house_reservation_id %}
+        <a class="btn btn-sm" href="{% url 'folio:detail' g.in_house_reservation_id %}">{% trans "Folio" %}</a>
+        {% elif not g.is_blacklisted %}
+        <a class="btn btn-sm" href="{% url 'bookings:create' %}?guest={{ g.pk }}">{% trans "Bron" %}</a>
+        {% endif %}
+        <a class="btn-ghost btn-sm" href="{% url 'guests:detail' g.pk %}">{% trans "Profil" %}</a>
+        <a class="btn-ghost btn-sm" href="{% url 'guests:edit' g.pk %}">{% trans "Tahrirlash" %}</a>
+      </span>
+    </li>
+    {% empty %}
+    {% url 'guests:create' as guest_create %}
+    {% if q or flag %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Mos mehmon yo‘q") hint=_("Filtrni o‘zgartiring yoki yangi mehmon qo‘shing.") cta_url=guest_create cta_label=_("Mehmon qo‘shish") %}
+    {% else %}
+    {% include "includes/empty_state.html" with as_li=1 title=_("Mehmon yo‘q") hint=_("Yangi mehmon profilini qo‘shing — bron va hisob uchun.") cta_url=guest_create cta_label=_("Mehmon qo‘shish") %}
+    {% endif %}
+    {% endfor %}
+  </ul>
+  {% if filter_count > 100 %}
+  <p class="muted expense-footnote">{% trans "Faqat birinchi 100 ta ko‘rsatilmoqda — qidiruvni toraytiring." %}</p>
+  {% endif %}
+</section>

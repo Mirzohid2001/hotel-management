@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
@@ -26,7 +26,8 @@ from .models import Company, Guest, GuestDocument
 @tenant_login_required
 def guest_list(request):
     q = request.GET.get("q", "").strip()
-    guests = Guest.objects.filter(tenant=request.tenant)
+    flag = (request.GET.get("flag") or "").strip()
+    guests = Guest.objects.filter(tenant=request.tenant).select_related("company")
     if q:
         guests = guests.filter(
             Q(first_name__icontains=q)
@@ -34,12 +35,48 @@ def guest_list(request):
             | Q(phone__icontains=q)
             | Q(email__icontains=q)
         )
+
+    in_house_qs = Reservation.objects.filter(
+        guest_id=OuterRef("pk"),
+        tenant_id=request.tenant.id,
+        status=Reservation.Status.CHECKED_IN,
+    )
+    guests = guests.annotate(
+        is_in_house=Exists(in_house_qs),
+        in_house_reservation_id=Subquery(in_house_qs.order_by("-check_in").values("pk")[:1]),
+    )
+
+    if flag == "vip":
+        guests = guests.filter(is_vip=True)
+    elif flag == "blacklist":
+        guests = guests.filter(is_blacklisted=True)
+    elif flag == "in_house":
+        guests = guests.filter(is_in_house=True)
+
+    guests = guests.order_by("last_name", "first_name")
+    filter_count = guests.count()
+    vip_count = guests.filter(is_vip=True).count()
+    blacklist_count = guests.filter(is_blacklisted=True).count()
+    in_house_count = guests.filter(is_in_house=True).count()
+
     template = (
         "guests/partials/guest_results.html"
         if wants_htmx_partial(request, target="guest-results")
         else "guests/guest_list.html"
     )
-    return render(request, template, {"guests": guests[:100], "q": q})
+    return render(
+        request,
+        template,
+        {
+            "guests": guests[:100],
+            "q": q,
+            "flag": flag,
+            "filter_count": filter_count,
+            "vip_count": vip_count,
+            "blacklist_count": blacklist_count,
+            "in_house_count": in_house_count,
+        },
+    )
 
 
 @role_required(*FRONT_OFFICE)

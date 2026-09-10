@@ -1,24 +1,49 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Mehmonlar" %}{% endblock %}
+{% block body_class %}page-guests{% endblock %}
 {% block content %}
+<div class="guest-page expense-page">
 {% url 'guests:create' as create_url %}
 {% url 'guests:company_list' as companies_url %}
-{% include "includes/page_header.html" with title=_("Mehmonlar") primary_url=create_url primary_label=_("Yangi mehmon") secondary_url=companies_url secondary_label=_("Kompaniyalar") %}
+{% include "includes/page_header.html" with title=_("Mehmonlar") eyebrow=_("Front office") subtitle=_("Qidiruv, VIP filtri va tezkor bron — bir joyda.") primary_url=create_url primary_label=_("Yangi mehmon") secondary_url=companies_url secondary_label=_("Kompaniyalar") %}
 
-<form method="get" class="search-form"
+<form method="get" class="expense-filter panel guest-filter"
       hx-get="{% url 'guests:list' %}"
-      hx-trigger="keyup changed delay:300ms from:input[name=q], submit"
+      hx-trigger="keyup changed delay:300ms from:input[name=q], change from:select, submit"
       hx-target="#guest-results"
       hx-select="unset"
       hx-swap="innerHTML"
       hx-boost="false">
-  <input type="search" name="q" value="{{ q }}" placeholder="{% trans 'Qidiruv...' %}" autocomplete="off">
-  <button type="submit" class="btn btn-sm">{% trans "Topish" %}</button>
+  <div class="expense-filter-head">
+    <div>
+      <p class="eyebrow">{% trans "Qidiruv" %}</p>
+      <h2 class="expense-filter-title">{% trans "Filtrlar" %}</h2>
+    </div>
+    <div class="expense-filter-actions">
+      <button type="submit" class="btn btn-sm">{% trans "Topish" %}</button>
+      <a class="btn-ghost btn-sm" href="{% url 'guests:list' %}">{% trans "Tozalash" %}</a>
+    </div>
+  </div>
+  <div class="expense-filter-grid guest-filter-grid">
+    <label class="expense-field expense-field-wide">
+      <span>{% trans "Qidiruv" %}</span>
+      <input type="search" name="q" value="{{ q }}" placeholder="{% trans 'Ism, telefon, email…' %}" autocomplete="off">
+    </label>
+    <label class="expense-field">
+      <span>{% trans "Belgi" %}</span>
+      <select name="flag">
+        <option value="">{% trans "Barchasi" %}</option>
+        <option value="vip" {% if flag == "vip" %}selected{% endif %}>{% trans "VIP" %}</option>
+        <option value="blacklist" {% if flag == "blacklist" %}selected{% endif %}>{% trans "Qora ro‘yxat" %}</option>
+        <option value="in_house" {% if flag == "in_house" %}selected{% endif %}>{% trans "Hozir joylashgan" %}</option>
+      </select>
+    </label>
+  </div>
 </form>
-<section class="section-panel">
+
 <div id="guest-results">
   {% include "guests/partials/guest_results.html" %}
 </div>
-</section>
+</div>
 {% endblock %}

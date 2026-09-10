@@ -39,4 +39,15 @@ class GuestListSpaTests(TestCase):
         )
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Ali")
+        self.assertContains(resp, "Bron")
+        self.assertContains(resp, "Profil")
         self.assertNotContains(resp, 'id="spa-root"')
+
+    def test_flag_filter_vip(self):
+        Guest.objects.create(
+            tenant=self.ctx["tenant"], first_name="VIP", last_name="Guest", is_vip=True
+        )
+        resp = self.client.get(reverse("guests:list"), {"flag": "vip"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "VIP Guest")
+        self.assertNotContains(resp, "Ali")

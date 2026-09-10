@@ -2745,6 +2745,37 @@ a.cal-new.shax-walkin {
   border-color: rgba(232, 106, 12, 0.2);
 }
 
+.expense-summary-card.is-warn {
+  background: linear-gradient(135deg, rgba(180, 60, 50, 0.1), rgba(255, 240, 238, 0.6));
+  border-color: rgba(180, 60, 50, 0.22);
+}
+
+.guest-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.guest-filter-grid {
+  grid-template-columns: minmax(0, 2fr) minmax(12rem, 1fr);
+}
+
+.guest-filter-grid .expense-field-wide {
+  grid-column: auto;
+}
+
+.guest-entity-list .entity-row.is-blacklist {
+  border-color: rgba(180, 60, 50, 0.18);
+  background: rgba(255, 246, 244, 0.7);
+}
+
+@media (max-width: 900px) {
+  .guest-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .guest-filter-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .expense-summary-lbl {
   display: block;
   font-size: 0.68rem;
