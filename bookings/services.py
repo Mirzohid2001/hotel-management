@@ -650,24 +650,33 @@ def mark_no_show(reservation: Reservation, user, reason="") -> Reservation:
 
 
 def _settle_no_show_folio(reservation: Reservation, user) -> None:
-    """Jarimasiz: stay charge’larni void + net to‘lovni refund."""
+    """Jarimasiz: stay charge’larni void + net to‘lovni refund (kun yopiq bo‘lsa ham)."""
     from django.core.exceptions import ValidationError as DjangoValidationError
+    from django.utils import timezone as dj_tz
 
-    from folio.models import Folio, GuestPayment
-    from folio.services import emehmon_charge_q, refund_overpayment, void_charge
+    from folio.models import Folio, FolioCharge, GuestPayment
+    from folio.services import emehmon_charge_q, refund_overpayment
 
     folio = Folio.objects.filter(reservation=reservation, is_open=True).first()
     if folio is None:
         return
 
+    reason = str(_("Kelmagan — jarimasiz, hisob tozalandi"))
     for charge in folio.charges.filter(is_void=False).exclude(emehmon_charge_q()):
-        void_charge(
-            charge,
-            user,
-            reason=str(_("Kelmagan — jarimasiz, hisob tozalandi")),
+        charge.is_void = True
+        charge.void_reason = reason
+        charge.voided_at = dj_tz.now()
+        charge.voided_by = user
+        charge.save(
+            update_fields=[
+                "is_void",
+                "void_reason",
+                "voided_at",
+                "voided_by",
+                "updated_at",
+            ]
         )
 
-    # Refresh credit after voids
     folio = Folio.objects.get(pk=folio.pk)
     if folio.credit_amount <= 0:
         return
@@ -690,6 +699,54 @@ def _settle_no_show_folio(reservation: Reservation, user) -> None:
     except DjangoValidationError:
         # Masalan kassa smenasi yo‘q — credit folio da qoladi, kassir qo‘lda qaytaradi
         pass
+
+
+def clear_existing_no_show_penalties(*, tenant=None, user=None, dry_run: bool = True) -> dict:
+    """
+    Allaqachon «Kelmagan» bronlardagi jarima/yashash yozuvlarini tozalash.
+    Yangi siyosat: jarima yo‘q, to‘lov qaytariladi.
+    """
+    from folio.models import FolioCharge
+
+    qs = Reservation.objects.filter(status=Reservation.Status.NO_SHOW)
+    if tenant is not None:
+        qs = qs.filter(tenant=tenant)
+    qs = qs.select_related("folio", "hotel").order_by("id")
+
+    touched = []
+    void_count = 0
+    for res in qs:
+        folio = getattr(res, "folio", None)
+        if folio is None or not folio.is_open:
+            continue
+        penalties = list(
+            FolioCharge.objects.filter(
+                folio=folio,
+                is_void=False,
+                charge_type__in=[
+                    FolioCharge.ChargeType.PENALTY,
+                    FolioCharge.ChargeType.ROOM,
+                    FolioCharge.ChargeType.CANCEL,
+                ],
+            )
+        )
+        # Also any non-emehmon stay charge with незаезд/kelmagan in description
+        extra = list(
+            FolioCharge.objects.filter(folio=folio, is_void=False).exclude(
+                charge_type=FolioCharge.ChargeType.EMEHMON
+            )
+        )
+        charges = {c.pk: c for c in penalties + extra}
+        if not charges and folio.credit_amount <= 0:
+            continue
+        touched.append(res.code)
+        if dry_run:
+            void_count += len(charges)
+            continue
+        _settle_no_show_folio(res, user)
+        void_count += len(charges)
+
+    return {"reservations": touched, "void_candidates": void_count, "dry_run": dry_run}
 
 
 @transaction.atomic

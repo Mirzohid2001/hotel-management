@@ -116,6 +116,46 @@ class IdealFlowTests(TestCase):
         self.assertIsNotNone(refund)
         self.assertEqual(refund.amount, Decimal("100000"))
 
+    def test_clear_existing_no_show_penalties(self):
+        from bookings.services import clear_existing_no_show_penalties
+        from folio.services import add_charge, ensure_folio_for_reservation
+
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room1,
+            rate_plan=self.rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+        )
+        # Eski siyosat: jarima qo‘lda yozilgan, status no_show
+        folio = ensure_folio_for_reservation(reservation, allow_pre_checkin=True)
+        add_charge(
+            folio,
+            self.user,
+            charge_type=FolioCharge.ChargeType.PENALTY,
+            description="Kelmaganlik to‘lovi (100.00%)",
+            unit_price=Decimal("100000"),
+        )
+        reservation.status = Reservation.Status.NO_SHOW
+        reservation.save(update_fields=["status", "updated_at"])
+
+        dry = clear_existing_no_show_penalties(tenant=self.tenant, dry_run=True)
+        self.assertIn(reservation.code, dry["reservations"])
+        clear_existing_no_show_penalties(
+            tenant=self.tenant, user=self.user, dry_run=False
+        )
+        self.assertFalse(
+            FolioCharge.objects.filter(
+                folio=folio, is_void=False, charge_type=FolioCharge.ChargeType.PENALTY
+            ).exists()
+        )
+        folio.refresh_from_db()
+        self.assertEqual(folio.balance, Decimal("0"))
+
     def test_transfer_marks_old_dirty(self):
         reservation = create_reservation(
             tenant=self.tenant,
