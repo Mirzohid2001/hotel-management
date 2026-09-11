@@ -275,10 +275,10 @@ def build_emehmon_report(tenant, *, year: int, month: int, hotel=None) -> dict:
     """
     Oylik E-mehmon:
     - olingan: zayezdda / folio dagi EMEHMON
-    - farq: kerak bo‘lgan − olingan (P&L)
+    - farq: kerak bo‘lgan − olingan (P&L bilan bir xil: realized + bugungacha)
     """
     start, end = _month_bounds(year, month)
-    data = emehmon_totals_for_range(tenant, start, end, hotel=hotel, realized_only=False)
+    data = emehmon_totals_for_range(tenant, start, end, hotel=hotel, realized_only=True)
     return {
         "year": year,
         "month": month,

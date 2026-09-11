@@ -476,6 +476,8 @@ def payment_method_breakdown(tenant, start: date, end: date, *, hotel=None) -> d
                     "reinvest_out": Decimal("0"),
                     "payroll_out": Decimal("0"),
                     "advance_out": Decimal("0"),
+                    "commission_out": Decimal("0"),
+                    "partner_out": Decimal("0"),
                 },
             )
 
@@ -489,6 +491,8 @@ def payment_method_breakdown(tenant, start: date, end: date, *, hotel=None) -> d
                 "reinvest_out": Decimal("0"),
                 "payroll_out": Decimal("0"),
                 "advance_out": Decimal("0"),
+                "commission_out": Decimal("0"),
+                "partner_out": Decimal("0"),
             },
         )
 
@@ -525,6 +529,38 @@ def payment_method_breakdown(tenant, start: date, end: date, *, hotel=None) -> d
         b["out"] += amt
         b["payroll_out"] += amt
 
+    # Yo‘naltiruvchi komissiya to‘lovi — Sofda allaqachon accrued; kassa chiqimi
+    from bookings.models import ReferrerCommissionPayment
+
+    commission_pay_qs = ReferrerCommissionPayment.objects.filter(
+        tenant=tenant,
+        paid_on__gte=start,
+        paid_on__lte=end,
+    )
+    commission_paid_out = Decimal("0")
+    for row in commission_pay_qs.values("method").annotate(total=Sum("amount_base")):
+        amt = row["total"] or Decimal("0")
+        b = _bucket(row["method"])
+        b["out"] += amt
+        b["commission_out"] += amt
+        commission_paid_out += amt
+
+    # Sherik foyda olishi — kassa chiqimi (Sofga tegmaydi)
+    from finance.models import ProfitWithdrawal
+
+    withdraw_qs = ProfitWithdrawal.objects.filter(
+        tenant=tenant,
+        paid_on__gte=start,
+        paid_on__lte=end,
+    )
+    partner_withdraw_out = Decimal("0")
+    for row in withdraw_qs.values("payment_method").annotate(total=Sum("amount_base")):
+        amt = row["total"] or Decimal("0")
+        b = _bucket(row["payment_method"])
+        b["out"] += amt
+        b["partner_out"] += amt
+        partner_withdraw_out += amt
+
     adv_total = advance_qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
     if adv_total:
         b = _bucket("cash")
@@ -558,6 +594,8 @@ def payment_method_breakdown(tenant, start: date, end: date, *, hotel=None) -> d
                 "reinvest_out": vals["reinvest_out"],
                 "payroll_out": vals["payroll_out"],
                 "advance_out": vals["advance_out"],
+                "commission_out": vals.get("commission_out", Decimal("0")),
+                "partner_out": vals.get("partner_out", Decimal("0")),
                 "net": vals["in"] - vals["out"],
             }
         )
@@ -571,6 +609,8 @@ def payment_method_breakdown(tenant, start: date, end: date, *, hotel=None) -> d
         "reinvestment_out": reinvestment_out,
         "payroll_out": payroll_out,
         "advances_out": advances_out,
+        "commission_paid_out": commission_paid_out,
+        "partner_withdraw_out": partner_withdraw_out,
     }
 
 
