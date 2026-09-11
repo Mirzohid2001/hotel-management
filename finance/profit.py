@@ -481,6 +481,44 @@ def build_partner_ledger(
                 % {"n": net},
             },
         )
+
+    prior = (
+        ProfitPeriod.objects.filter(tenant=tenant, ended_on__isnull=False)
+        .order_by("-ended_on", "-id")
+        .first()
+    )
+    prior_period = None
+    if prior is not None and prior.ended_on is not None:
+        # Jonli hisob — snayp eskirishi mumkin (yopilgandan keyin qo‘shilgan reinvest)
+        prior_reinv = reinvestment_in_range(
+            tenant, prior.started_on, prior.ended_on, hotel=hotel
+        )
+        prior_period = {
+            "period": prior,
+            "start": prior.started_on,
+            "end": prior.ended_on,
+            "net": _q(prior.net_snapshot or ZERO),
+            "reinvestment": _q(prior_reinv or ZERO),
+            "revenue": _q(prior.revenue_snapshot or ZERO),
+        }
+        if reinvestment <= 0 and prior_period["reinvestment"] > 0:
+            next_steps.insert(
+                0,
+                {
+                    "key": "prior_reinvest",
+                    "tone": "info",
+                    "text": _(
+                        "Bu ochiq davrda reinvestitsiya 0. Remont/rasxodlardagi "
+                        "%(a)s oxirgi yopiq davrda (%(s)s → %(e)s) — «Tarix»da."
+                    )
+                    % {
+                        "a": prior_period["reinvestment"],
+                        "s": prior_period["start"],
+                        "e": prior_period["end"],
+                    },
+                },
+            )
+
     if withdrawn_total > 0 and remaining_total <= 0 and partners:
         next_steps.append(
             {
@@ -523,6 +561,7 @@ def build_partner_ledger(
         "withdrawals": list(withdrawals[:40]),
         "next_steps": next_steps,
         "ready_to_reset": withdrawn_total > 0 and remaining_total <= 0 and bool(partners),
+        "prior_period": prior_period,
     }
     result["receipt"] = build_profit_receipt(result)
     return result
