@@ -9,7 +9,13 @@ from django.views.decorators.http import require_http_methods, require_POST
 from core.mixins import feature_required, role_required
 from core.roles import HR
 
-from .forms import EmployeeAdvanceForm, EmployeeForm, PayrollItemAdjustForm, SalaryAdvanceForm
+from .forms import (
+    DailyPayForm,
+    EmployeeAdvanceForm,
+    EmployeeForm,
+    PayrollItemAdjustForm,
+    SalaryAdvanceForm,
+)
 from .models import Employee, PayrollItem, PayrollPeriod, SalaryAdvance, SalaryPayment
 from .services import (
     create_advance,
@@ -18,6 +24,7 @@ from .services import (
     mark_item_paid,
     open_advance_total,
     pay_all_unpaid,
+    pay_employee_daily,
     pay_employee_salary,
     salary_due_preview,
     settle_advance,
@@ -31,24 +38,45 @@ from .services import (
 def employee_list(request):
     employees = list(Employee.objects.filter(tenant=request.tenant))
     today = timezone.localdate()
-    paid_ids = set(
+    monthly_paid_ids = set(
         SalaryPayment.objects.filter(
             tenant=request.tenant,
             item__period__year=today.year,
             item__period__month=today.month,
+            item__work_date__isnull=True,
+        ).values_list("item__employee_id", flat=True)
+    )
+    daily_paid_today_ids = set(
+        SalaryPayment.objects.filter(
+            tenant=request.tenant,
+            item__work_date=today,
         ).values_list("item__employee_id", flat=True)
     )
     rows = []
     for emp in employees:
         open_adv = open_advance_total(emp)
-        rows.append(
-            {
-                "employee": emp,
-                "open_advance": open_adv,
-                "due_preview": salary_due_preview(emp),
-                "paid_this_month": emp.pk in paid_ids,
-            }
-        )
+        if emp.is_daily:
+            rows.append(
+                {
+                    "employee": emp,
+                    "open_advance": open_adv,
+                    "due_preview": salary_due_preview(emp, days=1),
+                    "paid_this_month": False,
+                    "paid_today": emp.pk in daily_paid_today_ids,
+                    "is_daily": True,
+                }
+            )
+        else:
+            rows.append(
+                {
+                    "employee": emp,
+                    "open_advance": open_adv,
+                    "due_preview": salary_due_preview(emp),
+                    "paid_this_month": emp.pk in monthly_paid_ids,
+                    "paid_today": False,
+                    "is_daily": False,
+                }
+            )
     return render(request, "hr/employee_list.html", {"rows": rows})
 
 
@@ -117,9 +145,48 @@ def employee_advance(request, pk):
 
 @feature_required("payroll")
 @role_required(*HR)
-@require_POST
+@require_http_methods(["GET", "POST"])
 def employee_pay(request, pk):
     emp = get_object_or_404(Employee, pk=pk, tenant=request.tenant)
+    if emp.is_daily:
+        initial = {"work_date": timezone.localdate(), "days": 1, "method": "cash"}
+        form = DailyPayForm(request.POST or None, initial=initial)
+        if request.method == "POST" and form.is_valid():
+            try:
+                payment = pay_employee_daily(
+                    request.tenant,
+                    emp,
+                    days=form.cleaned_data["days"],
+                    work_date=form.cleaned_data["work_date"],
+                    method=form.cleaned_data["method"],
+                )
+                messages.success(
+                    request,
+                    _("%(name)s ga %(days)s kun · %(amount)s to‘landi.")
+                    % {
+                        "name": emp.full_name,
+                        "days": form.cleaned_data["days"],
+                        "amount": payment.amount,
+                    },
+                )
+                return redirect("hr:employees")
+            except ValidationError as exc:
+                messages.error(request, "; ".join(exc.messages))
+        return render(
+            request,
+            "hr/employee_daily_pay.html",
+            {
+                "form": form,
+                "employee": emp,
+                "title": _("Kunlik to‘lash: %(name)s") % {"name": emp.full_name},
+                "rate": emp.base_salary,
+                "open_advance": open_advance_total(emp),
+                "due_preview": salary_due_preview(emp, days=1),
+            },
+        )
+
+    if request.method != "POST":
+        return redirect("hr:employees")
     try:
         payment = pay_employee_salary(request.tenant, emp)
         messages.success(

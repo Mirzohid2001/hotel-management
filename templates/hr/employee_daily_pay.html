@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% url 'hr:employees' as cancel_url %}
+{% include "includes/page_header.html" with title=title eyebrow=_("Kadrlar") subtitle=_("Stavka × kun. Avans shu to‘lovdan ushlanadi. Sofga yalpi, kassaga sof.") %}
+
+<p class="muted">
+  {% trans "Kunlik stavka" %}: <strong class="money">{{ rate|money }}</strong>
+  {% if open_advance %}
+  · {% trans "Ochiq avans" %}: <strong class="money">−{{ open_advance|money }}</strong>
+  {% endif %}
+  · {% trans "1 kun taxminan" %}: <strong class="money">{{ due_preview|money }}</strong>
+</p>
+
+<section class="section-panel">
+  {% include "includes/app_form.html" with form=form cancel_url=cancel_url submit_label=_("To‘lash") %}
+</section>
+{% endblock %}

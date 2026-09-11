@@ -129,7 +129,7 @@ def reinvestment_in_range(tenant, start: date, end: date, *, hotel=None) -> Deci
 
 
 def payroll_in_range(tenant, start: date, end: date) -> Decimal:
-    """To‘langan oyliklarning yalpi mehnat xarajati (baza+bonus−ushlama)."""
+    """To‘langan ish haqi yalpi mehnat xarajati (baza+bonus−ushlama; avans ayirilmaydi)."""
     from hr.models import PayrollItem
 
     total = Decimal("0")
@@ -140,11 +140,7 @@ def payroll_in_range(tenant, start: date, end: date) -> Decimal:
         payment__paid_at__date__lte=end,
     ).only("base_amount", "bonus", "deduction")
     for item in items:
-        gross = (
-            (item.base_amount or Decimal("0"))
-            + (item.bonus or Decimal("0"))
-            - (item.deduction or Decimal("0"))
-        )
+        gross = item.gross_amount
         if gross > 0:
             total += gross
     return total
@@ -308,7 +304,7 @@ def _operating_bundle(
     inventory: Decimal,
     emehmon_shortfall: Decimal = Decimal("0"),
 ) -> dict:
-    # Avans — xodim qarzi (aktiv), sof foydadan ayrilmaydi. Mehnat = faqat oylik to‘lovlari.
+    # Avans — xodim qarzi (aktiv), sof foydadan ayrilmaydi. Mehnat = oylik + kunlik yalpi.
     labor = payroll
     operating = expenses + labor + commission + inventory + emehmon_shortfall
     return {
@@ -385,7 +381,7 @@ def build_pnl_report(tenant, year: int, month: int, *, basis="cash", hotel=None)
     )
     cost_breakdown = list(exp["breakdown"])
     if costs["payroll"]:
-        cost_breakdown.append({"label": _("Oylik (yalpi)"), "amount": costs["payroll"]})
+        cost_breakdown.append({"label": _("Mehnat (yalpi)"), "amount": costs["payroll"]})
     if costs["commission"]:
         cost_breakdown.append(
             {"label": _("Yo‘naltiruvchi komissiya"), "amount": costs["commission"]}

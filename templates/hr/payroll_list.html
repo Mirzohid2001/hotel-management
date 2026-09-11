@@ -57,7 +57,12 @@
       <tbody>
         {% for item in period.items.all %}
         <tr>
-          <td><strong class="entity-title">{{ item.employee.full_name }}</strong></td>
+          <td>
+            <strong class="entity-title">{{ item.employee.full_name }}</strong>
+            {% if item.work_date %}
+            <div class="muted">{% trans "Kunlik" %} · {{ item.work_date|date:"d.m.Y" }}{% if item.days_count > 1 %} · {{ item.days_count }} {% trans "kun" %}{% endif %}</div>
+            {% endif %}
+          </td>
           <td class="num money">{{ item.base_amount|money }}</td>
           <td class="num money">{% if item.bonus %}{{ item.bonus|money }}{% else %}—{% endif %}</td>
           <td class="num money">{% if item.advance %}−{{ item.advance|money }}{% else %}—{% endif %}</td>

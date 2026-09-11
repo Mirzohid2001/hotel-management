@@ -120,7 +120,7 @@
         {% empty %}<li class="muted">{% trans "Yo‘q" %}</li>{% endfor %}
       </ul>
       <p class="muted report-footnote">
-        {% trans "Mehnat" %} (oylik + avans): <span class="money">{{ report.labor_total|money }}</span>
+        {% trans "Mehnat" %} (oylik/kunlik yalpi): <span class="money">{{ report.labor_total|money }}</span>
         {% if report.commission %} · {% trans "Komissiya" %}: <span class="money">{{ report.commission|money }}</span>{% endif %}
         {% if report.inventory_cost %} · {% trans "Ombor" %}: <span class="money">{{ report.inventory_cost|money }}</span>{% endif %}
         {% if report.emehmon_shortfall %} · {% trans "E-mehmon farq" %}: <span class="money">{{ report.emehmon_shortfall|money }}</span>{% endif %}

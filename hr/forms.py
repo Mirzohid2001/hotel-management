@@ -20,10 +20,14 @@ class EmployeeForm(forms.ModelForm):
             "full_name": _("F.I.Sh."),
             "position": _("Lavozim"),
             "salary_type": _("Maosh turi"),
-            "base_salary": _("Asosiy maosh"),
+            "base_salary": _("Stavka"),
             "hire_date": _("Ishga kirgan sana"),
             "phone": _("Telefon"),
             "is_active": _("Faol"),
+        }
+        help_texts = {
+            "salary_type": _("Oylik — oyiga bir marta. Kunlik — ishlagan kunlar bo‘yicha."),
+            "base_salary": _("Oylik: oyiga summa. Kunlik: bir kunlik stavka."),
         }
         widgets = {"hire_date": forms.DateInput(attrs={"type": "date"})}
 
@@ -61,6 +65,30 @@ class EmployeeAdvanceForm(forms.Form):
         required=False,
     )
     note = forms.CharField(label=_("Izoh"), required=False, max_length=255)
+
+
+class DailyPayForm(forms.Form):
+    days = forms.IntegerField(
+        min_value=1,
+        max_value=31,
+        initial=1,
+        label=_("Kunlar"),
+        help_text=_("Necha kunlik stavka to‘lanadi."),
+    )
+    work_date = forms.DateField(
+        label=_("Ish kuni"),
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text=_("Qaysi kun uchun (bir kunda bir marta)."),
+    )
+    method = forms.ChoiceField(
+        choices=(
+            ("cash", _("Naqd")),
+            ("transfer", _("O‘tkazma")),
+            ("card", _("Karta")),
+        ),
+        initial="cash",
+        label=_("To‘lov usuli"),
+    )
 
 
 class PayrollItemAdjustForm(forms.Form):

@@ -4,7 +4,7 @@
 {% block content %}
 {% url 'hr:employee_create' as create_url %}
 {% url 'hr:payroll_list' as payroll_url %}
-{% include "includes/page_header.html" with title=_("Xodimlar") eyebrow=_("Kadrlar") subtitle=_("Avans yoki oylikni xodim yonidan bering — boshqa sahifaga o‘tish shart emas.") primary_url=create_url primary_label=_("Yangi") secondary_url=payroll_url secondary_label=_("Jadval") %}
+{% include "includes/page_header.html" with title=_("Xodimlar") eyebrow=_("Kadrlar") subtitle=_("Oylik yoki kunlik — avans ushlanadi, Sofga yalpi mehnat, kassaga sof to‘lov.") primary_url=create_url primary_label=_("Yangi") secondary_url=payroll_url secondary_label=_("Jadval") %}
 
 <section class="section-panel">
 <ul class="list entity-list">
@@ -14,12 +14,23 @@
     <span>
       <span class="entity-row-main">
         <strong class="entity-title">{{ e.full_name }}</strong>
-        {% if row.paid_this_month %}
+        {% if row.is_daily %}
+          {% if row.paid_today %}
+          <span class="status-pill status-checked_out">{% trans "Bugun to‘langan" %}</span>
+          {% endif %}
+          <span class="badge">{% trans "Kunlik" %}</span>
+        {% elif row.paid_this_month %}
         <span class="status-pill status-checked_out">{% trans "Shu oy to‘langan" %}</span>
         {% endif %}
       </span>
       <span class="entity-meta">
-        {{ e.position }} · {% trans "oylik" %} <span class="money">{{ e.base_salary|money }}</span>
+        {{ e.position }} ·
+        {% if row.is_daily %}
+          {% trans "kunlik" %}
+        {% else %}
+          {% trans "oylik" %}
+        {% endif %}
+        <span class="money">{{ e.base_salary|money }}</span>
         {% if row.open_advance %}
         · {% trans "avans" %} <span class="money">−{{ row.open_advance|money }}</span>
         {% endif %}
@@ -27,21 +38,25 @@
     </span>
     <span class="expense-actions row-actions">
       <a class="btn-ghost btn-sm" href="{% url 'hr:employee_advance' e.pk %}">{% trans "Avans" %}</a>
-      {% if not row.paid_this_month and e.is_active %}
-      <form method="post" action="{% url 'hr:employee_pay' e.pk %}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-sm"
-                onclick="return confirm('{% blocktrans with name=e.full_name amount=row.due_preview|money %}{{ name }} ga taxminan {{ amount }} to‘lansinmi?{% endblocktrans %}')">
-          {% trans "Oylik to‘lash" %}
-        </button>
-      </form>
+      {% if e.is_active %}
+        {% if row.is_daily %}
+        <a class="btn btn-sm" href="{% url 'hr:employee_pay' e.pk %}">{% trans "Kunlik to‘lash" %}</a>
+        {% elif not row.paid_this_month %}
+        <form method="post" action="{% url 'hr:employee_pay' e.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm"
+                  onclick="return confirm('{% blocktrans with name=e.full_name amount=row.due_preview|money %}{{ name }} ga taxminan {{ amount }} to‘lansinmi?{% endblocktrans %}')">
+            {% trans "Oylik to‘lash" %}
+          </button>
+        </form>
+        {% endif %}
       {% endif %}
       <a class="btn-ghost btn-sm" href="{% url 'hr:employee_edit' e.pk %}">{% trans "Tahrirlash" %}</a>
     </span>
   </li>
   {% endwith %}
   {% empty %}
-  {% include "includes/empty_state.html" with as_li=1 title=_("Xodim yo‘q") hint=_("Avval xodim qo‘shing, keyin avans yoki oylik bering.") cta_url=create_url cta_label=_("Xodim qo‘shish") %}
+  {% include "includes/empty_state.html" with as_li=1 title=_("Xodim yo‘q") hint=_("Avval xodim qo‘shing — oylik yoki kunlik stavka bilan.") cta_url=create_url cta_label=_("Xodim qo‘shish") %}
   {% endfor %}
 </ul>
 </section>

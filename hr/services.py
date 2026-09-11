@@ -1,8 +1,8 @@
+from datetime import date
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Sum
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
@@ -40,12 +40,6 @@ def settle_advance(advance: SalaryAdvance) -> SalaryAdvance:
     """Qo‘lda yopish — qolgan qarzni kechirish."""
     if advance.is_settled:
         raise ValidationError(_("Avans allaqachon hisoblangan."))
-    if (
-        advance.applied_to_period_id
-        and advance.applied_to_period.status == PayrollPeriod.Status.DRAFT
-    ):
-        # Qoralamada bog‘langan bo‘lsa — ushlanma qatorini yangilash kerak
-        pass
     principal = advance.principal
     advance.recovered_amount = principal
     advance.is_settled = True
@@ -70,25 +64,33 @@ def open_advance_total(employee: Employee) -> Decimal:
     return total
 
 
-def salary_due_preview(employee: Employee) -> Decimal:
-    """Taxminiy sof oylik: baza − ochiq avanslar (0 dan pastga tushmasin)."""
-    due = Decimal(employee.base_salary or 0) - open_advance_total(employee)
+def salary_due_preview(employee: Employee, *, days: int = 1) -> Decimal:
+    """
+    Taxminiy sof to‘lov: stavka (−× kun) − ochiq avanslar.
+    Oylik: oyiga; kunlik: days × kunlik stavka.
+    """
+    rate = Decimal(employee.base_salary or 0)
+    if employee.is_daily:
+        days = max(1, int(days or 1))
+        gross = rate * days
+    else:
+        gross = rate
+    due = gross - open_advance_total(employee)
     return due if due > 0 else ZERO
 
 
 def _max_advance_deduction(item: PayrollItem) -> Decimal:
-    due = (item.base_amount or ZERO) + (item.bonus or ZERO) - (item.deduction or ZERO)
-    return due if due > 0 else ZERO
+    return item.gross_amount
 
 
 def preview_advance_deduction(employee: Employee, item: PayrollItem) -> Decimal:
-    """Shu oylik qatoridan ushlanadigan avans (hali yozilmagan)."""
+    """Shu qatordan ushlanadigan avans (hali yozilmagan)."""
     return min(open_advance_total(employee), _max_advance_deduction(item))
 
 
 @transaction.atomic
 def sync_item_advances(item: PayrollItem) -> PayrollItem:
-    """Ochiq avans qoldig‘ini oylik qatoriga yozish (sof >= 0). To‘lovdan oldin."""
+    """Ochiq avans qoldig‘ini qatorga yozish (sof >= 0). To‘lovdan oldin."""
     if SalaryPayment.objects.filter(item=item).exists():
         return item
     item.advance = preview_advance_deduction(item.employee, item)
@@ -104,7 +106,7 @@ def recover_advances(
     period: PayrollPeriod | None = None,
 ) -> Decimal:
     """
-    Oylikdan ushlangan summani avanslarga FIFO bilan yozish.
+    To‘lovdan ushlangan summani avanslarga FIFO bilan yozish.
     Qisman qoplash: recovered_amount oshadi; to‘liq bo‘lsa is_settled=True.
     """
     left = Decimal(amount or 0)
@@ -138,35 +140,57 @@ def recover_advances(
     return recovered
 
 
+def _monthly_employees(tenant):
+    return Employee.objects.filter(
+        tenant=tenant,
+        is_active=True,
+        salary_type=Employee.SalaryType.MONTHLY,
+    )
+
+
 @transaction.atomic
 def generate_payroll(tenant, year: int, month: int) -> PayrollPeriod:
+    """Faqat oylik xodimlar — kunliklar alohida kunlik to‘lov bilan.
+    Kunlik to‘lovdan keyin davr FINALIZED/PAID bo‘lsa ham oylik qatorlar qo‘shiladi.
+    """
     period, _created = PayrollPeriod.objects.get_or_create(
         tenant=tenant, year=year, month=month, defaults={"status": PayrollPeriod.Status.DRAFT}
     )
-    if period.status != PayrollPeriod.Status.DRAFT:
-        raise ValidationError(_("Davr qoralama emas."))
 
-    for emp in Employee.objects.filter(tenant=tenant, is_active=True):
+    for emp in _monthly_employees(tenant):
         item, _created = PayrollItem.objects.get_or_create(
             tenant=tenant,
             period=period,
             employee=emp,
-            defaults={"base_amount": emp.base_salary},
+            work_date=None,
+            defaults={"base_amount": emp.base_salary, "days_count": 1},
         )
         if SalaryPayment.objects.filter(item=item).exists():
             continue
         if item.base_amount == 0 and emp.base_salary:
             item.base_amount = emp.base_salary
+            item.days_count = 1
+            item.save(update_fields=["base_amount", "days_count", "updated_at"])
         sync_item_advances(item)
 
+    period.refresh_from_db()
+    if (
+        period.status == PayrollPeriod.Status.PAID
+        and period.items.filter(payment__isnull=True).exists()
+    ):
+        period.status = PayrollPeriod.Status.FINALIZED
+        period.save(update_fields=["status", "updated_at"])
     return period
 
 
 @transaction.atomic
 def finalize_payroll(period: PayrollPeriod) -> PayrollPeriod:
     """Davrni qulflash — avanslar to‘lov paytida qoplansin."""
-    if period.status != PayrollPeriod.Status.DRAFT:
-        raise ValidationError(_("Faqat qoralama davrlar yakunlanadi."))
+    if period.status not in {
+        PayrollPeriod.Status.DRAFT,
+        PayrollPeriod.Status.FINALIZED,
+    }:
+        raise ValidationError(_("To‘liq to‘langan davrni qayta yakunlab bo‘lmaydi."))
     if not period.items.exists():
         raise ValidationError(_("Davrda ish haqi qatorlari yo‘q."))
     for item in period.items.filter(payment__isnull=True).select_related("employee"):
@@ -183,7 +207,11 @@ def ensure_payroll_item(
     year: int,
     month: int,
 ) -> PayrollItem:
-    """Xodim uchun oy qatorini topish yoki yaratish (yakunlangan davrda ham)."""
+    """Oylik xodim uchun oy qatorini topish yoki yaratish."""
+    if employee.is_daily:
+        raise ValidationError(
+            _("Kunlik xodim uchun oylik qator yaratilmaydi — kunlik to‘lovdan foydalaning.")
+        )
     period, _created = PayrollPeriod.objects.get_or_create(
         tenant=tenant,
         year=year,
@@ -193,14 +221,15 @@ def ensure_payroll_item(
     if period.status == PayrollPeriod.Status.DRAFT:
         generate_payroll(tenant, year, month)
         return PayrollItem.objects.select_related("period", "employee").get(
-            period=period, employee=employee
+            period=period, employee=employee, work_date__isnull=True
         )
 
     item, created = PayrollItem.objects.get_or_create(
         tenant=tenant,
         period=period,
         employee=employee,
-        defaults={"base_amount": employee.base_salary or ZERO},
+        work_date=None,
+        defaults={"base_amount": employee.base_salary or ZERO, "days_count": 1},
     )
     if created or (
         not SalaryPayment.objects.filter(item=item).exists()
@@ -209,7 +238,61 @@ def ensure_payroll_item(
     ):
         if item.base_amount == 0 and employee.base_salary:
             item.base_amount = employee.base_salary
-            item.save(update_fields=["base_amount", "updated_at"])
+            item.days_count = 1
+            item.save(update_fields=["base_amount", "days_count", "updated_at"])
+    return item
+
+
+def ensure_daily_payroll_item(
+    tenant,
+    employee: Employee,
+    *,
+    work_date: date,
+    days: int = 1,
+) -> PayrollItem:
+    """Kunlik xodim: ish kuni qatori (stavka × kun)."""
+    if not employee.is_daily:
+        raise ValidationError(_("Bu xodim oylik — oddiy oylik to‘lovdan foydalaning."))
+    days = int(days or 1)
+    if days < 1 or days > 31:
+        raise ValidationError(_("Kunlar soni 1–31 oralig‘ida bo‘lishi kerak."))
+    rate = Decimal(employee.base_salary or 0)
+    if rate <= 0:
+        raise ValidationError(_("Kunlik stavka kiritilmagan."))
+    base = (rate * days).quantize(Decimal("0.01"))
+
+    period, _created = PayrollPeriod.objects.get_or_create(
+        tenant=tenant,
+        year=work_date.year,
+        month=work_date.month,
+        defaults={"status": PayrollPeriod.Status.DRAFT},
+    )
+    item, created = PayrollItem.objects.get_or_create(
+        tenant=tenant,
+        period=period,
+        employee=employee,
+        work_date=work_date,
+        defaults={"base_amount": base, "days_count": days},
+    )
+    if SalaryPayment.objects.filter(item=item).exists():
+        raise ValidationError(
+            _("%(d)s kuni allaqachon to‘langan.") % {"d": work_date.strftime("%d.%m.%Y")}
+        )
+    if not created and (item.base_amount != base or item.days_count != days):
+        item.base_amount = base
+        item.days_count = days
+        item.bonus = ZERO
+        item.deduction = ZERO
+        item.save(
+            update_fields=[
+                "base_amount",
+                "days_count",
+                "bonus",
+                "deduction",
+                "net_amount",
+                "updated_at",
+            ]
+        )
     return item
 
 
@@ -240,10 +323,12 @@ def mark_item_paid(item: PayrollItem, amount=None, method="cash") -> SalaryPayme
     if SalaryPayment.objects.filter(item=item).exists():
         raise ValidationError(_("Bu qator allaqachon to‘langan."))
 
-    if period.status == PayrollPeriod.Status.DRAFT:
+    # Kunlik qator: oy jadvalini majburan generate/finalize qilmaymiz
+    if item.work_date is None and period.status == PayrollPeriod.Status.DRAFT:
         generate_payroll(period.tenant, period.year, period.month)
         item.refresh_from_db()
-        finalize_payroll(period)
+        if period.status == PayrollPeriod.Status.DRAFT:
+            finalize_payroll(period)
         period.refresh_from_db()
         item.refresh_from_db()
 
@@ -266,7 +351,6 @@ def mark_item_paid(item: PayrollItem, amount=None, method="cash") -> SalaryPayme
         },
     )
 
-    # Avansni faqat haqiqiy ushlanma bo‘yicha qoplash
     recover_advances(item.employee, item.advance or ZERO, period=period)
 
     unpaid = item.period.items.filter(payment__isnull=True).exists()
@@ -288,17 +372,48 @@ def pay_employee_salary(
     month: int | None = None,
     method: str = "cash",
 ) -> SalaryPayment:
-    """Bitta tugma: shu oy uchun qator → avans ushlash → to‘lash."""
+    """Oylik xodim: shu oy uchun qator → avans ushlash → to‘lash."""
     if employee.tenant_id != tenant.pk:
         raise ValidationError(_("Xodim ushbu mehmonxonaga tegishli emas."))
     if not employee.is_active:
         raise ValidationError(_("Faol bo‘lmagan xodimga oylik berib bo‘lmaydi."))
+    if employee.is_daily:
+        raise ValidationError(
+            _("Bu xodim kunlik — «Kunlik to‘lash» orqali bering (kunlar soni bilan).")
+        )
 
     today = timezone.localdate()
     year = year or today.year
     month = month or today.month
 
     item = ensure_payroll_item(tenant, employee, year=year, month=month)
+    return mark_item_paid(item, method=method)
+
+
+@transaction.atomic
+def pay_employee_daily(
+    tenant,
+    employee: Employee,
+    *,
+    days: int = 1,
+    work_date: date | None = None,
+    method: str = "cash",
+) -> SalaryPayment:
+    """
+    Kunlik xodim: stavka × kun → avans ushlash → to‘lash.
+    Sof (P&L): yalpi base; kassa: sof to‘lov (net). Bir kunda bir marta.
+    """
+    if employee.tenant_id != tenant.pk:
+        raise ValidationError(_("Xodim ushbu mehmonxonaga tegishli emas."))
+    if not employee.is_active:
+        raise ValidationError(_("Faol bo‘lmagan xodimga kunlik berib bo‘lmaydi."))
+    if not employee.is_daily:
+        raise ValidationError(_("Bu xodim oylik — «Oylik to‘lash»dan foydalaning."))
+
+    work_date = work_date or timezone.localdate()
+    item = ensure_daily_payroll_item(
+        tenant, employee, work_date=work_date, days=days
+    )
     return mark_item_paid(item, method=method)
 
 
@@ -310,7 +425,7 @@ def pay_all_unpaid(
     month: int | None = None,
     method: str = "cash",
 ) -> int:
-    """Shu oydagi barcha to‘lanmagan oyliklarni bir martada to‘lash."""
+    """Shu oydagi to‘lanmagan OYLIK qatorlarini bir martada to‘lash (kunlik emas)."""
     today = timezone.localdate()
     year = year or today.year
     month = month or today.month
@@ -324,16 +439,15 @@ def pay_all_unpaid(
     if period.status == PayrollPeriod.Status.DRAFT:
         generate_payroll(tenant, year, month)
 
-    # Faol xodimlar uchun qatorlar bo‘lsin
-    for emp in Employee.objects.filter(tenant=tenant, is_active=True):
+    for emp in _monthly_employees(tenant):
         ensure_payroll_item(tenant, emp, year=year, month=month)
 
     period.refresh_from_db()
     paid = 0
-    for item in period.items.select_related("employee"):
+    for item in period.items.select_related("employee").filter(work_date__isnull=True):
         if SalaryPayment.objects.filter(item=item).exists():
             continue
-        if not item.employee.is_active:
+        if not item.employee.is_active or item.employee.is_daily:
             continue
         mark_item_paid(item, method=method)
         paid += 1
