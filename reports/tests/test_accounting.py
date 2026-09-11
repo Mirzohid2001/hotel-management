@@ -139,7 +139,8 @@ class AccountingReportsTests(TestCase):
         )
         self.reservation.referrer = referrer
         self.reservation.commission_percent = Decimal("10")
-        self.reservation.check_out = self.today
+        # Sof komissiyasi check_in bo‘yicha; check_out ertaga bo‘lsa ham shu oyga tushadi
+        self.reservation.check_out = self.today + timedelta(days=1)
         self.reservation.status = self.reservation.Status.CHECKED_OUT
         self.reservation.save(
             update_fields=[
@@ -189,6 +190,38 @@ class AccountingReportsTests(TestCase):
 
         ranged = cash_pnl_for_range(self.tenant, self.today, self.today)
         self.assertEqual(ranged["operating_costs"], expected_ops)
+
+    def test_commission_uses_check_in_date(self):
+        """Komissiya check_out emas, check_in kuniga tushadi (tushum bilan birga)."""
+        from bookings.models import BookingReferrer
+        from reports.accounting import commission_in_range
+
+        referrer = BookingReferrer.objects.create(
+            tenant=self.tenant,
+            name="Agent2",
+            default_commission_percent=Decimal("10"),
+        )
+        self.reservation.referrer = referrer
+        self.reservation.commission_percent = Decimal("10")
+        self.reservation.check_in = self.today - timedelta(days=1)
+        self.reservation.check_out = self.today
+        self.reservation.status = self.reservation.Status.CHECKED_OUT
+        self.reservation.save(
+            update_fields=[
+                "referrer",
+                "commission_percent",
+                "check_in",
+                "check_out",
+                "status",
+                "updated_at",
+            ]
+        )
+        on_out = commission_in_range(self.tenant, self.today, self.today)
+        on_in = commission_in_range(
+            self.tenant, self.today - timedelta(days=1), self.today - timedelta(days=1)
+        )
+        self.assertEqual(on_out, Decimal("0"))
+        self.assertGreater(on_in, Decimal("0"))
 
     def test_emehmon_pass_through_pnl(self):
         """E-mehmon tushum emas; faqat qoplanmagan farq rasxod."""

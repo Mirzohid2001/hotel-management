@@ -234,7 +234,14 @@ def advances_in_range(tenant, start: date, end: date) -> Decimal:
 
 
 def commission_in_range(tenant, start: date, end: date, *, hotel=None) -> Decimal:
-    """Faqat chiqish qilingan bronlar bo‘yicha yo‘naltiruvchi komissiyasi."""
+    """
+    Yo‘naltiruvchi komissiyasi (Sof/P&L) — faqat CHECKED_OUT bronlar.
+
+    Sana: check_in (kirish). Mehmondan tushum odatda shu kunga tushadi;
+    check_out bo‘yicha olinsa, tushum bir kunda / komissiya keyingi kunda
+    qolib, «0 qilib qayta»dan keyin soxta −komissiya kuni chiqadi.
+    Agent hisoboti (bayonnoma) hali check_out bo‘yicha.
+    """
     from bookings.commission import reservation_commission_amount
     from bookings.models import Reservation
 
@@ -243,8 +250,8 @@ def commission_in_range(tenant, start: date, end: date, *, hotel=None) -> Decima
             tenant=tenant,
             referrer__isnull=False,
             status=Reservation.Status.CHECKED_OUT,
-            check_out__gte=start,
-            check_out__lte=end,
+            check_in__gte=start,
+            check_in__lte=end,
         )
         .select_related("folio")
         .prefetch_related("folio__charges")

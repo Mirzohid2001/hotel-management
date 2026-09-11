@@ -83,7 +83,7 @@ def build_profit_receipt(ledger: dict) -> dict:
         _receipt_line("=", _("Tushum jami"), pnl.get("revenue_total") or ZERO, tone="subtotal"),
         _receipt_line("−", _("Rasxod (joriy)"), pnl.get("expenses_total") or ZERO),
         _receipt_line("−", _("Mehnat (yalpi)"), pnl.get("labor_total") or ZERO),
-        _receipt_line("−", _("Yo‘naltiruvchi komissiya"), pnl.get("commission") or ZERO),
+        _receipt_line("−", _("Yo‘naltiruvchi komissiya"), pnl.get("commission") or ZERO, note=_("Kirish sanasi bo‘yicha; to‘lov Sofni o‘chirmaydi")),
         _receipt_line("−", _("Ombor tannarx"), pnl.get("inventory_cost") or ZERO),
         _receipt_line("−", _("E-mehmon farq"), pnl.get("emehmon_shortfall") or ZERO),
         _receipt_line(
