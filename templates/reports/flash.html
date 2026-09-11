@@ -62,7 +62,33 @@
       <span class="dash-stat-lbl">{% trans "Rasxod (joriy)" %}</span>
       <strong class="money">{{ flash.expenses_today|money }}</strong>
     </div>
+    {% if flash.reinvestment_today %}
+    <div class="stat dash-stat">
+      <span class="dash-stat-icon is-out" aria-hidden="true"></span>
+      <span class="dash-stat-lbl">{% trans "Reinvestitsiya" %}</span>
+      <strong class="money">{{ flash.reinvestment_today|money }}</strong>
+    </div>
+    {% endif %}
   </div>
+
+  {% if flash.payments.reinvestment_out or flash.payments.payroll_out or flash.payments.advances_out %}
+  <p class="muted panel mb-md" style="margin-top:0.75rem">
+    {% trans "Kassa chiqimi Sof emas:" %}
+    {% if flash.payments.operating_out %}
+    {% trans "joriy" %} <strong class="money">{{ flash.payments.operating_out|money }}</strong>
+    {% endif %}
+    {% if flash.payments.reinvestment_out %}
+    · {% trans "reinvestitsiya (ulushdan)" %} <strong class="money">{{ flash.payments.reinvestment_out|money }}</strong>
+    {% endif %}
+    {% if flash.payments.payroll_out %}
+    · {% trans "oylik (to‘langan)" %} <strong class="money">{{ flash.payments.payroll_out|money }}</strong>
+    {% endif %}
+    {% if flash.payments.advances_out %}
+    · {% trans "avans" %} <strong class="money">{{ flash.payments.advances_out|money }}</strong>
+    {% endif %}
+    · {% trans "kassa net" %} <strong class="money">{{ flash.payments.net|money }}</strong>
+  </p>
+  {% endif %}
 
   <section class="section-panel pnl-charts-panel">
     <div class="dash-section-head">
@@ -90,7 +116,7 @@
   <section class="section-panel">
     <div class="dash-section-head">
       <h2>{% trans "To‘lov usullari" %} · {{ day|date:"d.m.Y" }}</h2>
-      <span class="money flash-net-badge">{{ flash.payments.net|money }}</span>
+      <span class="money flash-net-badge">{% trans "Kassa net" %}: {{ flash.payments.net|money }}</span>
     </div>
     <ul class="list report-breakdown">
       {% for row in flash.payments.rows %}
@@ -99,6 +125,9 @@
         <span>
           <span class="muted">{% trans "kirim" %}</span> <span class="money">{{ row.in|money }}</span>
           · <span class="muted">{% trans "chiqim" %}</span> <span class="money">{{ row.out|money }}</span>
+          {% if row.reinvest_out %}
+          <span class="muted">({% trans "shu jumladan reinvest" %} {{ row.reinvest_out|money }})</span>
+          {% endif %}
         </span>
       </li>
       {% empty %}<li class="muted">{% trans "Yo‘q" %}</li>{% endfor %}

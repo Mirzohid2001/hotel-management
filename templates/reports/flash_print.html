@@ -98,14 +98,26 @@
     <div class="cell"><span>{% trans "Naqd tushum" %}</span><strong>{{ flash.revenue_cash|money }}</strong></div>
     <div class="cell"><span>{% trans "Hisoblangan" %}</span><strong>{{ flash.revenue_accrual|money }}</strong></div>
     <div class="cell"><span>{% trans "Rasxod (joriy)" %}</span><strong>{{ flash.expenses_today|money }}</strong></div>
+    {% if flash.reinvestment_today %}
+    <div class="cell"><span>{% trans "Reinvestitsiya" %}</span><strong>{{ flash.reinvestment_today|money }}</strong></div>
+    {% endif %}
   </div>
 
   <h2>{% trans "To‘lov usullari" %}</h2>
   <div class="grid">
     <div class="cell"><span>{% trans "Kirim" %}</span><strong>{{ flash.payments.total_in|money }}</strong></div>
     <div class="cell"><span>{% trans "Chiqim" %}</span><strong>−{{ flash.payments.total_out|money }}</strong></div>
-    <div class="cell is-net"><span>{% trans "Net" %}</span><strong>{{ flash.payments.net|money }}</strong></div>
+    <div class="cell is-net"><span>{% trans "Kassa net" %}</span><strong>{{ flash.payments.net|money }}</strong></div>
   </div>
+  {% if flash.payments.reinvestment_out or flash.payments.payroll_out %}
+  <p class="note">
+    {% trans "Chiqim tafsiloti" %}:
+    {% trans "joriy" %} {{ flash.payments.operating_out|money }}
+    {% if flash.payments.reinvestment_out %} · {% trans "reinvestitsiya (ulushdan)" %} {{ flash.payments.reinvestment_out|money }}{% endif %}
+    {% if flash.payments.payroll_out %} · {% trans "oylik" %} {{ flash.payments.payroll_out|money }}{% endif %}
+    {% if flash.payments.advances_out %} · {% trans "avans" %} {{ flash.payments.advances_out|money }}{% endif %}
+  </p>
+  {% endif %}
   <table>
     <thead>
       <tr>
@@ -118,7 +130,12 @@
     <tbody>
       {% for row in flash.payments.rows %}
       <tr>
-        <td>{{ row.label }}</td>
+        <td>
+          {{ row.label }}
+          {% if row.reinvest_out %}
+          <span class="muted">({% trans "reinvest" %} {{ row.reinvest_out|money }})</span>
+          {% endif %}
+        </td>
         <td class="num">{{ row.in|money }}</td>
         <td class="num">{{ row.out|money }}</td>
         <td class="num">{{ row.net|money }}</td>

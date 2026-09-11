@@ -410,3 +410,34 @@ class AccountingReportsTests(TestCase):
         self.assertEqual(cash["in"], Decimal("150000"))
         # Sdachi 50k + setUp rasxod 200k (cash)
         self.assertEqual(cash["out"], Decimal("250000"))
+
+    def test_flash_separates_reinvestment_from_operating_out(self):
+        """Reinvest kassadan chiqadi, lekin Rasxod (joriy) / Sofga kirmaydi."""
+        from maintenance.services import record_maintenance_spend
+        from reports.accounting import build_daily_flash, payment_method_breakdown
+
+        record_maintenance_spend(
+            self.tenant,
+            self.user,
+            hotel=self.prop,
+            title="Katta remont",
+            amount=Decimal("5000000"),
+            expense_date=self.today,
+            funding=Expense.Funding.REINVESTMENT,
+            payment_method=Expense.PaymentMethod.CASH,
+        )
+        flash = build_daily_flash(self.tenant, self.today, hotel=self.prop)
+        self.assertEqual(flash["expenses_today"], Decimal("200000"))  # setUp Power
+        self.assertEqual(flash["reinvestment_today"], Decimal("5000000"))
+        self.assertEqual(flash["payments"]["reinvestment_out"], Decimal("5000000"))
+        self.assertGreaterEqual(flash["payments"]["operating_out"], Decimal("200000"))
+        cash = next(
+            r for r in flash["payments"]["rows"] if r["method"] == Expense.PaymentMethod.CASH
+        )
+        self.assertEqual(cash["reinvest_out"], Decimal("5000000"))
+        # Sof o‘zgarmagan (reinvest ayirilmagan)
+        from reports.accounting import cash_pnl_for_range
+
+        pnl = cash_pnl_for_range(self.tenant, self.today, self.today, hotel=self.prop)
+        self.assertEqual(pnl["reinvestment"], Decimal("5000000"))
+        self.assertEqual(pnl["expenses_total"], Decimal("200000"))

@@ -98,15 +98,16 @@ def flash_charts(flash: dict, *, currency: str = "UZS") -> dict:
             "out": [_f(r["out"]) for r in payment_rows],
         },
         "revenueDay": {
-            "labels": [_("Naqd tushum"), _("Hisoblangan"), _("Rasxod")],
+            "labels": [_("Naqd tushum"), _("Hisoblangan"), _("Rasxod (joriy)"), _("Reinvestitsiya")],
             "values": [
                 _f(flash.get("revenue_cash")),
                 _f(flash.get("revenue_accrual")),
                 _f(flash.get("expenses_today")),
+                _f(flash.get("reinvestment_today")),
             ],
         },
         "mtdBar": {
-            "labels": [_("Tushum"), _("Xarajat"), _("Sof")],
+            "labels": [_("Tushum"), _("Operatsion jami"), _("Sof")],
             "values": [
                 _f(mtd.get("revenue")),
                 _f(mtd.get("operating_costs") or (

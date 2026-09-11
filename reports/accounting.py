@@ -423,6 +423,11 @@ def build_pnl_report(tenant, year: int, month: int, *, basis="cash", hotel=None)
 
 
 def payment_method_breakdown(tenant, start: date, end: date, *, hotel=None) -> dict:
+    """
+    Kassa ko‘rinishi: kirim/chiqim to‘lov usuli bo‘yicha.
+    Chiqim ichida joriy rasxod, reinvestitsiya, oylik va avans alohida yig‘iladi
+    (Sof ≠ kassa: reinvest Sofga kirmaydi, lekin kassadan chiqadi).
+    """
     guest_qs = GuestPayment.objects.filter(
         tenant=tenant,
         is_void=False,
@@ -462,52 +467,111 @@ def payment_method_breakdown(tenant, start: date, end: date, *, hotel=None) -> d
         ("payroll_out", [("cash", "Cash"), ("transfer", "Transfer"), ("card", "Card")]),
     ]:
         for key, _ in choices:
-            methods.setdefault(key, {"in": Decimal("0"), "out": Decimal("0")})
+            methods.setdefault(
+                key,
+                {
+                    "in": Decimal("0"),
+                    "out": Decimal("0"),
+                    "ops_out": Decimal("0"),
+                    "reinvest_out": Decimal("0"),
+                    "payroll_out": Decimal("0"),
+                    "advance_out": Decimal("0"),
+                },
+            )
+
+    def _bucket(key: str) -> dict:
+        return methods.setdefault(
+            key,
+            {
+                "in": Decimal("0"),
+                "out": Decimal("0"),
+                "ops_out": Decimal("0"),
+                "reinvest_out": Decimal("0"),
+                "payroll_out": Decimal("0"),
+                "advance_out": Decimal("0"),
+            },
+        )
 
     for row in (
         guest_qs.exclude(kind=GuestPayment.Kind.REFUND)
         .values("method")
         .annotate(total=Sum("amount_base"))
     ):
-        methods[row["method"]]["in"] += row["total"] or Decimal("0")
+        _bucket(row["method"])["in"] += row["total"] or Decimal("0")
     for row in (
         guest_qs.filter(kind=GuestPayment.Kind.REFUND)
         .values("method")
         .annotate(total=Sum("amount_base"))
     ):
-        methods[row["method"]]["out"] += row["total"] or Decimal("0")
+        b = _bucket(row["method"])
+        amt = row["total"] or Decimal("0")
+        b["out"] += amt
+        b["ops_out"] += amt
     for row in company_qs.values("method").annotate(total=Sum("amount_base")):
-        methods[row["method"]]["in"] += row["total"] or Decimal("0")
-    for row in expense_qs.values("payment_method").annotate(total=Sum("amount_base")):
-        methods[row["payment_method"]]["out"] += row["total"] or Decimal("0")
+        _bucket(row["method"])["in"] += row["total"] or Decimal("0")
+
+    for exp in expense_qs.only("payment_method", "funding", "amount_base", "amount"):
+        amt = exp.amount_base if exp.amount_base is not None else (exp.amount or Decimal("0"))
+        b = _bucket(exp.payment_method)
+        b["out"] += amt
+        if exp.funding == Expense.Funding.REINVESTMENT:
+            b["reinvest_out"] += amt
+        else:
+            b["ops_out"] += amt
+
     for row in payroll_qs.values("method").annotate(total=Sum("amount_base")):
-        methods[row["method"]]["out"] += row["total"] or Decimal("0")
-    # Avans — kassa chiqimi (P&L sofida emas, lekin flash/kassa net uchun)
+        amt = row["total"] or Decimal("0")
+        b = _bucket(row["method"])
+        b["out"] += amt
+        b["payroll_out"] += amt
+
     adv_total = advance_qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
     if adv_total:
-        methods.setdefault("cash", {"in": Decimal("0"), "out": Decimal("0")})
-        methods["cash"]["out"] += adv_total
+        b = _bucket("cash")
+        b["out"] += adv_total
+        b["advance_out"] += adv_total
 
     labels = dict(GuestPayment.Method.choices)
     rows = []
     total_in = Decimal("0")
     total_out = Decimal("0")
+    operating_out = Decimal("0")
+    reinvestment_out = Decimal("0")
+    payroll_out = Decimal("0")
+    advances_out = Decimal("0")
     for key, vals in methods.items():
         if vals["in"] == 0 and vals["out"] == 0:
             continue
         total_in += vals["in"]
         total_out += vals["out"]
+        operating_out += vals["ops_out"]
+        reinvestment_out += vals["reinvest_out"]
+        payroll_out += vals["payroll_out"]
+        advances_out += vals["advance_out"]
         rows.append(
             {
                 "method": key,
                 "label": labels.get(key, key),
                 "in": vals["in"],
                 "out": vals["out"],
+                "ops_out": vals["ops_out"],
+                "reinvest_out": vals["reinvest_out"],
+                "payroll_out": vals["payroll_out"],
+                "advance_out": vals["advance_out"],
                 "net": vals["in"] - vals["out"],
             }
         )
     rows.sort(key=lambda r: r["in"] + r["out"], reverse=True)
-    return {"rows": rows, "total_in": total_in, "total_out": total_out, "net": total_in - total_out}
+    return {
+        "rows": rows,
+        "total_in": total_in,
+        "total_out": total_out,
+        "net": total_in - total_out,
+        "operating_out": operating_out,
+        "reinvestment_out": reinvestment_out,
+        "payroll_out": payroll_out,
+        "advances_out": advances_out,
+    }
 
 
 def guest_ar_summary(tenant, *, hotel=None) -> dict:
@@ -543,6 +607,7 @@ def build_daily_flash(tenant, day: date, *, hotel=None) -> dict:
     company_ar = ar_aging(tenant)
     mtd = pnl_lite(tenant, day.year, day.month, hotel=hotel)
     expenses_today = expenses_in_range(tenant, day, day, hotel=hotel)
+    reinvestment_today = reinvestment_in_range(tenant, day, day, hotel=hotel)
     return {
         "day": day,
         "stats": stats,
@@ -553,4 +618,5 @@ def build_daily_flash(tenant, day: date, *, hotel=None) -> dict:
         "company_ar": company_ar,
         "mtd": mtd,
         "expenses_today": expenses_today,
+        "reinvestment_today": reinvestment_today,
     }
