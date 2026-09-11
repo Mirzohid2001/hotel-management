@@ -383,6 +383,9 @@ def build_partner_ledger(
             if major is not None and p.pk == major.pk and net > 0
             else ZERO
         )
+        # Reinvest ulushdan katta bo‘lsa — qoldiq manfiy bo‘lmasin
+        if reinvest_cut > gross:
+            reinvest_cut = gross
         entitled = _q(gross - reinvest_cut)
         withdrawn = withdrawn_by_partner.get(p.pk, ZERO)
         remaining = _q(entitled - withdrawn)
