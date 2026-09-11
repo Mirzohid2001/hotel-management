@@ -103,6 +103,7 @@ class CommissionReportTests(TestCase):
             check_out=self.today + timedelta(days=1),
             referrer=self.vali,
             commission_percent=Decimal("10"),
+            nightly_rate=Decimal("2000000"),
         )
         folio = Folio.objects.create(tenant=self.tenant, reservation=reservation)
         FolioCharge.objects.create(
@@ -154,9 +155,49 @@ class CommissionReportTests(TestCase):
             posted_by=self.user,
         )
         reservation.refresh_from_db()
-        # 250k beer << 2M quote → baza = faktik xona narxi
         self.assertEqual(reservation_commission_base(reservation), Decimal("2000000"))
         self.assertEqual(reservation_commission_amount(reservation), Decimal("300000.00"))
+
+    def test_duplicate_night_locale_does_not_double_commission(self):
+        """Bir kecha ikki til/yozuv bilan chiqsa — komissiya bron summasidan."""
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+            referrer=self.vali,
+            commission_percent=Decimal("10"),
+            nightly_rate=Decimal("1000000"),
+        )
+        folio = Folio.objects.create(tenant=self.tenant, reservation=reservation)
+        day = self.today.isoformat()
+        FolioCharge.objects.create(
+            tenant=self.tenant,
+            folio=folio,
+            charge_type=FolioCharge.ChargeType.ROOM,
+            description=f"Night {day} — xona to‘lovi",
+            quantity=Decimal("1"),
+            unit_price=Decimal("1000000"),
+            posted_by=self.user,
+        )
+        FolioCharge.objects.create(
+            tenant=self.tenant,
+            folio=folio,
+            charge_type=FolioCharge.ChargeType.ROOM,
+            description=f"Night {day} — плата за номер",
+            quantity=Decimal("1"),
+            unit_price=Decimal("1000000"),
+            posted_by=self.user,
+        )
+        reservation.refresh_from_db()
+        self.assertEqual(reservation.total_amount, Decimal("1000000"))
+        self.assertEqual(reservation_commission_base(reservation), Decimal("1000000"))
+        self.assertEqual(reservation_commission_amount(reservation), Decimal("100000.00"))
 
     def test_misc_room_charge_does_not_block_night_posts(self):
         from bookings.services import check_in_reservation

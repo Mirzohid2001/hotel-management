@@ -13,6 +13,7 @@ from folio.services import (
     add_charge,
     ensure_folio_for_reservation,
     folio_has_legacy_prepaid_room,
+    folio_has_night_for_day,
     night_amount_for,
     night_charge_description,
 )
@@ -190,20 +191,13 @@ def run_night_audit(
         folio = ensure_folio_for_reservation(reservation)
         if folio_has_legacy_prepaid_room(folio):
             continue
-        desc = night_charge_description(day)
-        already = FolioCharge.objects.filter(
-            folio=folio,
-            charge_type=FolioCharge.ChargeType.ROOM,
-            description=desc,
-            is_void=False,
-        ).exists()
-        if already:
+        if folio_has_night_for_day(folio, day):
             continue
         add_charge(
             folio,
             user,
             charge_type=FolioCharge.ChargeType.ROOM,
-            description=desc,
+            description=night_charge_description(day),
             unit_price=night_amount_for(reservation, day),
             quantity=Decimal("1"),
             currency=getattr(reservation, "currency", None) or tenant.currency,

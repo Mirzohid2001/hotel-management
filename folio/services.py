@@ -51,9 +51,22 @@ def post_room_charge(folio: Folio, user, amount: Decimal, description=None) -> F
     )
 
 
+def night_charge_day_prefix(day) -> str:
+    """Tilga bog‘liq bo‘lmagan prefiks — bir kecha ikki marta yozilmasin."""
+    return f"Night {day.isoformat()}"
+
+
 def night_charge_description(day) -> str:
-    # Keep a stable English prefix for idempotency / legacy filters.
-    return f"Night {day.isoformat()} — " + _("xona to‘lovi")
+    return f"{night_charge_day_prefix(day)} — " + _("xona to‘lovi")
+
+
+def folio_has_night_for_day(folio: Folio, day) -> bool:
+    return FolioCharge.objects.filter(
+        folio=folio,
+        charge_type=FolioCharge.ChargeType.ROOM,
+        is_void=False,
+        description__startswith=night_charge_day_prefix(day),
+    ).exists()
 
 
 def folio_has_legacy_prepaid_room(folio: Folio) -> bool:
@@ -115,19 +128,12 @@ def ensure_stay_nights_posted(reservation, user) -> int:
     posted = 0
     day = reservation.check_in
     while day < reservation.check_out:
-        desc = night_charge_description(day)
-        exists = FolioCharge.objects.filter(
-            folio=folio,
-            charge_type=FolioCharge.ChargeType.ROOM,
-            description=desc,
-            is_void=False,
-        ).exists()
-        if not exists:
+        if not folio_has_night_for_day(folio, day):
             add_charge(
                 folio,
                 user,
                 charge_type=FolioCharge.ChargeType.ROOM,
-                description=desc,
+                description=night_charge_description(day),
                 unit_price=night_amount_for(reservation, day),
                 quantity=Decimal("1"),
                 currency=getattr(reservation, "currency", None) or folio.tenant.currency,
