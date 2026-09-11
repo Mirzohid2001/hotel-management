@@ -86,8 +86,10 @@
   }
 
   function showProgress() {
-    if (progress) progress.hidden = false;
-    spaRoot.classList.add("spa-loading");
+    if (progress) {
+      progress.hidden = false;
+      progress.setAttribute("aria-hidden", "false");
+    }
   }
 
   function hideProgress() {
@@ -95,10 +97,20 @@
       progress.hidden = true;
       progress.setAttribute("aria-hidden", "true");
     }
-    spaRoot.classList.remove("spa-loading", "htmx-settling", "htmx-request", "htmx-swapping");
+    spaRoot.classList.remove(
+      "spa-loading",
+      "htmx-settling",
+      "htmx-request",
+      "htmx-swapping",
+      "htmx-added"
+    );
+    spaRoot.style.removeProperty("opacity");
+    spaRoot.style.removeProperty("transform");
+    shell.classList.remove("htmx-request", "htmx-settling", "htmx-swapping");
   }
 
-  function resetShellChrome() {
+  function clearVisualFog() {
+    /* Nazad / history: opacity va loading qotib qolmasin */
     hideProgress();
     document.body.classList.remove("modal-open", "nav-lock");
     var modal = document.getElementById("modal-root");
@@ -110,6 +122,16 @@
       var backdrop = document.getElementById("nav-backdrop");
       if (backdrop) backdrop.hidden = true;
     }
+    var pages = spaRoot.querySelectorAll(".page-content > *");
+    for (var i = 0; i < pages.length; i++) {
+      pages[i].style.animation = "none";
+      pages[i].style.opacity = "1";
+      pages[i].style.transform = "none";
+    }
+  }
+
+  function resetShellChrome() {
+    clearVisualFog();
   }
 
   function isSpaNavigation(evt) {
@@ -137,6 +159,11 @@
     showProgress();
   });
 
+  /* Historyga yozishdan oldin loading holatini olib tashlash */
+  document.body.addEventListener("htmx:beforeHistorySave", function () {
+    hideProgress();
+  });
+
   document.body.addEventListener("htmx:afterRequest", function (evt) {
     if (!isSpaNavigation(evt)) return;
     updateTitle(evt.detail.xhr);
@@ -156,8 +183,7 @@
   });
 
   document.body.addEventListener("htmx:historyRestore", function () {
-    /* Orqaga/oldinga: spa-loading qolib ekran oqarib qolmasin */
-    resetShellChrome();
+    clearVisualFog();
     updateNavActive();
   });
 
@@ -173,17 +199,13 @@
     if (isSpaNavigation(evt)) hideProgress();
   });
 
-  /* Brauzer nazad / bfcache: loading holatini tozalash */
-  window.addEventListener("pageshow", function (evt) {
-    if (evt.persisted || spaRoot.classList.contains("spa-loading")) {
-      resetShellChrome();
-      updateNavActive();
-    }
+  window.addEventListener("pageshow", function () {
+    clearVisualFog();
+    updateNavActive();
   });
 
   window.addEventListener("popstate", function () {
-    /* HTMX historyRestore kechiksa ham oqarishni darhol olib tashlash */
-    hideProgress();
+    clearVisualFog();
   });
 
   /* Mobile menyu — navigatsiyadan keyin yopish */

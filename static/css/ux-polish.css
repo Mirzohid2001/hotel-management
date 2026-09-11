@@ -52,16 +52,15 @@
 #spa-root .page-content > #calendar-page,
 #spa-root .page-content > #board-page,
 #spa-root > .messages + .page-content {
-  animation: uxRise 0.42s var(--ease-spring) both;
+  /* both + opacity:0 → brauzer nazadida oq parda bo‘lib qolardi */
+  animation: uxRise 0.36s var(--ease-spring);
 }
 
 @keyframes uxRise {
   from {
-    opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
   to {
-    opacity: 1;
     transform: none;
   }
 }

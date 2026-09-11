@@ -2227,15 +2227,15 @@ button.tile-btn {
 }
 #spa-root {
   min-height: 2rem;
-  transition: opacity 0.18s ease, transform 0.18s var(--ease-out);
 }
+/* Loading: faqat yuqoridagi progress — opacity o‘zgarmasin (nazad = oq parda bug) */
 #spa-root.spa-loading {
-  opacity: 0.72;
-  transform: translateY(4px);
+  pointer-events: none;
 }
-#spa-root.htmx-settling {
-  opacity: 1;
-  transform: none;
+#spa-root.htmx-settling,
+#spa-root.htmx-swapping {
+  opacity: 1 !important;
+  transform: none !important;
 }
 @supports (view-transition-name: root) {
   #spa-root { view-transition-name: spa-content; }
