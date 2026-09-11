@@ -299,16 +299,15 @@ def maintenance_expense_qs(tenant, *, hotel=None):
 
 
 def build_maintenance_statement(tenant, *, year: int, month: int, hotel=None) -> dict:
-    """Oylik Remont bayonnomasi — joriy / reinvestitsiya xarajatlari."""
+    """Oylik Remont bayonnomasi — joriy / reinvestitsiya (naqd Sof bilan bir xil sana)."""
+    from reports.accounting import _paid_expense_month_q
+
     start = date(year, month, 1)
     end = date(year, month, monthrange(year, month)[1])
     qs = (
         maintenance_expense_qs(tenant, hotel=hotel)
-        .filter(
-            status=Expense.Status.PAID,
-            expense_date__gte=start,
-            expense_date__lte=end,
-        )
+        .filter(status=Expense.Status.PAID)
+        .filter(_paid_expense_month_q(year, month))
         .order_by("expense_date", "id")
     )
     operating = Decimal("0")

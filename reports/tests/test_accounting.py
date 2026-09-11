@@ -200,10 +200,14 @@ class AccountingReportsTests(TestCase):
         settings.emehmon_fee = Decimal("9000")
         settings.save(update_fields=["emehmon_fee"])
 
-        # 2 kecha × 1 mehmon = 18000 expected; half collected
-        self.reservation.check_out = self.today + timedelta(days=2)
+        # 2 o‘tgan kecha × 1 mehmon = 18000 expected; half collected → shortfall 9000
+        self.reservation.emehmon_required = True
+        self.reservation.check_in = self.today - timedelta(days=1)
+        self.reservation.check_out = self.today + timedelta(days=1)
         self.reservation.adults = 1
-        self.reservation.save(update_fields=["check_out", "adults", "updated_at"])
+        self.reservation.save(
+            update_fields=["emehmon_required", "check_in", "check_out", "adults", "updated_at"]
+        )
 
         collect_emehmon_fee(
             self.reservation,
@@ -280,6 +284,79 @@ class AccountingReportsTests(TestCase):
         ranged = cash_pnl_for_range(self.tenant, self.today, self.today)
         self.assertEqual(ranged["reinvestment"], Decimal("5000000"))
         self.assertEqual(ranged["net"], after["net"])
+
+    def test_flash_cash_includes_company_payments(self):
+        from folio.models import CompanyInvoice, CompanyInvoiceLine, CompanyPayment
+        from guests.models import Company
+        from reports.accounting import build_daily_flash
+        from reports.services import revenue_on
+
+        company = Company.objects.create(tenant=self.tenant, name="Corp")
+        inv = CompanyInvoice.objects.create(
+            tenant=self.tenant,
+            hotel=self.prop,
+            company=company,
+            code="INV-TEST-0001",
+            created_by=self.user,
+        )
+        CompanyInvoiceLine.objects.create(
+            tenant=self.tenant,
+            invoice=inv,
+            description="Stay",
+            amount=Decimal("250000"),
+        )
+        CompanyPayment.objects.create(
+            tenant=self.tenant,
+            invoice=inv,
+            amount=Decimal("250000"),
+            method="card",
+            received_by=self.user,
+        )
+        self.assertEqual(
+            revenue_on(self.tenant, self.today, hotel=self.prop),
+            Decimal("250000"),
+        )
+        flash = build_daily_flash(self.tenant, self.today, hotel=self.prop)
+        self.assertEqual(flash["revenue_cash"], Decimal("250000"))
+
+    def test_emehmon_shortfall_does_not_count_future_nights(self):
+        """Joriy oy Sofi kelajak kechalarini oldindan ayirmasin."""
+        from bookings.emehmon import emehmon_shortfall_for_range, nights_overlap
+        from calendar import monthrange
+
+        settings = self.prop.settings
+        settings.emehmon_fee = Decimal("9000")
+        settings.save(update_fields=["emehmon_fee"])
+        self.reservation.emehmon_required = True
+        self.reservation.adults = 1
+        self.reservation.check_out = self.today + timedelta(days=10)
+        self.reservation.save(
+            update_fields=["emehmon_required", "adults", "check_out", "updated_at"]
+        )
+        # already checked in in setUp
+
+        month_start = self.today.replace(day=1)
+        month_end = self.today.replace(
+            day=monthrange(self.today.year, self.today.month)[1]
+        )
+        shortfall = emehmon_shortfall_for_range(
+            self.tenant, month_start, month_end, hotel=self.prop
+        )
+        expected_nights = nights_overlap(
+            self.reservation.check_in,
+            self.reservation.check_out,
+            month_start,
+            self.today,
+        )
+        self.assertEqual(shortfall, Decimal(expected_nights) * Decimal("9000"))
+        full_month_nights = nights_overlap(
+            self.reservation.check_in,
+            self.reservation.check_out,
+            month_start,
+            month_end,
+        )
+        if full_month_nights > expected_nights:
+            self.assertLess(shortfall, Decimal(full_month_nights) * Decimal("9000"))
 
     def test_flash_and_guest_ar(self):
         flash = build_daily_flash(self.tenant, self.today)

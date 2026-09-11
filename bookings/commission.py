@@ -141,7 +141,7 @@ def record_commission_payment(
 def build_commission_report(tenant, *, year: int, month: int) -> dict:
     """
     Monthly commission by referrer for stays whose check-out falls in the month.
-    Excludes cancelled / no-show. Includes paid / remaining per referrer.
+    Faqat CHECKED_OUT — Sof/P&L komissiyasi bilan bir xil.
     """
     start = date(year, month, 1)
     end = date(year, month, monthrange(year, month)[1])
@@ -149,14 +149,9 @@ def build_commission_report(tenant, *, year: int, month: int) -> dict:
         Reservation.objects.filter(
             tenant=tenant,
             referrer__isnull=False,
+            status=Reservation.Status.CHECKED_OUT,
             check_out__gte=start,
             check_out__lte=end,
-        )
-        .exclude(
-            status__in=[
-                Reservation.Status.CANCELLED,
-                Reservation.Status.NO_SHOW,
-            ]
         )
         .select_related("referrer", "guest", "room", "hotel")
         .prefetch_related("folio__charges")

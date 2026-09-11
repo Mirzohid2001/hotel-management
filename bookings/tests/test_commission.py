@@ -243,7 +243,7 @@ class CommissionReportTests(TestCase):
     def test_monthly_report_groups_by_referrer(self):
         check_out = self.today.replace(day=15) if self.today.day >= 2 else self.today
         check_in = check_out - timedelta(days=1)
-        create_reservation(
+        res = create_reservation(
             tenant=self.tenant,
             user=self.user,
             property_obj=self.prop,
@@ -255,6 +255,22 @@ class CommissionReportTests(TestCase):
             check_out=check_out,
             referrer=self.vali,
             commission_percent=Decimal("15"),
+        )
+        res.status = Reservation.Status.CHECKED_OUT
+        res.save(update_fields=["status", "updated_at"])
+        # Hali chiqmagan bron Sof/komissiya hisobotiga kirmasin
+        create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            rate_plan=self.rate,
+            check_in=check_in,
+            check_out=check_out,
+            referrer=self.vali,
+            commission_percent=Decimal("15"),
+            status=Reservation.Status.CONFIRMED,
         )
         cancelled = create_reservation(
             tenant=self.tenant,
@@ -304,6 +320,8 @@ class CommissionReportTests(TestCase):
             referrer=self.vali,
             commission_percent=Decimal("10"),
         )
+        res.status = Reservation.Status.CHECKED_OUT
+        res.save(update_fields=["status", "updated_at"])
         report = build_commission_report(
             self.tenant, year=check_out.year, month=check_out.month
         )
@@ -351,7 +369,7 @@ class CommissionReportTests(TestCase):
 
         check_out = self.today.replace(day=15) if self.today.day >= 2 else self.today
         check_in = check_out - timedelta(days=1)
-        create_reservation(
+        res = create_reservation(
             tenant=self.tenant,
             user=self.user,
             property_obj=self.prop,
@@ -364,6 +382,8 @@ class CommissionReportTests(TestCase):
             referrer=self.vali,
             commission_percent=Decimal("10"),
         )
+        res.status = Reservation.Status.CHECKED_OUT
+        res.save(update_fields=["status", "updated_at"])
         self.client.force_login(self.user)
         resp = self.client.get(
             reverse("bookings:commission_report"),
@@ -379,7 +399,7 @@ class CommissionReportTests(TestCase):
 
         check_out = self.today.replace(day=15) if self.today.day >= 2 else self.today
         check_in = check_out - timedelta(days=1)
-        create_reservation(
+        res = create_reservation(
             tenant=self.tenant,
             user=self.user,
             property_obj=self.prop,
@@ -392,6 +412,8 @@ class CommissionReportTests(TestCase):
             referrer=self.vali,
             commission_percent=Decimal("10"),
         )
+        res.status = Reservation.Status.CHECKED_OUT
+        res.save(update_fields=["status", "updated_at"])
         self.client.force_login(self.user)
         report = build_commission_report(
             self.tenant, year=check_out.year, month=check_out.month
@@ -420,7 +442,7 @@ class CommissionReportTests(TestCase):
 
         check_out = self.today.replace(day=15) if self.today.day >= 2 else self.today
         check_in = check_out - timedelta(days=1)
-        create_reservation(
+        res = create_reservation(
             tenant=self.tenant,
             user=self.user,
             property_obj=self.prop,
@@ -433,6 +455,8 @@ class CommissionReportTests(TestCase):
             referrer=self.vali,
             commission_percent=Decimal("10"),
         )
+        res.status = Reservation.Status.CHECKED_OUT
+        res.save(update_fields=["status", "updated_at"])
         self.client.force_login(self.user)
         resp = self.client.get(
             reverse("bookings:commission_statement", args=[self.vali.pk]),

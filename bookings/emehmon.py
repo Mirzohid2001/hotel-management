@@ -83,7 +83,15 @@ def emehmon_totals_for_range(
     for res in qs:
         unit = settings_map.get(res.hotel_id, Decimal("0"))
         guests = emehmon_guest_count(res.adults, res.children)
-        nights = nights_overlap(res.check_in, res.check_out, start, end)
+        # Joriy oyda kelajak kechalarini Sofga oldindan kiritmaslik
+        night_end = end
+        capped = False
+        if realized_only:
+            today = timezone.localdate()
+            if night_end > today:
+                night_end = today
+                capped = True
+        nights = nights_overlap(res.check_in, res.check_out, start, night_end)
         if nights <= 0:
             continue
         guest_nights = nights * guests
@@ -96,27 +104,38 @@ def emehmon_totals_for_range(
                 ).aggregate(s=Sum("amount_base"))["s"]
                 or Decimal("0")
             )
-        # Ko‘p oylik bron: olingan summani kechalar ulushiga bo‘lamiz
-        stay_nights = max(1, int(getattr(res, "nights", None) or nights))
-        collected = (
-            (collected_full * Decimal(nights) / Decimal(stay_nights)).quantize(
-                Decimal("0.01")
-            )
-            if collected_full
-            else Decimal("0")
-        )
-        # Ixtiyoriy: faqat belgilangan bronlarda to‘liq kutilgan summa.
-        # Belgilanmagan, lekin biror to‘lov bor — kutilgan = olingan (farq 0).
+        # Ko‘p oylik bron: olingan summani kechalar ulushiga bo‘lamiz.
+        # Joriy oyda kelajak kechalari qirqilganda — to‘lov avval o‘tgan kechalarga.
         required = bool(getattr(res, "emehmon_required", False))
         if required:
             expected = calc_emehmon_fee(unit, nights=nights, guests=guests)
             applies = True
         elif collected_full > 0:
-            expected = collected
+            expected = Decimal("0")  # temporary; set after collected
             applies = True
         else:
             expected = Decimal("0")
             applies = False
+            guest_nights = 0
+
+        if collected_full and applies:
+            if capped:
+                # Elapsed nights only: to‘lovni foizli bo‘lmasdan qoplaymiz
+                collected = min(collected_full, expected) if required else collected_full
+            else:
+                stay_nights = max(1, int(getattr(res, "nights", None) or nights))
+                collected = (
+                    collected_full * Decimal(nights) / Decimal(stay_nights)
+                ).quantize(Decimal("0.01"))
+        else:
+            collected = Decimal("0")
+
+        if applies and not required and collected_full > 0:
+            expected = collected
+        # Ixtiyoriy: faqat belgilangan bronlarda to‘liq kutilgan summa.
+        # Belgilanmagan, lekin biror to‘lov bor — kutilgan = olingan (farq 0).
+        if not applies:
+            expected = Decimal("0")
             guest_nights = 0
 
         posted = bool(folio and emehmon_already_posted(folio))
