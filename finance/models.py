@@ -81,7 +81,7 @@ class Expense(MoneyFieldsMixin, TenantOwnedModel):
         verbose_name=_("Moliyalashtirish"),
         help_text=_(
             "Joriy — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, "
-            "egalar / foyda ulushidan ayiriladi."
+            "ulushi eng katta sherikning ulushidan ayiriladi."
         ),
     )
     title = models.CharField(max_length=200)

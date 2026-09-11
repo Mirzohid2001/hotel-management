@@ -161,7 +161,7 @@
        href="{% url 'maintenance:statement' %}?year={{ statement_year }}&amp;month={{ statement_month }}"
        target="_blank" rel="noopener" hx-boost="false">{% trans "Bayonnoma / chek" %}</a>
   </div>
-  <p class="maint-hint muted">{% trans "Joriy — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, ulushdan ayiriladi." %}</p>
+  <p class="maint-hint muted">{% trans "Joriy — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, ulushi eng katta sherikdan ayiriladi." %}</p>
   <ul class="expense-list maint-list">
     {% for e in costs %}
     <li class="expense-card status-{{ e.status }} maint-card {% if e.funding == 'reinvestment' %}is-reinvest{% endif %}">

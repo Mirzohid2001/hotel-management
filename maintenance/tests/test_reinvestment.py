@@ -142,12 +142,45 @@ class MaintenanceReinvestmentTests(TestCase):
         ledger = build_partner_ledger(self.tenant)
         self.assertEqual(ledger["operating_net"], Decimal("1000000.00"))
         self.assertEqual(ledger["reinvestment"], Decimal("200000.00"))
-        self.assertEqual(ledger["net"], Decimal("800000.00"))
+        # Sof foyda o‘zgarmaydi; reinvest major ulushidan
+        self.assertEqual(ledger["net"], Decimal("1000000.00"))
+        self.assertEqual(ledger["distributable"], Decimal("800000.00"))
+        self.assertEqual(ledger["rows"][0]["gross_entitled"], Decimal("1000000.00"))
+        self.assertEqual(ledger["rows"][0]["reinvestment_cut"], Decimal("200000.00"))
         self.assertEqual(ledger["rows"][0]["entitled"], Decimal("800000.00"))
 
         # P&L Sof o‘zgarmagan
         pnl = cash_pnl_for_range(self.tenant, self.today, self.today)
         self.assertEqual(pnl["net"], Decimal("1000000"))
+
+    def test_reinvestment_taken_from_largest_share_only(self):
+        self._revenue()
+        ProfitPartner.objects.create(
+            tenant=self.tenant, name="Uchreditel", share_percent=Decimal("70")
+        )
+        ProfitPartner.objects.create(
+            tenant=self.tenant, name="Direktor", share_percent=Decimal("30")
+        )
+        record_maintenance_spend(
+            self.tenant,
+            self.user,
+            hotel=self.prop,
+            title="Katta remont",
+            amount=Decimal("200000"),
+            expense_date=self.today,
+            funding=Expense.Funding.REINVESTMENT,
+        )
+        ledger = build_partner_ledger(self.tenant)
+        by_name = {r["partner"].name: r for r in ledger["rows"]}
+        self.assertEqual(ledger["net"], Decimal("1000000.00"))
+        self.assertEqual(by_name["Uchreditel"]["gross_entitled"], Decimal("700000.00"))
+        self.assertEqual(by_name["Uchreditel"]["reinvestment_cut"], Decimal("200000.00"))
+        self.assertEqual(by_name["Uchreditel"]["entitled"], Decimal("500000.00"))
+        self.assertEqual(by_name["Direktor"]["gross_entitled"], Decimal("300000.00"))
+        self.assertEqual(by_name["Direktor"]["reinvestment_cut"], Decimal("0.00"))
+        self.assertEqual(by_name["Direktor"]["entitled"], Decimal("300000.00"))
+        self.assertEqual(ledger["distributable"], Decimal("800000.00"))
+        self.assertEqual(ledger["reinvestment_partner"].name, "Uchreditel")
 
     def test_cancel_ticket_and_ooo(self):
         ticket = MaintenanceTicket.objects.create(

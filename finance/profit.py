@@ -51,10 +51,18 @@ def period_bounds(period: ProfitPeriod, *, today: date | None = None) -> tuple[d
     return period.started_on, end
 
 
+def _major_share_partner(partners: list[ProfitPartner]) -> ProfitPartner | None:
+    """Ulushi eng katta sherik (teng bo‘lsa — eng kichik pk)."""
+    if not partners:
+        return None
+    return max(partners, key=lambda p: (_q(p.share_percent), -p.pk))
+
+
 def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=None) -> dict:
     """
-    Sof (operatsion) = tushum − joriy rasxod − oylik − komissiya − ombor …
-    Reinvestitsiya Sofga kirmaydi; taqsimlash: Sof − reinvestitsiya.
+    Sof = tushum − joriy rasxod − oylik − komissiya − ombor …
+    Ulushlar sof foydadan. Reinvestitsiya Sofga kirmaydi — ulushi eng katta
+    sherikning ulushidan ayiriladi (qolganlar to‘liq foizini oladi).
     """
     from reports.accounting import cash_pnl_for_range, reinvestment_in_range
 
@@ -63,7 +71,8 @@ def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=No
     pnl = cash_pnl_for_range(tenant, start, end, hotel=hotel)
     operating_net = _q(pnl["net"])
     reinvestment = _q(reinvestment_in_range(tenant, start, end, hotel=hotel))
-    net = _q(operating_net - reinvestment)
+    # net = sof foyda (ulushlar shundan); reinvest alohida — major sherikdan
+    net = operating_net
 
     withdrawals = (
         ProfitWithdrawal.objects.filter(tenant=tenant, period=period)
@@ -78,16 +87,16 @@ def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=No
 
     partners = list(active_partners(tenant))
     share_sum = sum((_q(p.share_percent) for p in partners), ZERO)
+    major = _major_share_partner(partners) if reinvestment > 0 else None
     rows = []
     entitled_total = ZERO
     withdrawn_total = ZERO
     remaining_total = ZERO
     for p in partners:
         pct = _q(p.share_percent)
-        entitled = _q(net * pct / HUNDRED) if net > 0 else ZERO
-        # Zarar bo‘lsa ulush ham manfiy ko‘rinadi (moslashuvchan)
-        if net < 0:
-            entitled = _q(net * pct / HUNDRED)
+        gross = _q(net * pct / HUNDRED) if net != 0 else ZERO
+        reinvest_cut = _q(reinvestment) if major is not None and p.pk == major.pk else ZERO
+        entitled = _q(gross - reinvest_cut)
         withdrawn = withdrawn_by_partner.get(p.pk, ZERO)
         remaining = _q(entitled - withdrawn)
         entitled_total += entitled
@@ -97,9 +106,12 @@ def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=No
             {
                 "partner": p,
                 "share_percent": pct,
+                "gross_entitled": gross,
+                "reinvestment_cut": reinvest_cut,
                 "entitled": entitled,
                 "withdrawn": withdrawn,
                 "remaining": remaining,
+                "bears_reinvestment": bool(reinvest_cut),
             }
         )
 
@@ -114,9 +126,12 @@ def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=No
             {
                 "partner": partner,
                 "share_percent": _q(partner.share_percent),
+                "gross_entitled": ZERO,
+                "reinvestment_cut": ZERO,
                 "entitled": ZERO,
                 "withdrawn": amt,
                 "remaining": _q(ZERO - amt),
+                "bears_reinvestment": False,
                 "inactive": True,
             }
         )
@@ -126,7 +141,8 @@ def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=No
     entitled_total = _q(entitled_total)
     withdrawn_total = _q(withdrawn_total)
     remaining_total = _q(remaining_total)
-    undistributed = _q(net - entitled_total) if net >= 0 else ZERO
+    distributable = entitled_total
+    undistributed = _q(net - sum((_q(r["gross_entitled"]) for r in rows if not r.get("inactive")), ZERO)) if net >= 0 else ZERO
     share_gap = _q(HUNDRED - share_sum) if share_sum < HUNDRED else ZERO
 
     # Next-step hints for the UI
@@ -189,8 +205,9 @@ def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=No
         "pnl": pnl,
         "operating_net": operating_net,
         "reinvestment": reinvestment,
+        "reinvestment_partner": major,
         "net": net,
-        "distributable": net,
+        "distributable": distributable,
         "share_sum": share_sum,
         "share_ok": share_sum == HUNDRED,
         "share_gap": share_gap,

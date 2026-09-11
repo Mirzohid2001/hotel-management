@@ -9,9 +9,13 @@
       <h1>{% trans "Foyda ulushi" %}</h1>
       <p class="report-hero-sub">
         {% trans "Davr" %}: {{ ledger.start }} → {{ ledger.end }}
-        · {% trans "Taqsimlanadigan" %}: <strong class="money">{{ ledger.net|money }}</strong>
+        · {% trans "Sof foyda" %}: <strong class="money">{{ ledger.net|money }}</strong>
+        · {% trans "Taqsimlanadigan" %}: <strong class="money">{{ ledger.distributable|money }}</strong>
         {% if ledger.reinvestment %}
         · {% trans "Reinvestitsiya" %}: <strong class="money">−{{ ledger.reinvestment|money }}</strong>
+        {% if ledger.reinvestment_partner %}
+        ({% blocktrans with name=ledger.reinvestment_partner.name %}{{ name }} ulushidan{% endblocktrans %})
+        {% endif %}
         {% endif %}
       </p>
     </div>
@@ -67,10 +71,13 @@
     <div class="dash-pnl-item">
       <span>{% trans "Reinvestitsiya" %}</span>
       <strong class="money">−{{ ledger.reinvestment|money }}</strong>
+      {% if ledger.reinvestment_partner %}
+      <span class="muted" style="display:block;font-size:.85em">{% blocktrans with name=ledger.reinvestment_partner.name %}{{ name }} ulushidan{% endblocktrans %}</span>
+      {% endif %}
     </div>
     <div class="dash-pnl-item dash-pnl-net">
       <span>{% trans "Taqsimlanadigan" %}</span>
-      <strong class="money">{{ ledger.net|money }}</strong>
+      <strong class="money">{{ ledger.distributable|money }}</strong>
     </div>
   </div>
 
@@ -95,7 +102,13 @@
           <a class="btn-ghost btn-sm" href="{% url 'finance:profit_partner_edit' row.partner.pk %}">{% trans "Tahrirlash" %}</a>
         </span>
         <span class="muted">
+          {% if row.reinvestment_cut %}
+          {% trans "Ulush" %}: <span class="money">{{ row.gross_entitled|money }}</span>
+          − {% trans "Reinvestitsiya" %} <span class="money">{{ row.reinvestment_cut|money }}</span>
+          = <span class="money">{{ row.entitled|money }}</span>
+          {% else %}
           {% trans "Ulush" %}: <span class="money">{{ row.entitled|money }}</span>
+          {% endif %}
           · {% trans "Olingan" %}: <span class="money">{{ row.withdrawn|money }}</span>
           · {% trans "Qoldiq" %}: <strong class="money">{{ row.remaining|money }}</strong>
         </span>
