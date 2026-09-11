@@ -252,6 +252,35 @@ class AccountingReportsTests(TestCase):
         self.assertEqual(month_pnl["emehmon_shortfall"], Decimal("9000"))
         self.assertEqual(month_pnl["guest_payments"], Decimal("100000"))
 
+    def test_reinvestment_excluded_from_pnl_net(self):
+        """Reinvestitsiya Sof/P&Ldan ayirilmaydi — faqat foyda ulushida."""
+        from maintenance.services import record_maintenance_spend
+        from reports.accounting import build_pnl_report, cash_pnl_for_range
+
+        before = build_pnl_report(
+            self.tenant, self.today.year, self.today.month, basis="cash"
+        )
+        record_maintenance_spend(
+            self.tenant,
+            self.user,
+            hotel=self.prop,
+            title="Katta remont",
+            amount=Decimal("5000000"),
+            expense_date=self.today,
+            funding=Expense.Funding.REINVESTMENT,
+        )
+        after = build_pnl_report(
+            self.tenant, self.today.year, self.today.month, basis="cash"
+        )
+        self.assertEqual(after["expenses_total"], before["expenses_total"])
+        self.assertEqual(after["net"], before["net"])
+        self.assertEqual(after["reinvestment"], Decimal("5000000"))
+        self.assertEqual(after["operating_costs"], before["operating_costs"])
+
+        ranged = cash_pnl_for_range(self.tenant, self.today, self.today)
+        self.assertEqual(ranged["reinvestment"], Decimal("5000000"))
+        self.assertEqual(ranged["net"], after["net"])
+
     def test_flash_and_guest_ar(self):
         flash = build_daily_flash(self.tenant, self.today)
         self.assertEqual(flash["day"], self.today)

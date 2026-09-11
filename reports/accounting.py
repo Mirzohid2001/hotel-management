@@ -328,6 +328,7 @@ def _operating_bundle(
 def cash_pnl_for_range(tenant, start: date, end: date, *, hotel=None) -> dict:
     """Naqd sof: tushum − rasxod − oylik − komissiya − ombor − E-mehmon farq.
     Xodim avansi (qarz) sofga kirmaydi — alohida `advances` maydonida qaytariladi.
+    Reinvestitsiya sofga kirmaydi — faqat `reinvestment` (foyda ulushi) da.
     """
     from bookings.emehmon import emehmon_shortfall_for_range
 
@@ -342,6 +343,7 @@ def cash_pnl_for_range(tenant, start: date, end: date, *, hotel=None) -> dict:
             tenant, start, end, hotel=hotel
         ),
     )
+    reinvestment = reinvestment_in_range(tenant, start, end, hotel=hotel)
     return {
         "start": start,
         "end": end,
@@ -349,6 +351,7 @@ def cash_pnl_for_range(tenant, start: date, end: date, *, hotel=None) -> dict:
         "guest_payments": rev["guest_payments"],
         "company_payments": rev["company_payments"],
         **costs,
+        "reinvestment": reinvestment,
         "net": rev["total"] - costs["operating_costs"],
     }
 
@@ -385,6 +388,7 @@ def build_pnl_report(tenant, year: int, month: int, *, basis="cash", hotel=None)
         inventory=inventory_cost_in_month(tenant, year, month, hotel=hotel),
         emehmon_shortfall=shortfall,
     )
+    reinvestment = reinvestment_in_range(tenant, start, end, hotel=hotel)
     cost_breakdown = list(exp["breakdown"])
     if costs["payroll"]:
         cost_breakdown.append({"label": _("Mehnat (yalpi)"), "amount": costs["payroll"]})
@@ -412,6 +416,8 @@ def build_pnl_report(tenant, year: int, month: int, *, basis="cash", hotel=None)
         "revenue_breakdown": revenue_breakdown,
         "expenses_breakdown": cost_breakdown,
         **costs,
+        "reinvestment": reinvestment,
+        # Sof = tushum − operatsion; reinvestitsiya bu yerga kirmaydi
         "net": revenue_total - costs["operating_costs"],
     }
 

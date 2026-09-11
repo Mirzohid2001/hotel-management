@@ -64,11 +64,43 @@
       <span>{% trans "Mehnat" %}</span>
       <strong class="money">{{ report.labor_total|money }}</strong>
     </div>
+    <div class="dash-pnl-item">
+      <span>{% trans "Komissiya" %}</span>
+      <strong class="money">{{ report.commission|money }}</strong>
+    </div>
+    {% if report.inventory_cost %}
+    <div class="dash-pnl-item">
+      <span>{% trans "Ombor" %}</span>
+      <strong class="money">{{ report.inventory_cost|money }}</strong>
+    </div>
+    {% endif %}
+    {% if report.emehmon_shortfall %}
+    <div class="dash-pnl-item">
+      <span>{% trans "E-mehmon farq" %}</span>
+      <strong class="money">{{ report.emehmon_shortfall|money }}</strong>
+    </div>
+    {% endif %}
     <div class="dash-pnl-item dash-pnl-net">
       <span>{% trans "Sof" %}</span>
       <strong class="money">{{ report.net|money }} {{ current_tenant.currency }}</strong>
     </div>
   </div>
+
+  {% if report.reinvestment %}
+  <p class="muted panel mb-md" style="margin-top:0.75rem">
+    {% trans "Reinvestitsiya" %}: <strong class="money">{{ report.reinvestment|money }}</strong>
+    — {% trans "Sof foydaga kirmaydi; foyda ulushida ulushi katta sherikdan ayiriladi." %}
+    <a href="{% url 'finance:profit_share' %}">{% trans "Foyda ulushi" %}</a>
+  </p>
+  {% endif %}
+
+  <p class="muted report-footnote" style="margin-bottom:1rem">
+    {% trans "Sof" %} =
+    {% trans "Tushum" %} − {% trans "Rasxod" %} − {% trans "Mehnat" %} − {% trans "Komissiya" %}
+    {% if report.inventory_cost %} − {% trans "Ombor" %}{% endif %}
+    {% if report.emehmon_shortfall %} − {% trans "E-mehmon farq" %}{% endif %}
+    · {% trans "Jami operatsion" %}: <strong class="money">{{ report.operating_costs|money }}</strong>
+  </p>
 
   <section class="section-panel pnl-charts-panel">
     <div class="dash-section-head">
