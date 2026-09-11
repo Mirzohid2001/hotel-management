@@ -216,6 +216,125 @@ def build_profit_receipt(ledger: dict) -> dict:
     }
 
 
+def serialize_ledger_snapshot(ledger: dict) -> dict:
+    """Yopilgan davr uchun JSON-serializable tarix snaypi."""
+    receipt = ledger.get("receipt") or {}
+    pnl = ledger.get("pnl") or {}
+
+    def _sec(section: dict) -> dict:
+        return {
+            "key": section.get("key"),
+            "title": str(section.get("title") or ""),
+            "hint": str(section.get("hint") or ""),
+            "lines": [
+                {
+                    "sign": line.get("sign"),
+                    "label": str(line.get("label") or ""),
+                    "amount": str(line.get("amount") or "0"),
+                    "tone": line.get("tone") or "",
+                    "note": str(line.get("note") or ""),
+                }
+                for line in (section.get("lines") or [])
+            ],
+        }
+
+    return {
+        "net": str(ledger.get("net") or ZERO),
+        "operating_net": str(ledger.get("operating_net") or ZERO),
+        "reinvestment": str(ledger.get("reinvestment") or ZERO),
+        "distributable": str(ledger.get("distributable") or ZERO),
+        "revenue_total": str(pnl.get("revenue_total") or ZERO),
+        "operating_costs": str(pnl.get("operating_costs") or ZERO),
+        "reinvestment_partner": (
+            ledger["reinvestment_partner"].name
+            if ledger.get("reinvestment_partner")
+            else ""
+        ),
+        "receipt": {
+            "title": str(receipt.get("title") or ""),
+            "start": str(ledger.get("start") or ""),
+            "end": str(ledger.get("end") or ""),
+            "sections": [_sec(s) for s in (receipt.get("sections") or [])],
+        },
+        "partners": [
+            {
+                "name": row["partner"].name,
+                "share_percent": str(row.get("share_percent") or ZERO),
+                "gross_entitled": str(row.get("gross_entitled") or ZERO),
+                "reinvestment_cut": str(row.get("reinvestment_cut") or ZERO),
+                "entitled": str(row.get("entitled") or ZERO),
+                "withdrawn": str(row.get("withdrawn") or ZERO),
+                "remaining": str(row.get("remaining") or ZERO),
+            }
+            for row in (ledger.get("rows") or [])
+            if not row.get("inactive")
+        ],
+    }
+
+
+def ledger_from_period(tenant, period: ProfitPeriod, *, hotel=None) -> dict:
+    """
+    Yopilgan davr: snayp bo‘lsa undan; aks holda qayta hisob (eski davrlar).
+    """
+    if period.ended_on and period.receipt_snapshot:
+        snap = period.receipt_snapshot
+        # Minimal ledger shape for templates
+        receipt = snap.get("receipt") or {}
+        # Rehydrate Decimal amounts in lines for money filter
+        sections = []
+        for sec in receipt.get("sections") or []:
+            lines = []
+            for line in sec.get("lines") or []:
+                lines.append(
+                    {
+                        **line,
+                        "amount": _q(line.get("amount")),
+                    }
+                )
+            sections.append({**sec, "lines": lines})
+        partners = []
+        for p in snap.get("partners") or []:
+            partners.append(
+                {
+                    "name": p.get("name"),
+                    "share_percent": _q(p.get("share_percent")),
+                    "gross_entitled": _q(p.get("gross_entitled")),
+                    "reinvestment_cut": _q(p.get("reinvestment_cut")),
+                    "entitled": _q(p.get("entitled")),
+                    "withdrawn": _q(p.get("withdrawn")),
+                    "remaining": _q(p.get("remaining")),
+                    "from_snapshot": True,
+                }
+            )
+        return {
+            "period": period,
+            "start": period.started_on,
+            "end": period.ended_on,
+            "net": _q(snap.get("net") or period.net_snapshot),
+            "operating_net": _q(snap.get("operating_net") or period.net_snapshot),
+            "reinvestment": _q(snap.get("reinvestment") or period.reinvestment_snapshot),
+            "distributable": _q(
+                snap.get("distributable") or period.distributable_snapshot
+            ),
+            "pnl": {
+                "revenue_total": _q(snap.get("revenue_total") or period.revenue_snapshot),
+                "operating_costs": _q(
+                    snap.get("operating_costs") or period.operating_snapshot
+                ),
+            },
+            "receipt": {**receipt, "sections": sections},
+            "snapshot_partners": partners,
+            "from_snapshot": True,
+            "rows": [],
+            "withdrawals": list(
+                ProfitWithdrawal.objects.filter(tenant=tenant, period=period)
+                .select_related("partner")
+                .order_by("-paid_on", "-id")[:40]
+            ),
+        }
+    return build_partner_ledger(tenant, period=period, hotel=hotel)
+
+
 def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=None) -> dict:
     """
     Sof = tushum − joriy rasxod − oylik − komissiya − ombor …
@@ -453,11 +572,17 @@ def reset_profit_period(
         raise ValidationError(_("Tugash sanasi boshlanishdan oldin bo‘lishi mumkin emas."))
 
     ledger = build_partner_ledger(tenant, period=period)
+    snap = serialize_ledger_snapshot(ledger)
     period.ended_on = end
     period.closed_at = timezone.now()
     period.closed_by = user
     period.note = note or period.note
     period.net_snapshot = ledger["net"]
+    period.revenue_snapshot = ledger["pnl"]["revenue_total"]
+    period.operating_snapshot = ledger["pnl"]["operating_costs"]
+    period.reinvestment_snapshot = ledger["reinvestment"]
+    period.distributable_snapshot = ledger["distributable"]
+    period.receipt_snapshot = snap
     period.save(
         update_fields=[
             "ended_on",
@@ -465,6 +590,11 @@ def reset_profit_period(
             "closed_by",
             "note",
             "net_snapshot",
+            "revenue_snapshot",
+            "operating_snapshot",
+            "reinvestment_snapshot",
+            "distributable_snapshot",
+            "receipt_snapshot",
             "updated_at",
         ]
     )

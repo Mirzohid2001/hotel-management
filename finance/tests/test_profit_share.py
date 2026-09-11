@@ -169,3 +169,20 @@ class ProfitShareTests(TestCase):
         sof_labels = " ".join(l["label"] for l in ledger["receipt"]["sections"][0]["lines"])
         self.assertIn("Tushum", sof_labels)
         self.assertIn("Sof foyda", sof_labels)
+
+    def test_closed_period_saves_receipt_snapshot(self):
+        closed, fresh = reset_profit_period(self.tenant, self.user, restart_today=True)
+        self.assertIsNotNone(closed.receipt_snapshot)
+        self.assertIn("receipt", closed.receipt_snapshot)
+        self.assertIsNotNone(closed.revenue_snapshot)
+        hist = self.client.get(reverse("finance:profit_history"))
+        self.assertEqual(hist.status_code, 200)
+        self.assertContains(hist, "Tarix")
+        detail = self.client.get(reverse("finance:profit_period_detail", args=[closed.pk]))
+        self.assertEqual(detail.status_code, 200)
+        self.assertTrue(detail.context["ledger"]["from_snapshot"])
+        print_resp = self.client.get(
+            reverse("finance:profit_share_print"), {"period": closed.pk}
+        )
+        self.assertEqual(print_resp.status_code, 200)
+        self.assertContains(print_resp, "Chop etish")

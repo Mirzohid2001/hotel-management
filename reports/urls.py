@@ -6,7 +6,9 @@ app_name = "reports"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
+    path("tarix/", views.report_history, name="history"),
     path("pnl/", views.pnl_report, name="pnl"),
+    path("pnl/chek/", views.pnl_print, name="pnl_print"),
     path("flash/", views.daily_flash, name="flash"),
     path("flash/print/", views.daily_flash_print, name="flash_print"),
     path("audit/", views.audit_log, name="audit_log"),

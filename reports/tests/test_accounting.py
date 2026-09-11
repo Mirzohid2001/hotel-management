@@ -373,6 +373,15 @@ class AccountingReportsTests(TestCase):
             reverse("reports:flash_print"), {"day": self.today.isoformat()}
         )
         self.assertEqual(resp.status_code, 200)
+        resp = self.client.get(reverse("reports:history"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Hisobotlar tarixi")
+        resp = self.client.get(
+            reverse("reports:pnl_print"),
+            {"year": self.today.year, "month": self.today.month},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "chek")
         self.assertContains(resp, "Kunlik hisobot")
         self.assertContains(resp, "Chop etish")
         resp = self.client.get(reverse("reports:export_ar"))

@@ -29,6 +29,7 @@ from .profit import (
     active_share_total,
     build_partner_ledger,
     ensure_open_period,
+    ledger_from_period,
     record_withdrawal,
     reset_profit_period,
 )
@@ -403,7 +404,7 @@ def vendor_toggle(request, pk):
 @role_required(*FINANCE)
 def profit_share(request):
     ledger = build_partner_ledger(tenant=request.tenant)
-    closed = ProfitPeriod.objects.filter(tenant=request.tenant, ended_on__isnull=False)[:8]
+    closed = ProfitPeriod.objects.filter(tenant=request.tenant, ended_on__isnull=False)[:12]
     return render(
         request,
         "finance/profit_share.html",
@@ -417,8 +418,56 @@ def profit_share(request):
 
 @feature_required("pnl")
 @role_required(*FINANCE)
+def profit_history(request):
+    """Yopilgan foyda davrlari — oy/yil tarixi."""
+    qs = ProfitPeriod.objects.filter(
+        tenant=request.tenant, ended_on__isnull=False
+    ).select_related("closed_by")
+    year = request.GET.get("year")
+    if year and str(year).isdigit():
+        qs = qs.filter(started_on__year=int(year))
+    years = (
+        ProfitPeriod.objects.filter(tenant=request.tenant, ended_on__isnull=False)
+        .dates("started_on", "year", order="DESC")
+    )
+    return render(
+        request,
+        "finance/profit_history.html",
+        {
+            "periods": qs[:100],
+            "years": [d.year for d in years],
+            "year": int(year) if year and str(year).isdigit() else None,
+        },
+    )
+
+
+@feature_required("pnl")
+@role_required(*FINANCE)
+def profit_period_detail(request, pk):
+    period = get_object_or_404(
+        ProfitPeriod, pk=pk, tenant=request.tenant, ended_on__isnull=False
+    )
+    ledger = ledger_from_period(request.tenant, period)
+    return render(
+        request,
+        "finance/profit_period_detail.html",
+        {"period": period, "ledger": ledger},
+    )
+
+
+@feature_required("pnl")
+@role_required(*FINANCE)
 def profit_share_print(request):
-    ledger = build_partner_ledger(tenant=request.tenant)
+    period_id = request.GET.get("period")
+    if period_id:
+        period = get_object_or_404(
+            ProfitPeriod, pk=period_id, tenant=request.tenant, ended_on__isnull=False
+        )
+        ledger = ledger_from_period(request.tenant, period)
+        title_note = _("Tarixiy davr")
+    else:
+        ledger = build_partner_ledger(tenant=request.tenant)
+        title_note = _("Joriy davr")
     return render(
         request,
         "finance/profit_share_print.html",
@@ -426,6 +475,7 @@ def profit_share_print(request):
             "ledger": ledger,
             "tenant_name": getattr(request.tenant, "name", "") or str(request.tenant),
             "currency": request.tenant.currency or "UZS",
+            "title_note": title_note,
         },
     )
 

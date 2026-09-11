@@ -106,6 +106,7 @@
     <h1>{% trans "Foyda ulushi — chek hisobot" %}</h1>
     <p class="meta">
       {% if tenant_name %}{{ tenant_name }} · {% endif %}
+      {% if title_note %}{{ title_note }} · {% endif %}
       {% trans "Davr" %}: {{ ledger.start }} → {{ ledger.end }}
       · {% trans "Valyuta" %}: {{ currency }}
     </p>

@@ -1,0 +1,76 @@
+{% load money_fmt i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "Foyda/zarar — chek" %} · {{ year }}-{{ month|stringformat:"02d" }}</title>
+  <style>
+    :root { --brand: #c04a00; --ink: #1a1410; --muted: #7a7168; --line: #ddd4c8; }
+    * { box-sizing: border-box; }
+    body { font-family: Georgia, "Times New Roman", serif; max-width: 720px; margin: 1.5rem auto; padding: 0 1rem 2.5rem; color: var(--ink); line-height: 1.45; }
+    h1 { font-size: 1.35rem; color: var(--brand); margin: 0 0 0.2rem; }
+    h2 { font-size: 1.05rem; margin: 1.25rem 0 0.35rem; }
+    .muted { color: var(--muted); }
+    .head { border-bottom: 2px solid var(--brand); padding-bottom: 0.75rem; margin-bottom: 1rem; }
+    .meta { margin: 0.15rem 0; font-size: 0.95rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 1rem 0; }
+    .cell { border: 1px solid var(--line); padding: 0.5rem 0.65rem; border-radius: 6px; }
+    .cell span { display: block; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; }
+    .cell strong { font-variant-numeric: tabular-nums; }
+    .cell.is-net { border-color: var(--brand); background: #fff8f3; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.5rem 0 1rem; }
+    th, td { text-align: left; padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .actions { margin: 0 0 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button, .actions a { background: var(--brand); color: #fff; border: 0; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font: inherit; text-decoration: none; }
+    .actions a.ghost { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
+    @media print { .actions { display: none !important; } body { margin: 0; max-width: none; } }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button type="button" onclick="window.print()">{% trans "Chop etish" %}</button>
+    <a class="ghost" href="{% url 'reports:pnl' %}?year={{ year }}&amp;month={{ month }}&amp;basis={{ basis }}">{% trans "Orqaga" %}</a>
+  </div>
+  <header class="head">
+    <h1>{% trans "Foyda/zarar — chek bayonnoma" %}</h1>
+    <p class="meta">{{ year }}-{{ month|stringformat:"02d" }} · {% if basis == 'accrual' %}{% trans "Hisoblangan" %}{% else %}{% trans "Naqd" %}{% endif %} · {{ currency }}</p>
+    {% if active_hotel %}<p class="meta muted">{{ active_hotel.display_label }}</p>{% endif %}
+  </header>
+
+  <div class="grid">
+    <div class="cell"><span>{% trans "Tushum" %}</span><strong>{{ report.revenue_total|money }}</strong></div>
+    <div class="cell"><span>{% trans "Rasxod" %}</span><strong>{{ report.expenses_total|money }}</strong></div>
+    <div class="cell"><span>{% trans "Mehnat" %}</span><strong>{{ report.labor_total|money }}</strong></div>
+    <div class="cell"><span>{% trans "Komissiya" %}</span><strong>{{ report.commission|money }}</strong></div>
+    {% if report.inventory_cost %}<div class="cell"><span>{% trans "Ombor" %}</span><strong>{{ report.inventory_cost|money }}</strong></div>{% endif %}
+    {% if report.emehmon_shortfall %}<div class="cell"><span>{% trans "E-mehmon farq" %}</span><strong>{{ report.emehmon_shortfall|money }}</strong></div>{% endif %}
+    <div class="cell"><span>{% trans "Operatsion jami" %}</span><strong>{{ report.operating_costs|money }}</strong></div>
+    <div class="cell is-net"><span>{% trans "Sof" %}</span><strong>{{ report.net|money }}</strong></div>
+  </div>
+  {% if report.reinvestment %}
+  <p class="muted">{% trans "Reinvestitsiya" %}: {{ report.reinvestment|money }} — {% trans "Sofga kirmaydi (foyda ulushidan)." %}</p>
+  {% endif %}
+
+  <h2>{% trans "Tushum tafsiloti" %}</h2>
+  <table>
+    <thead><tr><th>{% trans "Tur" %}</th><th class="num">{% trans "Summa" %}</th></tr></thead>
+    <tbody>
+      {% for row in report.revenue_breakdown %}
+      <tr><td>{{ row.label }}</td><td class="num">{{ row.amount|money }}</td></tr>
+      {% empty %}<tr><td colspan="2" class="muted">{% trans "Yo‘q" %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+
+  <h2>{% trans "Xarajat tafsiloti" %}</h2>
+  <table>
+    <thead><tr><th>{% trans "Tur" %}</th><th class="num">{% trans "Summa" %}</th></tr></thead>
+    <tbody>
+      {% for row in report.expenses_breakdown %}
+      <tr><td>{{ row.label }}</td><td class="num">{{ row.amount|money }}</td></tr>
+      {% empty %}<tr><td colspan="2" class="muted">{% trans "Yo‘q" %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

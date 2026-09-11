@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Foyda ulushi — tarix" %}{% endblock %}
+{% block content %}
+<div class="report-page">
+  <header class="report-hero pnl-hero">
+    <div class="report-hero-text">
+      <p class="eyebrow">{% trans "Moliya" %} · {% trans "Tarix" %}</p>
+      <h1>{% trans "Foyda ulushi — tarix" %}</h1>
+      <p class="report-hero-sub">
+        {% trans "Yopilgan davrlar: oy/yil natijalari va har birining chek bayonnomasi." %}
+      </p>
+    </div>
+    <div class="report-hero-actions">
+      <a class="btn-ghost" href="{% url 'finance:profit_share' %}">{% trans "Joriy davr" %}</a>
+      <a class="btn-ghost" href="{% url 'reports:history' %}">{% trans "Barcha hisobotlar" %}</a>
+    </div>
+  </header>
+
+  <form method="get" class="filter-panel report-filter" role="search">
+    <div class="filter-panel-grid">
+      <label class="filter-field">
+        <span class="filter-field-label">{% trans "Yil" %}</span>
+        <select name="year" onchange="this.form.submit()">
+          <option value="">{% trans "Barcha yillar" %}</option>
+          {% for y in years %}
+          <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+  </form>
+
+  <section class="section-panel">
+    <ul class="list report-breakdown">
+      {% for p in periods %}
+      <li class="guest-chip">
+        <span>
+          <strong>{{ p.started_on|date:"d.m.Y" }} → {{ p.ended_on|date:"d.m.Y" }}</strong>
+          {% if p.note %}<span class="muted"> · {{ p.note }}</span>{% endif %}
+          {% if p.closed_at %}<span class="muted"> · {{ p.closed_at|date:"d.m.Y H:i" }}</span>{% endif %}
+        </span>
+        <span>
+          <span class="money">{% if p.net_snapshot is not None %}{{ p.net_snapshot|money }}{% else %}—{% endif %}</span>
+          <a class="btn-ghost btn-sm" href="{% url 'finance:profit_period_detail' p.pk %}">{% trans "Ochish" %}</a>
+          <a class="btn btn-sm" href="{% url 'finance:profit_share_print' %}?period={{ p.pk }}" target="_blank" rel="noopener">{% trans "Chek" %}</a>
+        </span>
+      </li>
+      {% empty %}
+      {% include "includes/empty_state.html" with as_li=1 title=_("Hali yopilgan davr yo‘q") hint=_("«0 qilib qayta» qilsangiz, joriy natija shu yerga saqlanadi.") %}
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

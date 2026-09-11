@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Foyda davri" %} · {{ period.started_on }} → {{ period.ended_on }}{% endblock %}
+{% block content %}
+<div class="report-page profit-share-page">
+  <header class="report-hero pnl-hero">
+    <div class="report-hero-text">
+      <p class="eyebrow">{% trans "Tarix" %} · {% trans "Yopilgan davr" %}</p>
+      <h1>{{ period.started_on|date:"d.m.Y" }} → {{ period.ended_on|date:"d.m.Y" }}</h1>
+      <p class="report-hero-sub">
+        {% if ledger.from_snapshot %}{% trans "Saqlangan snayp (o‘zgarmaydi)" %}{% else %}{% trans "Qayta hisoblangan" %}{% endif %}
+        · {% trans "Sof" %}: <strong class="money">{{ ledger.net|money }}</strong>
+        · {% trans "Taqsimlanadigan" %}: <strong class="money">{{ ledger.distributable|money }}</strong>
+      </p>
+    </div>
+    <div class="report-hero-actions">
+      <a class="btn-ghost" href="{% url 'finance:profit_history' %}">{% trans "Tarix" %}</a>
+      <a class="btn" href="{% url 'finance:profit_share_print' %}?period={{ period.pk }}" target="_blank" rel="noopener">{% trans "Chek bayonnoma" %}</a>
+    </div>
+  </header>
+
+  <div class="dash-pnl-row pnl-summary-row">
+    <div class="dash-pnl-item">
+      <span>{% trans "Tushum" %}</span>
+      <strong class="money">{{ ledger.pnl.revenue_total|money }}</strong>
+    </div>
+    <div class="dash-pnl-item">
+      <span>{% trans "Operatsion jami" %}</span>
+      <strong class="money">{{ ledger.pnl.operating_costs|money }}</strong>
+    </div>
+    <div class="dash-pnl-item">
+      <span>{% trans "Sof foyda" %}</span>
+      <strong class="money">{{ ledger.operating_net|money }}</strong>
+    </div>
+    <div class="dash-pnl-item">
+      <span>{% trans "Reinvestitsiya" %}</span>
+      <strong class="money">−{{ ledger.reinvestment|money }}</strong>
+    </div>
+    <div class="dash-pnl-item dash-pnl-net">
+      <span>{% trans "Taqsimlanadigan" %}</span>
+      <strong class="money">{{ ledger.distributable|money }}</strong>
+    </div>
+  </div>
+
+  {% if ledger.snapshot_partners %}
+  <section class="section-panel stack-gap">
+    <div class="dash-section-head"><h2>{% trans "Sheriklar (snayp)" %}</h2></div>
+    <ul class="list report-breakdown">
+      {% for row in ledger.snapshot_partners %}
+      <li class="guest-chip">
+        <span><strong>{{ row.name }}</strong> · {{ row.share_percent }}%</span>
+        <span class="muted">
+          {% if row.reinvestment_cut %}
+          {% trans "Ulush" %} {{ row.gross_entitled|money }} − {% trans "Reinvest" %} {{ row.reinvestment_cut|money }} = {{ row.entitled|money }}
+          {% else %}
+          {% trans "Ulush" %} {{ row.entitled|money }}
+          {% endif %}
+          · {% trans "Olingan" %} {{ row.withdrawn|money }}
+          · {% trans "Qoldiq" %} <strong class="money">{{ row.remaining|money }}</strong>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if ledger.receipt %}
+  <section class="section-panel stack-gap profit-receipt-panel">
+    <div class="dash-section-head">
+      <h2>{% trans "Chek hisobot" %}</h2>
+    </div>
+    {% for section in ledger.receipt.sections %}
+    <div class="profit-receipt-block">
+      <h3 class="profit-receipt-title">{{ section.title }}</h3>
+      {% if section.hint %}<p class="muted profit-receipt-hint">{{ section.hint }}</p>{% endif %}
+      <ul class="list profit-receipt-list">
+        {% for line in section.lines %}
+        <li class="profit-receipt-line {% if line.tone %}is-{{ line.tone }}{% endif %}">
+          <span class="profit-receipt-sign">{{ line.sign }}</span>
+          <span class="profit-receipt-label">
+            {{ line.label }}
+            {% if line.note %}<span class="muted"> · {{ line.note }}</span>{% endif %}
+          </span>
+          <strong class="money profit-receipt-amt">{% if line.sign == "−" %}−{% endif %}{{ line.amount|money }}</strong>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

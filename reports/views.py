@@ -128,6 +128,76 @@ def pnl_report(request):
 
 @feature_required("pnl")
 @role_required(*ACCOUNTING)
+def pnl_print(request):
+    tenant = request.tenant
+    hotel = getattr(request, "active_property", None)
+    today = timezone.localdate()
+    year = int(request.GET.get("year", today.year))
+    month = int(request.GET.get("month", today.month))
+    basis = request.GET.get("basis", "cash")
+    report = build_pnl_report(tenant, year, month, basis=basis, hotel=hotel)
+    return render(
+        request,
+        "reports/pnl_print.html",
+        {
+            "report": report,
+            "year": year,
+            "month": month,
+            "basis": basis,
+            "active_hotel": hotel,
+            "currency": tenant.currency or "UZS",
+        },
+    )
+
+
+@feature_required("pnl")
+@role_required(*ACCOUNTING)
+def report_history(request):
+    """Oy/yil bo‘yicha barcha hisobotlar va cheklar indeksi."""
+    from calendar import monthrange
+
+    from finance.models import ProfitPeriod
+
+    today = timezone.localdate()
+    year = int(request.GET.get("year", today.year))
+    years = list(range(today.year, today.year - 6, -1))
+    if year not in years:
+        years.insert(0, year)
+    months = []
+    for num in range(1, 13):
+        last = monthrange(year, num)[1]
+        # Flash: oy oxiri yoki bugun (joriy oy)
+        flash_day = date(year, num, last)
+        if year == today.year and num == today.month:
+            flash_day = today
+        elif date(year, num, 1) > today:
+            continue
+        months.append(
+            {
+                "num": num,
+                "label": MONTHS[num],
+                "flash_day": flash_day.isoformat(),
+            }
+        )
+    profit_periods = ProfitPeriod.objects.filter(
+        tenant=request.tenant,
+        ended_on__isnull=False,
+        started_on__year=year,
+    ).order_by("-started_on")[:40]
+    return render(
+        request,
+        "reports/history.html",
+        {
+            "year": year,
+            "years": years,
+            "months": months,
+            "profit_periods": profit_periods,
+        },
+    )
+
+
+@feature_required("pnl")
+@role_required(*ACCOUNTING)
 def daily_flash(request):
     tenant = request.tenant
     hotel = getattr(request, "active_property", None)

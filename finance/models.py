@@ -181,6 +181,23 @@ class ProfitPeriod(TenantOwnedModel):
     net_snapshot = models.DecimalField(
         max_digits=14, decimal_places=2, null=True, blank=True
     )
+    revenue_snapshot = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    operating_snapshot = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    reinvestment_snapshot = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    distributable_snapshot = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True
+    )
+    receipt_snapshot = models.JSONField(
+        null=True,
+        blank=True,
+        help_text=_("Yopilgandagi chek hisobot (tarix uchun)."),
+    )
 
     class Meta:
         ordering = ["-started_on", "-id"]

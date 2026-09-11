@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Hisobotlar tarixi" %}{% endblock %}
+{% block content %}
+<div class="report-page">
+  <header class="report-hero pnl-hero">
+    <div class="report-hero-text">
+      <p class="eyebrow">{% trans "Hisob-kitob" %} · {% trans "Tarix" %}</p>
+      <h1>{% trans "Hisobotlar tarixi" %}</h1>
+      <p class="report-hero-sub">
+        {% trans "Oy/yil bo‘yicha P&L, kunlik, komissiya, E-mehmon, remont va foyda ulushi — har biri o‘z chek/bayonnomasi bilan." %}
+      </p>
+    </div>
+  </header>
+
+  <form method="get" class="filter-panel report-filter" role="search">
+    <div class="filter-panel-grid">
+      <label class="filter-field">
+        <span class="filter-field-label">{% trans "Yil" %}</span>
+        <select name="year" onchange="this.form.submit()">
+          {% for y in years %}
+          <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+  </form>
+
+  <section class="section-panel">
+    <div class="dash-section-head"><h2>{{ year }} {% trans "yil — oylar" %}</h2></div>
+    <ul class="list report-breakdown">
+      {% for m in months %}
+      <li class="guest-chip" style="flex-wrap:wrap;gap:0.5rem">
+        <span><strong>{{ m.label }}</strong></span>
+        <span style="display:flex;flex-wrap:wrap;gap:0.35rem">
+          <a class="btn-ghost btn-sm" href="{% url 'reports:pnl' %}?year={{ year }}&amp;month={{ m.num }}&amp;basis=cash">{% trans "P&L" %}</a>
+          <a class="btn btn-sm" href="{% url 'reports:pnl_print' %}?year={{ year }}&amp;month={{ m.num }}&amp;basis=cash" target="_blank" rel="noopener">{% trans "P&L chek" %}</a>
+          <a class="btn-ghost btn-sm" href="{% url 'reports:flash' %}?day={{ m.flash_day }}">{% trans "Kunlik" %}</a>
+          <a class="btn-ghost btn-sm" href="{% url 'bookings:commission_report' %}?year={{ year }}&amp;month={{ m.num }}">{% trans "Komissiya" %}</a>
+          <a class="btn-ghost btn-sm" href="{% url 'bookings:emehmon_report' %}?year={{ year }}&amp;month={{ m.num }}">{% trans "E-mehmon" %}</a>
+          <a class="btn-ghost btn-sm" href="{% url 'bookings:emehmon_statement' %}?year={{ year }}&amp;month={{ m.num }}" target="_blank" rel="noopener">{% trans "E-mehmon chek" %}</a>
+          <a class="btn-ghost btn-sm" href="{% url 'maintenance:statement' %}?year={{ year }}&amp;month={{ m.num }}" target="_blank" rel="noopener">{% trans "Remont bayonnoma" %}</a>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="section-panel stack-gap">
+    <div class="dash-section-head">
+      <h2>{% trans "Foyda ulushi davrlari" %}</h2>
+      <a class="btn btn-sm" href="{% url 'finance:profit_history' %}?year={{ year }}">{% trans "Barcha davrlar" %}</a>
+    </div>
+    <ul class="list report-breakdown">
+      {% for p in profit_periods %}
+      <li class="guest-chip">
+        <span>{{ p.started_on|date:"d.m.Y" }} → {{ p.ended_on|date:"d.m.Y" }}</span>
+        <span>
+          <a class="btn-ghost btn-sm" href="{% url 'finance:profit_period_detail' p.pk %}">{% trans "Ochish" %}</a>
+          <a class="btn btn-sm" href="{% url 'finance:profit_share_print' %}?period={{ p.pk }}" target="_blank" rel="noopener">{% trans "Chek" %}</a>
+        </span>
+      </li>
+      {% empty %}
+      <li class="muted">{% trans "Bu yilda yopilgan foyda davri yo‘q." %}</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}
