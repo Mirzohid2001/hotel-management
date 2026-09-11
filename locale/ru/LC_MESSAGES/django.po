@@ -20,25 +20,22 @@ msgstr ""
 
 #: accounts/admin.py:11
 msgid "Qo‘shimcha · Дополнительно"
-msgstr ""
+msgstr "Дополнительно"
 
 #: accounts/forms.py:10
-#, fuzzy
 #| msgid "Yangi bron"
 msgid "Yangi parol"
-msgstr "Новая бронь"
+msgstr "Новый пароль"
 
 #: accounts/forms.py:13
-#, fuzzy
 #| msgid "Bo‘sh qoldirilsa — barcha filiallarga ruxsat."
 msgid "Bo‘sh qoldirsangiz — parol o‘zgarmaydi."
-msgstr "Если пусто — доступ ко всем филиалам."
+msgstr "Если оставить пустым — пароль не изменится."
 
 #: accounts/forms.py:16
-#, fuzzy
 #| msgid "Sanalarni tanlang"
 msgid "Parolni takrorlang"
-msgstr "Выберите даты"
+msgstr "Повторите пароль"
 
 #: accounts/forms.py:25 bookings/forms.py:104 bookings/forms.py:124
 #: bookings/forms.py:375 finance/forms.py:113 finance/models.py:142
@@ -71,67 +68,62 @@ msgid "Telefon"
 msgstr "Телефон"
 
 #: accounts/forms.py:37
-#, fuzzy
 #| msgid "Guruhga kamida bitta xona qo‘shing."
 msgid "Parol kamida 8 belgidan iborat bo‘lsin."
-msgstr "Добавьте в группу хотя бы один номер."
+msgstr "Пароль должен содержать не менее 8 символов."
 
 #: accounts/forms.py:39
-#, fuzzy
 #| msgid "Xona turi mos kelmaydi."
 msgid "Parollar mos kelmadi."
-msgstr "Тип номера не совпадает."
+msgstr "Пароли не совпадают."
 
 #: accounts/views.py:49
-#, fuzzy
 #| msgid "Rol yangilandi."
 msgid "Profil yangilandi."
-msgstr "Роль обновлена."
+msgstr "Профиль обновлён."
 
 #: accounts/views.py:56
-#, fuzzy
 #| msgid "Sherikni tahrirlash"
 msgid "Profilni tahrirlash"
-msgstr "Редактировать партнёра"
+msgstr "Редактировать профиль"
 
 #: accounts/views.py:59
 msgid ""
 "Akkauntingiz o‘chirilsinmi? Tizimga kira olmaysiz. Bu amalni qaytarib "
 "bo‘lmaydi."
-msgstr ""
+msgstr "Удалить ваш аккаунт? Вы не сможете войти. Это действие необратимо."
 
 #: accounts/views.py:83
 msgid ""
 "Yagona admin akkauntini o‘chirib bo‘lmaydi. Avval boshqa admin qo‘shing."
 msgstr ""
+"Нельзя удалить единственный аккаунт администратора. Сначала добавьте другого"
+" админа."
 
 #: accounts/views.py:91
-#, fuzzy
 #| msgid "Rasxod o‘chirildi."
 msgid "Akkaunt o‘chirildi."
-msgstr "Расход удалён."
+msgstr "Аккаунт удалён."
 
 #: bookings/commission.py:107
-#, fuzzy
 #| msgid "Xodim ushbu mehmonxonaga tegishli emas."
 msgid "Yo‘naltiruvchi ushbu mehmonxonaga tegishli emas."
-msgstr "Сотрудник не принадлежит этому отелю."
+msgstr "Направляющий не относится к этой гостинице."
 
 #: bookings/commission.py:110
-#, fuzzy
 #| msgid "Avans summasi musbat bo‘lishi kerak."
 msgid "Summa musbat bo‘lishi kerak."
-msgstr "Сумма аванса должна быть положительной."
+msgstr "Сумма должна быть положительной."
 
 #: bookings/commission.py:123
-#, fuzzy, python-format
+#, python-format
 #| msgid "Ulush qoldig‘idan ko‘p: qolgan %(r)s, so‘ralgan %(a)s."
 msgid "Qolgan summadan ko‘p: qolgan %(r)s %(cur)s, so‘ralgan %(a)s %(pay)s."
-msgstr "Больше остатка доли: осталось %(r)s, запрошено %(a)s."
+msgstr "Больше остатка: осталось %(r)s %(cur)s, запрошено %(a)s %(pay)s."
 
 #: bookings/forms.py:36 templates/bookings/reservation_detail.html:101
 msgid "E-mehmon komissiyasini olish"
-msgstr ""
+msgstr "Принять комиссию E-mehmon"
 
 #: bookings/forms.py:38
 #, python-format
@@ -139,10 +131,12 @@ msgid ""
 "Standart: yoqilgan. Hisob = %(u)s so‘m × kechalar × mehmonlar. O‘chirsangiz "
 "— bu mehmondan E-mehmon olinmaydi."
 msgstr ""
+"По умолчанию: включено. Счет = %(u)s сум × ночи × гости. Если вы отключите "
+"эту функцию, этот гость не получит электронного гостя."
 
 #: bookings/forms.py:48 templates/bookings/reservation_detail.html:107
 msgid "E-mehmon summasi"
-msgstr ""
+msgstr "Сумма E-mehmon"
 
 #: bookings/forms.py:61 bookings/models.py:92 finance/models.py:46
 #: finance/models.py:203 folio/models.py:180 reports/chart_data.py:135
@@ -177,20 +171,18 @@ msgid "O‘tkazma"
 msgstr "Перевод"
 
 #: bookings/forms.py:66
-#, fuzzy
 #| msgid "Mehmon to‘lovlari"
 msgid "E-mehmon to‘lov usuli"
-msgstr "Платежи гостей"
+msgstr "Способ оплаты E-mehmon"
 
 #: bookings/forms.py:85
 msgid "E-mehmon to‘lovini olish uchun summa kiriting."
-msgstr ""
+msgstr "Введите сумму для приёма оплаты E-mehmon."
 
 #: bookings/forms.py:106 bookings/forms.py:132
-#, fuzzy
 #| msgid "Standart"
 msgid "Standart foiz %"
-msgstr "Стандарт"
+msgstr "Стандартный процент %"
 
 #: bookings/forms.py:107 bookings/forms.py:161 bookings/forms.py:215
 #: bookings/forms.py:441 bookings/forms.py:596 bookings/forms.py:597
@@ -226,7 +218,7 @@ msgstr "Активно"
 
 #: bookings/forms.py:118 bookings/forms.py:133
 msgid "Bu odam orqali kelgan mehmonlar uchun odatdagi foiz."
-msgstr ""
+msgstr "Это типичный процент для личных посетителей."
 
 #: bookings/forms.py:143 finance/forms.py:30 finance/forms.py:129
 #: finance/models.py:213 folio/forms.py:38 folio/forms.py:77
@@ -286,10 +278,9 @@ msgid "Usul"
 msgstr "Способ"
 
 #: bookings/forms.py:176 folio/forms.py:63
-#, fuzzy
 #| msgid "Summa noto‘g‘ri."
 msgid "Valyuta noto‘g‘ri."
-msgstr "Неверная сумма."
+msgstr "Неверная валюта."
 
 #: bookings/forms.py:201 bookings/forms.py:572 bookings/forms.py:732
 #: templates/bookings/commission_report.html:88
@@ -315,11 +306,11 @@ msgstr "Компания"
 #: bookings/forms.py:203 bookings/forms.py:447
 #: templates/bookings/reservation_detail.html:43
 msgid "Kim orqali"
-msgstr ""
+msgstr "Через кого"
 
 #: bookings/forms.py:204 bookings/forms.py:456
 msgid "Yo‘naltiruvchi foizi %"
-msgstr ""
+msgstr "Процент направляющего %"
 
 #: bookings/forms.py:205 bookings/forms.py:733 properties/forms.py:121
 #: properties/forms.py:158 properties/views.py:225
@@ -351,7 +342,7 @@ msgstr "Номер"
 #: bookings/forms.py:207 bookings/forms.py:329 bookings/forms.py:416
 #: bookings/forms.py:577 bookings/forms.py:739
 msgid "Narx (1 kecha)"
-msgstr ""
+msgstr "Цена (1 ночь)"
 
 #: bookings/forms.py:209 bookings/forms.py:317 bookings/forms.py:716
 #: templates/accounts/login.html:4
@@ -403,36 +394,39 @@ msgstr "Статус"
 
 #: bookings/forms.py:218
 msgid "Kelishilgan bir kechalik summa. Jami = narx × kechalar."
-msgstr ""
+msgstr "Согласованная сумма за ночь. Итого = цена × ночи."
 
 #: bookings/forms.py:219 bookings/forms.py:425
 msgid "Narx shu valyutada — UZS, USD yoki EUR."
-msgstr ""
+msgstr "Цена в этой валюте — UZS, USD или EUR."
 
 #: bookings/forms.py:242 bookings/forms.py:448 bookings/views.py:962
-#, fuzzy
 #| msgid "So‘rov yo‘q"
 msgid "— yo‘q —"
-msgstr "Нет заявок"
+msgstr "— нет —"
 
 #: bookings/forms.py:245
 msgid ""
 "Ixtiyoriy. Faqat «Kim orqali» tanlanganda — shu odamga xona summasidan foiz."
 msgstr ""
+"Необязательно. Только если выбран «Через кого» — процент этому человеку от "
+"суммы номера."
 
 #: bookings/forms.py:288
 msgid "Foiz 0–100 oralig‘ida bo‘lishi kerak."
-msgstr ""
+msgstr "Процент должен быть от 0 до 100."
 
 #: bookings/forms.py:292 bookings/forms.py:539
 msgid "1 kecha narxini kiriting."
-msgstr ""
+msgstr "Введите цену за 1 ночь."
 
 #: bookings/forms.py:323
 msgid ""
 "Boshqa turdagi xona tanlansa (masalan Twin↔Double) — tur avtomatik "
 "yangilanadi."
 msgstr ""
+"Если выбран номер другого типа (например Twin↔Double) — тип обновится "
+"автоматически."
 
 #: bookings/forms.py:339 bookings/forms.py:627 folio/forms.py:125
 #: templates/finance/partials/expense_row.html:18
@@ -475,7 +469,7 @@ msgstr "Особый запрос или заметка"
 
 #: bookings/forms.py:458
 msgid "Ixtiyoriy. Faqat «Kim orqali» tanlanganda."
-msgstr ""
+msgstr "Необязательно. Только если выбран «Через кого»."
 
 #: bookings/forms.py:549
 msgid "Xona tanlang."
@@ -504,19 +498,20 @@ msgid "So‘rov"
 msgstr "Заявка"
 
 #: bookings/forms.py:614
-#, fuzzy
 #| msgid "Xona turi"
 msgid "Kerakli xona turi"
-msgstr "Тип номера"
+msgstr "Нужный тип номера"
 
 #: bookings/forms.py:615
 msgid ""
 "Mehmon Twin so‘rasa — Twin ni tanlang; Double↔Twin va boshqalar mumkin."
 msgstr ""
+"Если гость просит Twin — выберите Twin; Double↔Twin и другие варианты "
+"возможны."
 
 #: bookings/forms.py:616
 msgid "— barcha turlar —"
-msgstr ""
+msgstr "— все типы —"
 
 #: bookings/forms.py:618 properties/views.py:251
 msgid "Yangi xona"
@@ -524,16 +519,16 @@ msgstr "Новый номер"
 
 #: bookings/forms.py:622
 msgid "Yangi tur BAR tarifiga o‘tkazish (faqat eski bronlar)"
-msgstr ""
+msgstr "Перевести новый тип на тариф BAR (только старые брони)"
 
 #: bookings/forms.py:628
 msgid "Masalan: mehmon Twin so‘radi"
-msgstr ""
+msgstr "Например: гость просил Twin"
 
 #: bookings/forms.py:703
 #, python-format
 msgid "Tanlangan xona «%(room)s» turi «%(got)s», filtr esa «%(want)s»."
-msgstr ""
+msgstr "Выбранный номер «%(room)s» типа «%(got)s», фильтр — «%(want)s»."
 
 #: bookings/forms.py:714
 msgid "Guruh nomi"
@@ -541,22 +536,20 @@ msgstr "Название группы"
 
 #: bookings/models.py:73
 msgid "Bron yaratilganda foiz shu qiymatdan to‘ldiriladi."
-msgstr ""
+msgstr "При создании брони процент подставляется из этого значения."
 
 #: bookings/models.py:81
-#, fuzzy
 #| msgid "To‘lovchi"
 msgid "Yo‘naltiruvchi"
-msgstr "Плательщик"
+msgstr "Направляющий"
 
 #: bookings/models.py:82 templates/base.html:58
 #: templates/bookings/commission_report.html:16
 #: templates/bookings/referrer_list.html:3
 #: templates/bookings/referrer_list.html:7 templates/includes/nav_hub.html:55
-#, fuzzy
 #| msgid "Yetkazib beruvchilar"
 msgid "Yo‘naltiruvchilar"
-msgstr "Поставщики"
+msgstr "Направляющие"
 
 #: bookings/models.py:132 templates/bookings/reservation_list.html:45
 #: templates/guests/partials/guest_results.html:16
@@ -591,11 +584,12 @@ msgstr "Прочее"
 
 #: bookings/models.py:176
 msgid "Yo‘naltiruvchiga bron summasidan foiz."
-msgstr ""
+msgstr "Процент направляющему от суммы брони."
 
 #: bookings/models.py:204
 msgid "True — E-mehmon: tarif × kecha × mehmon; False — bu bronda olinmaydi."
 msgstr ""
+"True — E-mehmon: тариф × ночь × гость; False — для этой брони не берётся."
 
 #: bookings/services.py:70
 msgid "Xona faol emas."
@@ -715,7 +709,7 @@ msgstr "Нужен новый номер."
 
 #: bookings/services.py:676
 msgid "Xona boshqa filialga tegishli."
-msgstr ""
+msgstr "Номер относится к другому филиалу."
 
 #: bookings/services.py:750
 msgid "Xona almashtirishdan keyin tozalash"
@@ -764,10 +758,9 @@ msgid "Kirish qilindi."
 msgstr "Гость заселён."
 
 #: bookings/views.py:326 bookings/views.py:603 folio/views.py:388
-#, fuzzy
 #| msgid "Kompaniya to‘lovi qabul qilindi."
 msgid "E-mehmon to‘lovi qabul qilindi."
-msgstr "Платёж компании принят."
+msgstr "Оплата E-mehmon принята."
 
 #: bookings/views.py:344
 msgid ""
@@ -807,10 +800,9 @@ msgid "Hujjat ruxsati yoki pasport raqamini kiriting."
 msgstr "Дайте разрешение на документы или введите номер паспорта."
 
 #: bookings/views.py:647
-#, fuzzy
 #| msgid "Xona turi qo‘shildi."
 msgid "Xona / tur almashtirildi."
-msgstr "Тип номера добавлен."
+msgstr "Номер / тип заменён."
 
 #: bookings/views.py:745
 msgid "Noto‘g‘ri xona yoki sana."
@@ -856,39 +848,36 @@ msgstr "Номер не выбран — даты OK"
 
 #: bookings/views.py:972 bookings/views.py:993
 msgid "Yangi yo‘naltiruvchi"
-msgstr ""
+msgstr "Новый направляющий"
 
 #: bookings/views.py:985
-#, fuzzy
 #| msgid "Yetkazib beruvchi qo‘shildi."
 msgid "Yo‘naltiruvchi qo‘shildi."
-msgstr "Поставщик добавлен."
+msgstr "Направляющий добавлен."
 
 #: bookings/views.py:1004
-#, fuzzy
 #| msgid "Yetkazib beruvchi yangilandi."
 msgid "Yo‘naltiruvchi yangilandi."
-msgstr "Поставщик обновлён."
+msgstr "Направляющий обновлён."
 
 #: bookings/views.py:1009
-#, fuzzy
 #| msgid "Yetkazib beruvchini tahrirlash"
 msgid "Yo‘naltiruvchini tahrirlash"
-msgstr "Редактировать поставщика"
+msgstr "Редактировать направляющего"
 
 #: bookings/views.py:1178
 #, python-format
 msgid "%(name)s ga %(amount)s %(cur)s to‘landi."
-msgstr ""
+msgstr "%(name)s выплачено %(amount)s %(cur)s."
 
 #: bookings/views.py:1193
 #, python-format
 msgid "To‘lov saqlanmadi — %(d)s"
-msgstr ""
+msgstr "Оплата не сохранена — %(d)s"
 
 #: bookings/views.py:1195
 msgid "To‘lov saqlanmadi — maydonlarni tekshiring."
-msgstr ""
+msgstr "Оплата не сохранена — проверьте поля."
 
 #: bookings/widgets.py:20 templates/bookings/partials/board_page.html:45
 #: templates/bookings/partials/board_page.html:60
@@ -901,53 +890,52 @@ msgstr "Занят"
 #: core/cbu.py:67
 #, python-format
 msgid "Markaziy bank javob bermadi (HTTP %(code)s)."
-msgstr ""
+msgstr "ЦБ не ответил (HTTP %(code)s)."
 
 #: core/cbu.py:71
 #, python-format
 msgid "Markaziy bankka ulanishning iloji bo‘lmadi: %(err)s"
-msgstr ""
+msgstr "Не удалось связаться с ЦБ: %(err)s"
 
 #: core/cbu.py:76
 msgid "Markaziy bank javobi JSON emas."
-msgstr ""
+msgstr "Ответ ЦБ не в формате JSON."
 
 #: core/cbu.py:92
 msgid "Markaziy bank formati kutilgandek emas."
-msgstr ""
+msgstr "Формат ответа ЦБ неожиданный."
 
 #: core/cbu.py:103
-#, fuzzy, python-format
+#, python-format
 #| msgid "Chiqish sanasi noto‘g‘ri."
 msgid "Kurs soni noto‘g‘ri: %(c)s"
-msgstr "Неверная дата выезда."
+msgstr "Неверное значение курса: %(c)s"
 
 #: core/cbu.py:115
-#, fuzzy
 #| msgid "Xona turi topilmadi."
 msgid "USD/EUR kurslari topilmadi."
-msgstr "Тип номера не найден."
+msgstr "Курсы USD/EUR не найдены."
 
 #: core/cbu.py:137
 #, python-format
 msgid "Bazaviy %(b)s uchun Markaziy bank kursi yo‘q."
-msgstr ""
+msgstr "Нет курса ЦБ для базовой %(b)s."
 
 #: core/currency.py:18
 msgid "So‘m (UZS)"
-msgstr ""
+msgstr "Сум (UZS)"
 
 #: core/currency.py:19
 msgid "Dollar (USD)"
-msgstr ""
+msgstr "Доллар (USD)"
 
 #: core/currency.py:20
 msgid "Euro (EUR)"
-msgstr ""
+msgstr "Евро (EUR)"
 
 #: core/currency.py:42
 msgid "Valyuta faqat UZS, USD yoki EUR bo‘lishi mumkin."
-msgstr ""
+msgstr "Валюта может быть только UZS, USD или EUR."
 
 #: core/mixins.py:41 core/mixins.py:86
 msgid "Bu modul joriy tarifda yo‘q."
@@ -978,27 +966,27 @@ msgid "Qarz · %(code)s"
 msgstr "Долг · %(code)s"
 
 #: core/notifications.py:116
-#, fuzzy, python-format
+#, python-format
 #| msgid "Kam ombor · %(name)s"
 msgid "Muddati o‘tgan · %(name)s"
-msgstr "Мало на складе · %(name)s"
+msgstr "Срок истёк · %(name)s"
 
 #: core/notifications.py:117
-#, fuzzy, python-format
+#, python-format
 #| msgid "%(qty)s %(unit)s (min %(min)s)"
 msgid "%(qty)s %(unit)s · %(d)s"
-msgstr "%(qty)s %(unit)s (мин. %(min)s)"
+msgstr "%(qty)s %(unit)s · %(d)s"
 
 #: core/notifications.py:133
-#, fuzzy, python-format
+#, python-format
 #| msgid "Kam ombor · %(name)s"
 msgid "Muddat yaqin · %(name)s"
-msgstr "Мало на складе · %(name)s"
+msgstr "Срок скоро · %(name)s"
 
 #: core/notifications.py:134
 #, python-format
 msgid "%(days)s kun · %(d)s"
-msgstr ""
+msgstr "%(days)s дн. · %(d)s"
 
 #: core/notifications.py:145
 #, python-format
@@ -1111,6 +1099,8 @@ msgid ""
 "Belgilanmasa ertasi kundan boshlanadi. Belgilansa shu kun tushumi qayta "
 "ulashiladi."
 msgstr ""
+"Если не указано, он начинается на следующий день. Если выбрано, доход за "
+"этот день будет перераспределен."
 
 #: finance/forms.py:169 templates/finance/exchange_rates.html:8
 msgid "Bazaviy valyuta"
@@ -1121,6 +1111,8 @@ msgid ""
 "Hisobotlar, P&L va mehmon hisobi qoldig‘i shu valyutada. USD/EUR to‘lovlar "
 "kurs orqali bazaga o‘tkaziladi."
 msgstr ""
+"Отчеты, прибыли и убытки, а также баланс гостевого счета представлены в этой"
+" валюте. Платежи в долларах США/евро переводятся в базу через обменный курс."
 
 #: finance/forms.py:184
 msgid "Kurs (1 birlik → baza)"
@@ -1168,7 +1160,6 @@ msgid "Ta’mir arizasi"
 msgstr "Заявка на ремонт"
 
 #: finance/models.py:83
-#, fuzzy
 #| msgid ""
 #| "Joriy — mehmonxona Sofidan. Reinvestitsiya — Sofga tegmaydi, "
 #| "uchreditel/foyda ulushidan ayiriladi."
@@ -1176,8 +1167,8 @@ msgid ""
 "Joriy — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, egalar / foyda "
 "ulushidan ayiriladi."
 msgstr ""
-"Текущий — из чистой прибыли. Реинвестиции — не из чистой, вычитаются из доли"
-" владельцев / прибыли."
+"Текущий - от чистой прибыли. Реинвестирование - не влияет на чистую прибыль "
+"за вычетом владельцев/доли прибыли."
 
 #: finance/models.py:147
 msgid "Masalan 30.00 — sof foydaning 30 foizi."
@@ -1260,10 +1251,10 @@ msgid "Summa 0 dan katta bo‘lishi kerak."
 msgstr "Сумма должна быть больше 0."
 
 #: finance/profit.py:237
-#, fuzzy, python-format
+#, python-format
 #| msgid "Ulush qoldig‘idan ko‘p: qolgan %(r)s, so‘ralgan %(a)s."
 msgid "Ulush qoldig‘idan ko‘p: qolgan %(r)s %(cur)s, so‘ralgan %(a)s %(pay)s."
-msgstr "Больше остатка доли: осталось %(r)s, запрошено %(a)s."
+msgstr "Больше остатка доли: осталось %(r)s %(cur)s, запрошено %(a)s %(pay)s."
 
 #: finance/profit.py:276
 msgid "Tugash sanasi boshlanishdan oldin bo‘lishi mumkin emas."
@@ -1537,13 +1528,12 @@ msgstr "Тип платежа"
 
 #: folio/forms.py:73
 msgid "Qaytarish usuli"
-msgstr ""
+msgstr "Способ возврата"
 
 #: folio/forms.py:85
-#, fuzzy
 #| msgid "Masalan: Alisher"
 msgid "Masalan: sdachi naqd"
-msgstr "Например: Алишер"
+msgstr "Например: сдача наличными"
 
 #: folio/forms.py:98
 #, python-format
@@ -1551,11 +1541,13 @@ msgid ""
 "Maksimal avans: %(m)s %(cur)s (bazaviy). Boshqa valyutada kurs bo‘yicha "
 "hisoblanadi."
 msgstr ""
+"Максимальное продвижение: %(m)s %(cur)s (базовый уровень). Он рассчитывается"
+" по курсу обмена в других валютах."
 
 #: folio/forms.py:115
 #, python-format
 msgid "Ortganidan ko‘p: maksimal %(m)s %(cur)s."
-msgstr ""
+msgstr "Больше начисленного: максимум %(m)s %(cur)s."
 
 #: folio/forms.py:133 templates/bookings/emehmon_statement.html:131
 msgid "Yozuvlar"
@@ -1600,33 +1592,32 @@ msgstr "Начальный остаток кассы"
 
 #: folio/forms.py:276
 msgid "Smena boshida qutidagi naqd pul."
-msgstr ""
+msgstr "Наличность в кассе на начало смены."
 
 #: folio/forms.py:286
-#, fuzzy
 #| msgid "Kutilgan naqd"
 msgid "Sanab chiqilgan naqd"
-msgstr "Ожидаемая наличность"
+msgstr "Пересчитанная наличность"
 
 #: folio/forms.py:287
 msgid "Kassani sanab, haqiqiy summani kiriting."
-msgstr ""
+msgstr "Пересчитайте кассу и введите фактическую сумму."
 
 #: folio/forms.py:299
 msgid "Topshirish izohi"
-msgstr ""
+msgstr "Комментарий к отправке"
 
 #: folio/forms.py:301
 msgid "Farq sababi, keyingi smenaga izoh…"
-msgstr ""
+msgstr "Причина разницы, комментарий для следующей смены…"
 
 #: folio/forms.py:309
 msgid "Kassa kirim (qo‘shimcha naqd)"
-msgstr ""
+msgstr "Кассовый чек (дополнительно)"
 
 #: folio/forms.py:310
 msgid "Kassa chiqim (mayda xarajat / olib ketish)"
-msgstr ""
+msgstr "Оформление заказа (мелкая/самовывоз)"
 
 #: folio/forms.py:312 templates/folio/cash_shift_print.html:94
 #: templates/folio/cash_shift_print.html:128
@@ -1637,7 +1628,7 @@ msgstr "Тип"
 
 #: folio/forms.py:327
 msgid "Masalan: mayda valyuta, kuryer…"
-msgstr ""
+msgstr "Например: мелкая валюта, курьер..."
 
 #: folio/models.py:134 templates/bookings/emehmon_statement.html:155
 #: templates/reports/dashboard.html:252
@@ -1668,7 +1659,7 @@ msgstr "E-mehmon"
 
 #: folio/models.py:187
 msgid "Sdachi / qaytarish"
-msgstr ""
+msgstr "Сдачи/возврат"
 
 #: folio/models.py:188 folio/pdf.py:402 templates/base.html:87
 #: templates/folio/city_ledger_list.html:3
@@ -1683,27 +1674,25 @@ msgstr "Счёт компании"
 #: templates/folio/cash_shift.html:44
 #: templates/folio/cash_shift_detail.html:41
 #: templates/folio/cash_shift_print.html:79
-#, fuzzy
 #| msgid "Naqd kirim"
 msgid "Kassa kirim"
-msgstr "Приход наличных"
+msgstr "Приход в кассу"
 
 #: folio/models.py:283 templates/folio/cash_shift.html:49
 #: templates/folio/cash_shift_detail.html:45
 #: templates/folio/cash_shift_print.html:80
-#, fuzzy
 #| msgid "Naqd chiqim"
 msgid "Kassa chiqim"
-msgstr "Расход наличных"
+msgstr "Расход из кассы"
 
 #: folio/models.py:301 templates/folio/cash_shift.html:75
 msgid "Kassa harakati"
-msgstr ""
+msgstr "Денежный поток"
 
 #: folio/models.py:302 templates/folio/cash_shift_detail.html:68
 #: templates/folio/cash_shift_print.html:92
 msgid "Kassa harakatlari"
-msgstr ""
+msgstr "Кассовые операции"
 
 #: folio/models.py:314 folio/pdf.py:236 maintenance/models.py:11
 #: templates/folio/cash_shift.html:262
@@ -1731,10 +1720,9 @@ msgid "Bekor"
 msgstr "Отмена"
 
 #: folio/pdf.py:233
-#, fuzzy
 #| msgid "Hisob-fakturalar"
 msgid "Hisob-faktura"
-msgstr "Счета"
+msgstr "Счёт-фактура"
 
 #: folio/pdf.py:236 templates/hr/advance_list.html:12
 #: templates/hr/advance_list.html:26 templates/reports/dashboard.html:282
@@ -1763,24 +1751,22 @@ msgid "QQS"
 msgstr "НДС"
 
 #: folio/pdf.py:281 templates/folio/receipt.html:146
-#, fuzzy
 #| msgid "Yangi mehmonxona"
 msgid "Jami (mehmonxona)"
-msgstr "Новая гостиница"
+msgstr "Итого (гостиница)"
 
 #: folio/pdf.py:285 templates/folio/receipt.html:151
 msgid "E-mehmon (alohida)"
-msgstr ""
+msgstr "Электронный гость (отдельный)"
 
 #: folio/pdf.py:308 templates/folio/receipt.html:157
 msgid "E-mehmon jami"
-msgstr ""
+msgstr "Всего электронных гостей"
 
 #: folio/pdf.py:309 templates/folio/receipt.html:159
-#, fuzzy
 #| msgid "Mehmon to‘lovlari"
 msgid "E-mehmon to‘langan"
-msgstr "Платежи гостей"
+msgstr "E-mehmon оплачен"
 
 #: folio/pdf.py:318 folio/pdf.py:442
 #: templates/bookings/commission_report.html:113
@@ -1794,10 +1780,9 @@ msgstr "Платежи"
 
 #: folio/pdf.py:344 folio/pdf.py:463
 #: templates/bookings/commission_statement.html:200
-#, fuzzy
 #| msgid "To‘langan"
 msgid "To‘langan jami"
-msgstr "Оплачено"
+msgstr "Всего оплачено"
 
 #: folio/pdf.py:345 folio/pdf.py:353 folio/pdf.py:464 folio/pdf.py:472
 #: inventory/forms.py:32 inventory/forms.py:122
@@ -1817,16 +1802,14 @@ msgid "Rahmat!"
 msgstr "Спасибо!"
 
 #: folio/pdf.py:358 folio/pdf.py:481 templates/guests/guest_detail.html:80
-#, fuzzy
 #| msgid "Hujjatlar"
 msgid "Hujjat"
-msgstr "Документы"
+msgstr "Документ"
 
 #: folio/pdf.py:390
-#, fuzzy
 #| msgid "Kompaniya hisobi"
 msgid "Kompaniya hisob-fakturasi"
-msgstr "Счёт компании"
+msgstr "Счёт-фактура компании"
 
 #: folio/pdf.py:396 templates/folio/invoice_detail.html:15
 msgid "Muddat"
@@ -1859,29 +1842,27 @@ msgid "xona to‘lovi"
 msgstr "плата за номер"
 
 #: folio/services.py:211
-#, fuzzy
 #| msgid "Naqd to‘lovdan oldin kassa smenasini oching."
 msgid "Naqd to‘lovdan oldin shu filial kassa smenasini oching."
-msgstr "Перед наличной оплатой откройте кассовую смену."
+msgstr "Перед наличной оплатой откройте кассовую смену этого филиала."
 
 #: folio/services.py:267
 msgid "Qaytarish uchun ortiqcha to‘lov yo‘q."
-msgstr ""
+msgstr "Дополнительная плата за возврат не взимается."
 
 #: folio/services.py:277
-#, fuzzy
 #| msgid "Avans summasi musbat bo‘lishi kerak."
 msgid "Qaytarish summasi musbat bo‘lishi kerak."
-msgstr "Сумма аванса должна быть положительной."
+msgstr "Сумма возврата должна быть положительной."
 
 #: folio/services.py:283
 #, python-format
 msgid "Ortganidan ko‘p qaytarib bo‘lmaydi: avans %(c)s %(cur)s."
-msgstr ""
+msgstr "Вы не можете вывести больше суммы: аванс %(c)s %(cur)s."
 
 #: folio/services.py:286
 msgid "Sdachi — ortiqcha to‘lovni qaytarish"
-msgstr ""
+msgstr "Сдачи – это возврат переплаты"
 
 #: folio/services.py:316
 msgid "Yozuv allaqachon bekor qilingan."
@@ -1900,42 +1881,37 @@ msgid "Summali kamida bitta to‘lov qatorini qo‘shing."
 msgstr "Добавьте хотя бы одну строку с суммой."
 
 #: folio/services.py:521
-#, fuzzy
 #| msgid "Avans summasi musbat bo‘lishi kerak."
 msgid "E-mehmon summasi musbat bo‘lishi kerak."
-msgstr "Сумма аванса должна быть положительной."
+msgstr "Сумма E-mehmon должна быть положительной."
 
 #: folio/services.py:525
-#, fuzzy
 #| msgid "Smena allaqachon yopilgan."
 msgid "E-mehmon to‘lovi allaqachon yozilgan."
-msgstr "Смена уже закрыта."
+msgstr "Оплата E-mehmon уже записана."
 
 #: folio/services.py:532
 #, python-format
 msgid "E-mehmon: %(g)s mehmon × %(n)s kecha × %(u)s"
-msgstr ""
+msgstr "Электронный гость: %(g)s гость × %(n)s ночь × %(u)s"
 
 #: folio/services.py:537
-#, fuzzy
 #| msgid "Bron ro‘yxati orqali sotish"
 msgid "E-mehmon: ro‘yxatdan o‘tkazish"
-msgstr "Продажа через список броней"
+msgstr "E-mehmon: регистрация"
 
 #: folio/services.py:549 templates/bookings/reservation_detail.html:10
 #: templates/bookings/reservation_detail.html:144
 #: templates/bookings/reservation_detail.html:173
 #: templates/bookings/walk_in.html:99
-#, fuzzy
 #| msgid "Mehmon to‘lovlari"
 msgid "E-mehmon to‘lovi"
-msgstr "Платежи гостей"
+msgstr "Оплата E-mehmon"
 
 #: folio/services.py:576
-#, fuzzy
 #| msgid "Qoldiq %(b)s bo‘lgan mehmon hisobini yopib bo‘lmaydi."
 msgid "Joylashgan mehmon hisobini yopib bo‘lmaydi — avval chiqish qiling."
-msgstr "Нельзя закрыть счёт гостя с остатком %(b)s."
+msgstr "Нельзя закрыть счёт размещённого гостя — сначала сделайте выезд."
 
 #: folio/services.py:580
 #, python-format
@@ -1943,26 +1919,23 @@ msgid "Qoldiq %(b)s bo‘lgan mehmon hisobini yopib bo‘lmaydi."
 msgstr "Нельзя закрыть счёт гостя с остатком %(b)s."
 
 #: folio/services.py:616
-#, fuzzy
 #| msgid "Kassa smena ochildi."
 msgid "Kassa smenasi uchun filial tanlang."
-msgstr "Смена кассы открыта."
+msgstr "Выберите филиал для кассовой смены."
 
 #: folio/services.py:618
-#, fuzzy
 #| msgid "Ochiq kassa smenasi allaqachon bor."
 msgid "Bu filialda ochiq kassa smenasi allaqachon bor."
-msgstr "Открытая кассовая смена уже есть."
+msgstr "В этом филиале уже есть открытая кассовая смена."
 
 #: folio/services.py:641
 msgid "Faqat ochiq smenaga harakat qo‘shiladi."
-msgstr ""
+msgstr "К действию добавляется только открытая смена."
 
 #: folio/services.py:646
-#, fuzzy
 #| msgid "Noto‘g‘ri status."
 msgid "Noto‘g‘ri harakat turi."
-msgstr "Неверный статус."
+msgstr "Неверный тип операции."
 
 #: folio/services.py:683
 msgid "Smena allaqachon yopilgan."
@@ -1971,6 +1944,8 @@ msgstr "Смена уже закрыта."
 #: folio/shift_report.py:180
 msgid "Boshlang‘ich + naqd kirim + kassa kirim − rasxod/oylik − kassa chiqim"
 msgstr ""
+"Первоначальный + приход наличных + приход наличных – "
+"удовлетворение/ежемесячно – снятие наличных"
 
 #: folio/views.py:119
 msgid "Hisob yozuvi qo‘shildi."
@@ -1990,13 +1965,12 @@ msgstr "Неверная форма платежа."
 
 #: folio/views.py:232
 msgid "Sdachi qaytarildi — ortiqcha to‘lov yozildi."
-msgstr ""
+msgstr "Вернули деньги - переплатили."
 
 #: folio/views.py:236
-#, fuzzy
 #| msgid "Xizmat formasi noto‘g‘ri."
 msgid "Qaytarish formasi noto‘g‘ri."
-msgstr "Неверная форма услуги."
+msgstr "Неверная форма возврата."
 
 #: folio/views.py:255
 msgid "Bo‘lingan to‘lov qabul qilindi."
@@ -2039,10 +2013,9 @@ msgid "Depozit formasi noto‘g‘ri."
 msgstr "Неверная форма депозита."
 
 #: folio/views.py:393
-#, fuzzy
 #| msgid "Depozit formasi noto‘g‘ri."
 msgid "E-mehmon formasi noto‘g‘ri."
-msgstr "Неверная форма депозита."
+msgstr "Неверная форма E-mehmon."
 
 #: folio/views.py:403
 msgid "Mehmon hisobi yopildi."
@@ -2050,11 +2023,11 @@ msgstr "Счёт гостя закрыт."
 
 #: folio/views.py:445 folio/views.py:519 folio/views.py:544 folio/views.py:577
 msgid "Kassa uchun avval filial tanlang."
-msgstr ""
+msgstr "Сначала выберите филиал для оформления заказа."
 
 #: folio/views.py:487 folio/views.py:503
 msgid "Bu smena boshqa filialga tegishli."
-msgstr ""
+msgstr "Эта смена принадлежит другому филиалу."
 
 #: folio/views.py:530
 msgid "Kassa smena ochildi."
@@ -2074,10 +2047,9 @@ msgid "Smena yopildi. Farq: %(v)s"
 msgstr "Смена закрыта. Разница: %(v)s"
 
 #: folio/views.py:594
-#, fuzzy
 #| msgid "Kassa yopildi"
 msgid "Kassa harakati yozildi."
-msgstr "Касса закрыта"
+msgstr "Движение кассы записано."
 
 #: folio/views.py:645
 msgid "Kompaniya hisobi formasi noto‘g‘ri."
@@ -2146,10 +2118,9 @@ msgid "Qora ro‘yxat sababi"
 msgstr "Причина чёрного списка"
 
 #: guests/forms.py:66
-#, fuzzy
 #| msgid "Pasport/ID yo‘q"
 msgid "Pasport / ID raqami"
-msgstr "Нет паспорта/ID"
+msgstr "Паспорт / ID номер"
 
 #: guests/forms.py:72 guests/forms.py:91
 msgid "Berilgan mamlakat"
@@ -2157,7 +2128,7 @@ msgstr "Страна выдачи"
 
 #: guests/forms.py:80
 msgid "Kirish (zayezd) uchun hujjat raqami kerak."
-msgstr ""
+msgstr "Для въезда (заезда) необходим номер документа."
 
 #: guests/forms.py:90 properties/forms.py:85 properties/forms.py:123
 msgid "Raqam"
@@ -2238,16 +2209,18 @@ msgid ""
 "Bu mehmonda bron tarixi bor — o‘chirib bo‘lmaydi. Kerak bo‘lsa qora "
 "ro‘yxatga qo‘ying."
 msgstr ""
+"У этого гостя есть история бронирований, которую невозможно удалить. Черный "
+"список при необходимости."
 
 #: guests/views.py:207
 msgid "Mehmon bog‘liq yozuvlar tufayli o‘chirilmadi."
-msgstr ""
+msgstr "Не удалось удалить гостя из-за связанных записей."
 
 #: guests/views.py:210
-#, fuzzy, python-format
+#, python-format
 #| msgid "Xodim qo‘shildi: %(username)s"
 msgid "Mehmon o‘chirildi: %(name)s"
-msgstr "Сотрудник добавлен: %(username)s"
+msgstr "Гость удалён: %(name)s"
 
 #: guests/views.py:225
 msgid "Hujjat qo‘shildi."
@@ -2353,16 +2326,14 @@ msgid "Xodim"
 msgstr "Сотрудник"
 
 #: hr/forms.py:71 templates/hr/payroll_list.html:50
-#, fuzzy
 #| msgid "bonus"
 msgid "Bonus"
-msgstr "бонус"
+msgstr "Бонус"
 
 #: hr/forms.py:78 templates/hr/payroll_list.html:52
-#, fuzzy
 #| msgid "ushlama"
 msgid "Ushlama"
-msgstr "удержание"
+msgstr "Удержание"
 
 #: hr/models.py:13
 msgid "Oylik maosh"
@@ -2378,17 +2349,16 @@ msgstr "Завершено"
 
 #: hr/models.py:92
 msgid "Oylikdan ushlangan qism (qisman qoplash)."
-msgstr ""
+msgstr "Доля, выловленная за месяц (частичное покрытие)."
 
 #: hr/services.py:24 hr/services.py:293
 msgid "Xodim ushbu mehmonxonaga tegishli emas."
 msgstr "Сотрудник не принадлежит этому отелю."
 
 #: hr/services.py:26
-#, fuzzy
 #| msgid "Yopilgan hisobda bekor qilib bo‘lmaydi."
 msgid "Faol bo‘lmagan xodimga avans berib bo‘lmaydi."
-msgstr "Нельзя отменить в закрытом счёте."
+msgstr "Нельзя выдать аванс неактивному сотруднику."
 
 #: hr/services.py:28
 msgid "Avans summasi musbat bo‘lishi kerak."
@@ -2411,40 +2381,34 @@ msgid "Davrda ish haqi qatorlari yo‘q."
 msgstr "В периоде нет строк зарплаты."
 
 #: hr/services.py:224 hr/views.py:208
-#, fuzzy
 #| msgid "Yopilgan bronni o‘zgartirib bo‘lmaydi."
 msgid "To‘langan qatorni o‘zgartirib bo‘lmaydi."
-msgstr "Нельзя изменить закрытую бронь."
+msgstr "Оплаченную строку изменить нельзя."
 
 #: hr/services.py:227
-#, fuzzy
 #| msgid "Miqdor musbat bo‘lishi kerak."
 msgid "Bonus manfiy bo‘lmasligi kerak."
-msgstr "Количество должно быть больше 0."
+msgstr "Бонус не может быть отрицательным."
 
 #: hr/services.py:231
-#, fuzzy
 #| msgid "Avans summasi musbat bo‘lishi kerak."
 msgid "Ushlama manfiy bo‘lmasligi kerak."
-msgstr "Сумма аванса должна быть положительной."
+msgstr "Удержание не может быть отрицательным."
 
 #: hr/services.py:241
-#, fuzzy
 #| msgid "Bron allaqachon yopilgan."
 msgid "Bu qator allaqachon to‘langan."
-msgstr "Бронь уже закрыта."
+msgstr "Эта строка уже оплачена."
 
 #: hr/services.py:257
-#, fuzzy
 #| msgid "To‘lov summasi musbat bo‘lishi kerak."
 msgid "To‘lov summasi manfiy bo‘lmasligi kerak."
-msgstr "Сумма оплаты должна быть положительной."
+msgstr "Сумма оплаты не может быть отрицательной."
 
 #: hr/services.py:295
-#, fuzzy
 #| msgid "Yopilgan arizaga biriktirib bo‘lmaydi."
 msgid "Faol bo‘lmagan xodimga oylik berib bo‘lmaydi."
-msgstr "Нельзя назначить закрытую заявку."
+msgstr "Нельзя выдать зарплату неактивному сотруднику."
 
 #: hr/views.py:64
 msgid "Xodim qo‘shildi."
@@ -2473,27 +2437,27 @@ msgid "Tahrirlash"
 msgstr "Редактировать"
 
 #: hr/views.py:101
-#, fuzzy, python-format
+#, python-format
 #| msgid "%(time)s dan oldin"
 msgid "%(name)s ga avans yozildi."
-msgstr "до %(time)s"
+msgstr "Аванс для %(name)s записан."
 
 #: hr/views.py:112
-#, fuzzy, python-format
+#, python-format
 #| msgid "Mavsum — %(name)s"
 msgid "Avans: %(name)s"
-msgstr "Сезон — %(name)s"
+msgstr "Аванс: %(name)s"
 
 #: hr/views.py:127
 #, python-format
 msgid "%(name)s ga %(amount)s to‘landi."
-msgstr ""
+msgstr "%(name)s га %(amount)s то’ланди."
 
 #: hr/views.py:179
-#, fuzzy, python-format
+#, python-format
 #| msgid "Ish haqi: %(p)s"
 msgid "Ish haqi yangilandi: %(p)s"
-msgstr "Зарплата: %(p)s"
+msgstr "Зарплата обновлена: %(p)s"
 
 #: hr/views.py:192
 #, python-format
@@ -2503,26 +2467,26 @@ msgstr "Завершено: %(period)s"
 #: hr/views.py:224
 #, python-format
 msgid "%(name)s: bonus/ushlama yangilandi (sof %(net)s)."
-msgstr ""
+msgstr "%(name)s: бонус/удержание обновлены (чистыми %(net)s)."
 
 #: hr/views.py:236
 #, python-format
 msgid "Bonus / ushlama: %(name)s"
-msgstr ""
+msgstr "Бонус/улов: %(name)s"
 
 #: hr/views.py:248
 msgid "To‘landi."
 msgstr "Оплачено."
 
 #: hr/views.py:263
-#, fuzzy, python-format
+#, python-format
 #| msgid "Rasxod to‘landi"
 msgid "%(n)s ta oylik to‘landi."
-msgstr "Расход оплачен"
+msgstr "Выплачено зарплат: %(n)s."
 
 #: hr/views.py:266
 msgid "To‘lanadigan qator yo‘q."
-msgstr ""
+msgstr "Нет строк к оплате."
 
 #: hr/views.py:304
 msgid "Avans qo‘shildi."
@@ -2558,24 +2522,22 @@ msgid "Sotish narxi"
 msgstr "Цена продажи"
 
 #: inventory/forms.py:37 inventory/models.py:59
-#, fuzzy
 #| msgid "Amal qilish muddati"
 msgid "Yaroqlilik muddati"
-msgstr "Срок действия"
+msgstr "Срок годности"
 
 #: inventory/forms.py:38 inventory/models.py:64
-#, fuzzy
 #| msgid "Ogohlantirishlar"
 msgid "Ogohlantirish (kun)"
-msgstr "Уведомления"
+msgstr "Предупреждение (дней)"
 
 #: inventory/forms.py:43
 msgid "Masalan: sut, sharbat. Bo‘sh = muddat yo‘q."
-msgstr ""
+msgstr "Например: молоко, сок. Пусто = нет термина."
 
 #: inventory/forms.py:44
 msgid "Standart 7 kun oldin ogohlantiradi."
-msgstr ""
+msgstr "По умолчанию предупреждает за 7 дней."
 
 #: inventory/forms.py:54
 msgid "Harakat"
@@ -2614,57 +2576,56 @@ msgstr "Бронь"
 
 #: inventory/models.py:15
 msgid "Dona"
-msgstr ""
+msgstr "Dona"
 
 #: inventory/models.py:16
 msgid "Kg"
-msgstr ""
+msgstr "Kg"
 
 #: inventory/models.py:17
 msgid "Gramm"
-msgstr ""
+msgstr "Gramm"
 
 #: inventory/models.py:18
 msgid "Litr"
-msgstr ""
+msgstr "Litr"
 
 #: inventory/models.py:19
 msgid "Ml"
-msgstr ""
+msgstr "Ml"
 
 #: inventory/models.py:20
 msgid "Quti"
-msgstr ""
+msgstr "Quti"
 
 #: inventory/models.py:21
 msgid "Paket"
-msgstr ""
+msgstr "Paket"
 
 #: inventory/models.py:22
 msgid "Juft"
-msgstr ""
+msgstr "Juft"
 
 #: inventory/models.py:23
 msgid "Metr"
-msgstr ""
+msgstr "Metr"
 
 #: inventory/models.py:24
 msgid "Dona (pcs)"
-msgstr ""
+msgstr "Штук (шт.)"
 
 #: inventory/models.py:51
 msgid "Qoldiq shu qiymatga teng yoki past bo‘lsa ogohlantirish."
-msgstr ""
+msgstr "Оповещение, если баланс равен или меньше этого значения."
 
 #: inventory/models.py:60
-#, fuzzy
 #| msgid "Bo‘sh qoldirilsa avtomatik yaratiladi."
 msgid "Bo‘sh qoldirilsa muddat kuzatilmaydi."
-msgstr "Если пусто — создаётся автоматически."
+msgstr "Если пусто — срок не отслеживается."
 
 #: inventory/models.py:65
 msgid "Muddatdan shuncha kun oldin «yaqin» deb ogohlantiriladi."
-msgstr ""
+msgstr "Предупреждено, что оно «закрыто» за много дней до крайнего срока."
 
 #: inventory/models.py:100 templates/reports/flash_print.html:105
 #: templates/reports/flash_print.html:113
@@ -2699,16 +2660,16 @@ msgstr "Товар не является активным минибаром."
 
 #: inventory/services.py:89
 msgid "Minibar mahsuloti boshqa filial omboridan."
-msgstr ""
+msgstr "Товар минибар со склада другого филиала."
 
 #: inventory/services.py:92
 #, python-format
 msgid "«%(name)s» muddati o‘tgan (%(d)s) — sotish mumkin emas."
-msgstr ""
+msgstr "Срок действия «%(name)s» истек (%(d)s) — продать невозможно."
 
 #: inventory/views.py:112
 msgid "Ombor uchun avval filial tanlang."
-msgstr ""
+msgstr "Сначала выберите ветку для репозитория."
 
 #: inventory/views.py:120
 msgid "Mahsulot qo‘shildi."
@@ -2720,19 +2681,17 @@ msgstr "Новый товар"
 
 #: inventory/views.py:136 inventory/views.py:157
 msgid "Bu mahsulot boshqa filial omboriga tegishli."
-msgstr ""
+msgstr "Этот товар относится к складу другого филиала."
 
 #: inventory/views.py:141
-#, fuzzy
 #| msgid "Rol yangilandi."
 msgid "Yangilandi."
-msgstr "Роль обновлена."
+msgstr "Обновлено."
 
 #: inventory/views.py:146
-#, fuzzy
 #| msgid "Rasxodni tahrirlash"
 msgid "Mahsulotni tahrirlash"
-msgstr "Редактировать расход"
+msgstr "Редактировать товар"
 
 #: inventory/views.py:169
 msgid "Ombor yangilandi."
@@ -2743,10 +2702,9 @@ msgid "Minibar sotildi."
 msgstr "Минибар продан."
 
 #: inventory/views.py:229
-#, fuzzy
 #| msgid "Filial tanlanmagan"
 msgid "Avval filial tanlang."
-msgstr "Филиал не выбран"
+msgstr "Сначала выберите филиал."
 
 #: inventory/views.py:239
 msgid "Bu SKU allaqachon mavjud."
@@ -2836,10 +2794,9 @@ msgid "Yangi ariza"
 msgstr "Новая заявка"
 
 #: maintenance/views.py:141
-#, fuzzy
 #| msgid "Yopilgan arizaga biriktirib bo‘lmaydi."
 msgid "Yopilgan arizani tahrirlab bo‘lmaydi."
-msgstr "Закрытую заявку нельзя редактировать."
+msgstr "Закрытую заявку редактировать нельзя."
 
 #: maintenance/views.py:152
 #| msgid "Xizmat yangilandi."
@@ -2874,13 +2831,11 @@ msgid "Xarajat uchun avval filial tanlang."
 msgstr "Сначала выберите филиал для расхода."
 
 #: maintenance/views.py:243
-#, fuzzy
 #| msgid "Ariza yopildi."
 msgid "Xarajat yozildi."
 msgstr "Расход записан."
 
 #: maintenance/views.py:250
-#, fuzzy
 #| msgid "Xarajatni qo‘shish"
 msgid "Xarajat yozish"
 msgstr "Записать расход"
@@ -2890,13 +2845,11 @@ msgid "Bu xarajat boshqa filialga tegishli."
 msgstr "Этот расход относится к другому филиалу."
 
 #: maintenance/views.py:295
-#, fuzzy
 #| msgid "Xizmat yangilandi."
 msgid "Xarajat yangilandi."
 msgstr "Расход обновлён."
 
 #: maintenance/views.py:305
-#, fuzzy
 #| msgid "Kategoriyani tahrirlash"
 msgid "Xarajatni tahrirlash"
 msgstr "Редактировать расход"
@@ -2906,7 +2859,6 @@ msgid "Xarajat hisobdan chiqarildi."
 msgstr "Расход снят с учёта."
 
 #: maintenance/views.py:340
-#, fuzzy
 #| msgid "Rasxod o‘chirildi."
 msgid "Xarajat o‘chirildi."
 msgstr "Расход удалён."
@@ -2933,7 +2885,7 @@ msgstr "Плата за поздний выезд"
 
 #: properties/forms.py:41
 msgid "E-mehmon (1 mehmon / 1 kecha)"
-msgstr ""
+msgstr "Электронный гость (1 гость / 1 ночь)"
 
 #: properties/forms.py:42
 msgid "Bekor qilish %"
@@ -2960,6 +2912,8 @@ msgid ""
 "E-mehmonga beriladigan komissiya: har bir mehmonning har bir kechasi uchun "
 "(odatda 9000 so‘m). Jami = tarif × kechalar × mehmonlar."
 msgstr ""
+"Комиссия электронного гостя: за гостя в сутки (обычно 9 000 сум). Итого = "
+"цена × ночи × гости."
 
 #: properties/forms.py:71 properties/forms.py:93 properties/forms.py:157
 #: services/forms.py:17
@@ -2979,16 +2933,14 @@ msgid "Asosiy narx"
 msgstr "Базовая цена"
 
 #: properties/forms.py:94
-#, fuzzy
 #| msgid "Bo‘sh qoldirilsa avtomatik yaratiladi."
 msgid "Bo‘sh qoldirilsa nomdan yaratiladi."
-msgstr "Если пусто — создаётся автоматически."
+msgstr "Если пусто — создаётся из названия."
 
 #: properties/forms.py:112
-#, fuzzy
 #| msgid "Hujjat raqami"
 msgid "Qavat raqami"
-msgstr "Номер документа"
+msgstr "Номер этажа"
 
 #: properties/forms.py:122 properties/views.py:449
 #: templates/properties/property_detail.html:14
@@ -3061,32 +3013,32 @@ msgstr "Дата начала должна быть раньше окончан�
 
 #: properties/room_type_presets.py:12
 msgid "Twin"
-msgstr ""
+msgstr "Twin"
 
 #: properties/room_type_presets.py:17
 msgid "Ikki alohida (single) yotoq — 2 kishi."
-msgstr ""
+msgstr "Две отдельные (односпальные) кровати – 2 человека."
 
 #: properties/room_type_presets.py:21
 msgid "Double"
-msgstr ""
+msgstr "Double"
 
 #: properties/room_type_presets.py:26
 msgid "Bitta katta (double/queen) yotoq — juftlik."
-msgstr ""
+msgstr "Одна большая (двуспальная/двуспальная) кровать – для пары."
 
 #: properties/room_type_presets.py:30
 msgid "Triple"
-msgstr ""
+msgstr "Triple"
 
 #: properties/room_type_presets.py:35
 msgid "Uch kishi uchun xona."
-msgstr ""
+msgstr "Комната для трёх человек."
 
 #: properties/services.py:151
 #, python-format
 msgid "BAR · %(type)s"
-msgstr ""
+msgstr "БАР · %(type)s"
 
 #: properties/views.py:63
 msgid "Bu filialga ruxsat yo‘q."
@@ -3118,22 +3070,20 @@ msgid "Yangi mehmonxona"
 msgstr "Новая гостиница"
 
 #: properties/views.py:150
-#, fuzzy
 #| msgid "Forma noto‘g‘ri."
 msgid "Asosiy narx noto‘g‘ri."
-msgstr "Неверная форма."
+msgstr "Базовая цена указана неверно."
 
 #: properties/views.py:153
-#, fuzzy
 #| msgid "Tugash sanasi boshlanishdan oldin bo‘lishi mumkin emas."
 msgid "Asosiy narx manfiy bo‘lishi mumkin emas."
-msgstr "Дата окончания не может быть раньше начала."
+msgstr "Базовая цена не может быть отрицательной."
 
 #: properties/views.py:168
-#, fuzzy, python-format
+#, python-format
 #| msgid "Xona turi qo‘shildi."
 msgid "%(n)s ta xona turi qo‘shildi (baza: %(p)s)."
-msgstr "Тип номера добавлен."
+msgstr "Добавлен тип помещения %(n)s (базовый: %(p)s)."
 
 #: properties/views.py:175
 #, python-format
@@ -3141,12 +3091,13 @@ msgid ""
 "Faqat Double/Twin/Triple qoldi: %(rooms)s xona qayta biriktirildi, %(off)s "
 "tur o‘chirildi."
 msgstr ""
+"Остались только двухместные/твин/трехместные номера: номер %(rooms)s "
+"присоединен, тур %(off)s удален."
 
 #: properties/views.py:184
-#, fuzzy
 #| msgid "Bu SKU allaqachon mavjud."
 msgid "Barcha standart turlar allaqachon mavjud."
-msgstr "Такой артикул уже существует."
+msgstr "Все стандартные типы уже доступны."
 
 #: properties/views.py:199
 msgid "Sozlamalar saqlandi."
@@ -3165,45 +3116,41 @@ msgid "Xona qo‘shildi."
 msgstr "Номер добавлен."
 
 #: properties/views.py:263
-#, fuzzy
 #| msgid "Bron yangilandi."
 msgid "Xona yangilandi."
-msgstr "Бронь обновлена."
+msgstr "Комната обновлена."
 
 #: properties/views.py:270
-#, fuzzy
 #| msgid "Mehmonni tahrirlash"
 msgid "Xonani tahrirlash"
-msgstr "Редактировать гостя"
+msgstr "Редактировать комнату"
 
 #: properties/views.py:274 templates/properties/property_detail.html:135
-#, fuzzy
 #| msgid "O‘chirishni tasdiqlaysizmi?"
 msgid "Bu xonani o‘chirishni xohlaysizmi?"
-msgstr "Подтвердить удаление?"
+msgstr "Вы хотите удалить эту комнату?"
 
 #: properties/views.py:285
-#, fuzzy
 #| msgid "Xona qo‘shildi."
 msgid "Xona o‘chirildi."
-msgstr "Номер добавлен."
+msgstr "Комната удалена."
 
 #: properties/views.py:297
-#, fuzzy
 #| msgid "Xodim yangilandi."
 msgid "Xona turi yangilandi."
-msgstr "Сотрудник обновлён."
+msgstr "Тип номера обновлен."
 
 #: properties/views.py:304
-#, fuzzy
 #| msgid "Kategoriyani tahrirlash"
 msgid "Xona turini tahrirlash"
-msgstr "Редактировать категорию"
+msgstr "Изменить тип номера"
 
 #: properties/views.py:308
 msgid ""
 "Bu xona turini o‘chirishni xohlaysizmi? Bog‘langan tariflar ham o‘chadi."
 msgstr ""
+"Вы хотите удалить этот тип номера? Соответствующие тарифы также будут "
+"отключены."
 
 #: properties/views.py:324
 #, python-format
@@ -3211,40 +3158,37 @@ msgid ""
 "Avval shu turga biriktirilgan %(n)s ta xonani boshqa turga o‘tkazing yoki "
 "o‘chiring."
 msgstr ""
+"Сначала перенесите или удалите %(n)s комнат, прикрепленных к этому типу, в "
+"другой тип."
 
 #: properties/views.py:334
 msgid "Bu tur bronlarda ishlatilgan — o‘chirib bo‘lmaydi."
-msgstr ""
+msgstr "Этот тип используется в резервациях — удалить его невозможно."
 
 #: properties/views.py:337
-#, fuzzy
 #| msgid "Xona turi qo‘shildi."
 msgid "Xona turi o‘chirildi."
-msgstr "Тип номера добавлен."
+msgstr "Тип номера удален."
 
 #: properties/views.py:354
-#, fuzzy
 #| msgid "Bu SKU allaqachon mavjud."
 msgid "Bu kod allaqachon mavjud."
-msgstr "Такой артикул уже существует."
+msgstr "Этот код уже существует."
 
 #: properties/views.py:376
-#, fuzzy
 #| msgid "Yangi xona"
 msgid "Yangi xona turi"
-msgstr "Новый номер"
+msgstr "Новый тип номера"
 
 #: properties/views.py:392
-#, fuzzy
 #| msgid "Bu SKU allaqachon mavjud."
 msgid "Bu qavat allaqachon mavjud."
-msgstr "Такой артикул уже существует."
+msgstr "Этот этаж уже существует."
 
 #: properties/views.py:410
-#, fuzzy
 #| msgid "Yangi avans"
 msgid "Yangi qavat"
-msgstr "Новый аванс"
+msgstr "Новый этаж"
 
 #: properties/views.py:425
 msgid "Tarif qo‘shildi."
@@ -3259,48 +3203,42 @@ msgid "Qavat qo‘shildi."
 msgstr "Этаж добавлен."
 
 #: properties/views.py:461
-#, fuzzy
 #| msgid "Xizmat yangilandi."
 msgid "Qavat yangilandi."
-msgstr "Услуга обновлена."
+msgstr "Пол обновлен."
 
 #: properties/views.py:468
-#, fuzzy
 #| msgid "Rasxodni tahrirlash"
 msgid "Qavatni tahrirlash"
-msgstr "Редактировать расход"
+msgstr "Изменить этаж"
 
 #: properties/views.py:471
 msgid "Bu qavatni o‘chirishni xohlaysizmi? Xonalar qavatsiz qoladi."
-msgstr ""
+msgstr "Вы хотите удалить этот слой? Комнаты остаются без полов."
 
 #: properties/views.py:482
-#, fuzzy
 #| msgid "Qavat qo‘shildi."
 msgid "Qavat o‘chirildi."
-msgstr "Этаж добавлен."
+msgstr "Этаж удален."
 
 #: properties/views.py:494
-#, fuzzy
 #| msgid "Sherik yangilandi."
 msgid "Tarif yangilandi."
-msgstr "Партнёр обновлён."
+msgstr "Тариф обновлен."
 
 #: properties/views.py:501
-#, fuzzy
 #| msgid "Sherikni tahrirlash"
 msgid "Tarifni tahrirlash"
-msgstr "Редактировать партнёра"
+msgstr "Изменить тариф"
 
 #: properties/views.py:505
 msgid "Bu tarifni o‘chirishni xohlaysizmi? Bog‘langan mavsumlar ham o‘chadi."
-msgstr ""
+msgstr "Вы хотите удалить этот тариф? Связанные сезоны также будут отключены."
 
 #: properties/views.py:517
-#, fuzzy
 #| msgid "Tarif qo‘shildi."
 msgid "Tarif o‘chirildi."
-msgstr "Тариф добавлен."
+msgstr "Тариф снят."
 
 #: properties/views.py:548
 msgid "Mavsum qo‘shildi / yangilandi."
@@ -3329,7 +3267,7 @@ msgstr "Платежи компаний"
 
 #: reports/accounting.py:388
 msgid "Oylik (yalpi)"
-msgstr ""
+msgstr "Ежемесячно (брутто)"
 
 #: reports/accounting.py:391 templates/bookings/emehmon_report.html:19
 msgid "Yo‘naltiruvchi komissiya"
@@ -3337,11 +3275,11 @@ msgstr "Комиссия агента"
 
 #: reports/accounting.py:395
 msgid "Ombor tannarx (sotilgan)"
-msgstr ""
+msgstr "Стоимость склада (продано)"
 
 #: reports/accounting.py:400
 msgid "E-mehmon (qoplanmagan)"
-msgstr ""
+msgstr "Электронный гость (не распространяется)"
 
 #: reports/chart_data.py:68 reports/chart_data.py:109
 #: templates/finance/profit_share.html:56 templates/reports/dashboard.html:171
@@ -3409,10 +3347,9 @@ msgstr "Начисление"
 #: templates/maintenance/ticket_list.html:9
 #: templates/reports/dashboard.html:175 templates/reports/flash.html:159
 #: templates/reports/flash_print.html:167
-#, fuzzy
 #| msgid "Xarajatlar"
 msgid "Xarajat"
-msgstr "Расход"
+msgstr "Xarajat"
 
 #: reports/chart_data.py:135
 msgid "O'tkazish"
@@ -3554,10 +3491,9 @@ msgid "Xodim hisobi bilan tizimga kiring"
 msgstr "Войдите с учётной записью сотрудника"
 
 #: templates/accounts/login.html:46
-#, fuzzy
 #| msgid "Foyda ulushi"
 msgid "Foydalanuvchi"
-msgstr "Пользователь"
+msgstr "Foydalanuvchi"
 
 #: templates/accounts/login.html:49
 msgid "username"
@@ -3589,7 +3525,7 @@ msgstr "Счёт"
 
 #: templates/accounts/profile.html:19
 msgid "Akkauntingiz o‘chirilsinmi? Tizimga kira olmaysiz."
-msgstr ""
+msgstr "Удалить свой аккаунт? Вы не можете войти в систему."
 
 #: templates/accounts/profile.html:21 templates/accounts/profile_form.html:14
 #: templates/bookings/group_form.html:43 templates/bookings/group_form.html:67
@@ -3630,49 +3566,48 @@ msgstr "Подтвердить удаление?"
 
 #: templates/admin/app_list.html:15
 msgid "Model name"
-msgstr ""
+msgstr "Название модели"
 
 #: templates/admin/app_list.html:16
 msgid "Add link"
-msgstr ""
+msgstr "Добавить ссылку"
 
 #: templates/admin/app_list.html:17
 msgid "Change or view list link"
-msgstr ""
+msgstr "Изменить или просмотреть ссылку на список"
 
 #: templates/admin/app_list.html:32
 msgid "Add"
-msgstr ""
+msgstr "Add"
 
 #: templates/admin/app_list.html:39
 msgid "View"
-msgstr ""
+msgstr "View"
 
 #: templates/admin/app_list.html:41
 msgid "Change"
-msgstr ""
+msgstr "Change"
 
 #: templates/admin/app_list.html:53
 msgid "You don’t have permission to view or edit anything."
-msgstr ""
+msgstr "У вас нет разрешения на просмотр или редактирование чего-либо."
 
 #: templates/admin/index.html:59
 msgid "Recent actions"
-msgstr ""
+msgstr "Недавние действия"
 
 #: templates/admin/index.html:60
-#, fuzzy
 #| msgid "Operations"
 msgid "My actions"
-msgstr "Операции"
+msgstr "Мои действия"
 
 #: templates/admin/index.html:64
 msgid "None available"
-msgstr ""
+msgstr "Нет доступных"
 
 #: templates/admin/index.html:78
 msgid "Unknown content"
-msgstr ""
+msgstr "Неизвестный контент"
 
 #: templates/base.html:7 templates/base.html:41
 msgid "Mehmonxona PMS"
@@ -3867,17 +3802,16 @@ msgstr "Язык"
 #: templates/base.html:198 templates/hr/payroll_item_form.html:9
 #: templates/hr/payroll_list.html:49
 msgid "Baza"
-msgstr ""
+msgstr "Baza"
 
 #: templates/base.html:199
 msgid "USD/EUR"
-msgstr ""
+msgstr "USD/EUR"
 
 #: templates/bookings/commission_report.html:3
-#, fuzzy
 #| msgid "Kompaniya hisobi"
 msgid "Komissiya hisoboti"
-msgstr "Счёт компании"
+msgstr "Отчет комиссии"
 
 #: templates/bookings/commission_report.html:9
 #: templates/bookings/referrer_list.html:7 templates/includes/nav_hub.html:165
@@ -3902,25 +3836,22 @@ msgstr "Год"
 
 #: templates/bookings/commission_report.html:40
 #: templates/bookings/emehmon_report.html:43
-#, fuzzy
 #| msgid "Ko‘rish"
 msgid "Ko‘rsatish"
-msgstr "Смотреть"
+msgstr "Показывать"
 
 #: templates/bookings/commission_report.html:59
 #: templates/bookings/commission_report.html:75
 #: templates/bookings/commission_report.html:144
 #: templates/bookings/commission_statement.html:134
-#, fuzzy
 #| msgid "Yopilgan"
 msgid "Qolgan"
-msgstr "Закрыт"
+msgstr "Qolgan"
 
 #: templates/bookings/commission_report.html:72
-#, fuzzy
 #| msgid "Tez bron"
 msgid "bron"
-msgstr "Быстрая бронь"
+msgstr "bron"
 
 #: templates/bookings/commission_report.html:81
 #: templates/bookings/emehmon_report.html:18
@@ -3935,10 +3866,9 @@ msgstr "База"
 
 #: templates/bookings/commission_report.html:106
 #: templates/bookings/commission_statement.html:166
-#, fuzzy
 #| msgid "Bron yo‘q."
 msgid "Bu oyda bron yo‘q"
-msgstr "Нет брони."
+msgstr "В этом месяце заказов нет"
 
 #: templates/bookings/commission_report.html:140
 #: templates/hr/payroll_list.html:71
@@ -3947,24 +3877,24 @@ msgstr "Выплатить"
 
 #: templates/bookings/commission_report.html:148
 msgid "Shu oy uchun to‘liq to‘langan."
-msgstr ""
+msgstr "Оплачена полностью за этот месяц."
 
 #: templates/bookings/commission_report.html:153
-#, fuzzy
 #| msgid "Bu modul joriy tarifda yo‘q."
 msgid "Bu oyda komissiya yo‘q"
-msgstr "Этот модуль недоступен в текущем тарифе."
+msgstr "В этом месяце комиссии нет."
 
 #: templates/bookings/commission_report.html:153
 msgid ""
 "Chiqish sanasi shu oyga tushgan va yo‘naltiruvchisi bor bronlar shu yerda "
 "chiqadi."
 msgstr ""
+"Здесь появятся бронирования с датой выезда в этом месяце и направлением."
 
 #: templates/bookings/commission_statement.html:6
 #: templates/bookings/commission_statement.html:101
 msgid "Komissiya bayonnomasi"
-msgstr ""
+msgstr "Отчет комиссии"
 
 #: templates/bookings/commission_statement.html:96
 #: templates/bookings/emehmon_statement.html:112
@@ -3977,10 +3907,9 @@ msgstr "Печать"
 
 #: templates/bookings/commission_statement.html:97
 #: templates/bookings/emehmon_statement.html:113
-#, fuzzy
 #| msgid "Hisob"
 msgid "Hisobotga"
-msgstr "Счёт"
+msgstr "Hisobotga"
 
 #: templates/bookings/commission_statement.html:104
 #: templates/bookings/emehmon_statement.html:120
@@ -3992,38 +3921,39 @@ msgstr "Период"
 
 #: templates/bookings/commission_statement.html:113
 msgid "Yo‘naltiruvchi / komissiyachi"
-msgstr ""
+msgstr "Реферер/комиссар"
 
 #: templates/bookings/commission_statement.html:139
 msgid "Bronlar bo‘yicha hisob"
-msgstr ""
+msgstr "Учетная запись для бронирования"
 
 #: templates/bookings/commission_statement.html:208
 msgid ""
 "Komissiya bazasi — xona tushumi (Night / xona yozuvlari yoki bron summasi). "
 "Minibar va qo‘shimcha xizmatlar bazaga kirmaydi."
 msgstr ""
+"Основой комиссии является доход от номера (записи за ночь/номер или сумма "
+"бронирования). Минибар и дополнительные услуги не включены в базовую "
+"комплектацию."
 
 #: templates/bookings/commission_statement.html:209
 msgid "Ushbu bayonnoma sverka uchun: tomonlar imzolab tasdiqlaydi."
-msgstr ""
+msgstr "Настоящее соглашение является обязательным: подписывается сторонами."
 
 #: templates/bookings/commission_statement.html:215
-#, fuzzy
 #| msgid "Mehmonxona yaratildi."
 msgid "Mehmonxona vakili"
-msgstr "Гостиница создана."
+msgstr "Представитель отеля"
 
 #: templates/bookings/commission_statement.html:216
 #: templates/bookings/commission_statement.html:220
-#, fuzzy
 #| msgid "F.I.Sh."
 msgid "F.I.Sh. / imzo"
-msgstr "ФИО"
+msgstr "Рыба. / подпись"
 
 #: templates/bookings/commission_statement.html:219
 msgid "Komissiyachi"
-msgstr ""
+msgstr "Komissiyachi"
 
 #: templates/bookings/commission_statement.html:225
 #: templates/bookings/emehmon_statement.html:124
@@ -4034,41 +3964,36 @@ msgstr "Напечатано"
 
 #: templates/bookings/emehmon_report.html:3
 msgid "E-mehmon komissiya"
-msgstr ""
+msgstr "Электронная гостевая комиссия"
 
 #: templates/bookings/emehmon_report.html:9
-#, fuzzy
 #| msgid "Oylik maosh"
 msgid "Oylik E-mehmon"
-msgstr "Месячный оклад"
+msgstr "Ежемесячный электронный гость"
 
 #: templates/bookings/emehmon_report.html:12
-#, fuzzy
 #| msgid "Mehmon to‘lovlari"
 msgid "Zayezdda olingan to‘lovlar"
-msgstr "Платежи гостей"
+msgstr "Платежи, полученные в Заезе"
 
 #: templates/bookings/emehmon_report.html:50
-#, fuzzy
 #| msgid "Mehmonlar"
 msgid "Mehmon-kechalar"
-msgstr "Гости"
+msgstr "Mehmon-kechalar"
 
 #: templates/bookings/emehmon_report.html:54
-#, fuzzy
 #| msgid "Mehmonga yozilgan"
 msgid "Mehmondan olingan"
-msgstr "Начислено гостю"
+msgstr "Взято у гостя"
 
 #: templates/bookings/emehmon_report.html:58
-#, fuzzy
 #| msgid "Kompaniya hisobiga o‘tkazish"
 msgid "E-mehmonga o‘tkazish"
-msgstr "Перенести на счёт компании"
+msgstr "Перенос в электронный гость"
 
 #: templates/bookings/emehmon_report.html:62
 msgid "Farq (P&L)"
-msgstr ""
+msgstr "Разница (ПиУ)"
 
 #: templates/bookings/emehmon_report.html:68
 msgid ""
@@ -4076,6 +4001,10 @@ msgid ""
 "emas). Bayonnoma bo‘yicha E-mehmonga topshiriladi. Farq > 0 — belgilangan, "
 "lekin olinmagan; P&L da rasxod."
 msgstr ""
+"Электронный гость, полученный в Зайезе, фиксируется в фолианте и кассовом "
+"аппарате (промежуточный - не квитанция). Он будет передан Электронному гостю"
+" согласно протоколу. Разница > 0 — указано, но не получено; "
+"Удовлетворенность прибылями и убытками."
 
 #: templates/bookings/emehmon_report.html:77
 #: templates/bookings/reservation_detail.html:37
@@ -4085,13 +4014,12 @@ msgstr "Даты"
 
 #: templates/bookings/emehmon_report.html:79
 msgid "Oy kechalari"
-msgstr ""
+msgstr "Лунные ночи"
 
 #: templates/bookings/emehmon_report.html:80
-#, fuzzy
 #| msgid "Mehmon"
 msgid "Mehmon-kecha"
-msgstr "Гость"
+msgstr "Mehmon-kecha"
 
 #: templates/bookings/emehmon_report.html:81
 #: templates/bookings/emehmon_report.html:99
@@ -4113,15 +4041,14 @@ msgid "Yo‘q"
 msgstr "Нет"
 
 #: templates/bookings/emehmon_report.html:107
-#, fuzzy
 #| msgid "Bu xonada yashovchi mehmon yo‘q."
 msgid "Bu oyda yashash yo‘q."
-msgstr "В этом номере нет проживающего гостя."
+msgstr "Никакой жизни в этом месяце."
 
 #: templates/bookings/emehmon_statement.html:6
 #: templates/bookings/emehmon_statement.html:117
 msgid "E-mehmon bayonnomasi"
-msgstr ""
+msgstr "Электронное гостевое заявление"
 
 #: templates/bookings/emehmon_statement.html:135
 #: templates/finance/profit_share.html:115
@@ -4129,10 +4056,9 @@ msgid "Jami olingan"
 msgstr "Всего получено"
 
 #: templates/bookings/emehmon_statement.html:139
-#, fuzzy
 #| msgid "Mehmonni tahrirlash"
 msgid "E-mehmonga topshirish"
-msgstr "Редактировать гостя"
+msgstr "Электронная гостевая подача"
 
 #: templates/bookings/emehmon_statement.html:145
 msgid ""
@@ -4140,18 +4066,19 @@ msgid ""
 "tizimiga / davlatga topshirish uchun sverka hujjatidir. Summalar folio "
 "hisobida o‘tkinchi (tushum emas) qilib yozilgan."
 msgstr ""
+"Данный отчет является официальным документом для передачи платежей E-guest, "
+"полученных от гостя в самолете, в систему/государство E-guest. Суммы "
+"записываются на счете фолио как временные (не доходы)."
 
 #: templates/bookings/emehmon_statement.html:180
-#, fuzzy
 #| msgid "Bu xonada yashovchi mehmon yo‘q."
 msgid "Bu oyda olingan E-mehmon yo‘q."
-msgstr "В этом номере нет проживающего гостя."
+msgstr "В этом месяце не было получено ни одного электронного гостя."
 
 #: templates/bookings/emehmon_statement.html:194
-#, fuzzy
 #| msgid "Mehmonxona boshqaruvi"
 msgid "Mehmonxona (topshiruvchi)"
-msgstr "Управление отелем"
+msgstr "Гостиница (поставщик)"
 
 #: templates/bookings/emehmon_statement.html:195
 #: templates/bookings/emehmon_statement.html:199
@@ -4161,13 +4088,12 @@ msgstr "ФИО / подпись"
 
 #: templates/bookings/emehmon_statement.html:198
 msgid "E-mehmon (qabul qiluvchi)"
-msgstr ""
+msgstr "Электронный гость (получатель)"
 
 #: templates/bookings/group_form.html:29
-#, fuzzy
 #| msgid "Xodim qo‘shish"
 msgid "Xona qo‘shish"
-msgstr "Добавить сотрудника"
+msgstr "Добавить комнату"
 
 #: templates/bookings/group_form.html:85
 #: templates/finance/exchange_rates.html:20
@@ -4195,14 +4121,13 @@ msgid "xona"
 msgstr "номер"
 
 #: templates/bookings/group_list.html:22
-#, fuzzy
 #| msgid "Davr yo‘q"
 msgid "Guruh yo‘q"
-msgstr "Нет периода"
+msgstr "Нет группы"
 
 #: templates/bookings/group_list.html:22
 msgid "Bir nechta xonali korporativ bron uchun guruh yarating."
-msgstr ""
+msgstr "Создайте группу для корпоративного бронирования нескольких номеров."
 
 #: templates/bookings/inquiry_list.html:6
 msgid "Navbat"
@@ -4228,13 +4153,12 @@ msgstr "Нет заявок"
 
 #: templates/bookings/inquiry_list.html:30
 msgid "Yangi so‘rov yaratilganda shu yerda tasdiqlash mumkin."
-msgstr ""
+msgstr "Когда будет создан новый запрос, вы можете подтвердить его здесь."
 
 #: templates/bookings/inquiry_list.html:30
-#, fuzzy
 #| msgid "Yangi bron"
 msgid "Yangi so‘rov"
-msgstr "Новая бронь"
+msgstr "Новый запрос"
 
 #: templates/bookings/partials/board_page.html:5
 #: templates/reports/dashboard.html:9
@@ -4267,7 +4191,7 @@ msgstr "Свободен"
 
 #: templates/bookings/partials/board_page.html:64
 msgid "Shaxmatka (Taqvim)"
-msgstr ""
+msgstr "Шахматы (Календарь)"
 
 #: templates/bookings/partials/board_page.html:101
 msgid "Kirish*"
@@ -4298,31 +4222,29 @@ msgstr "План броней"
 
 #: templates/bookings/partials/calendar_page.html:5
 msgid "Shaxmatka · 1 oy"
-msgstr ""
+msgstr "Шахматка · 1 мес."
 
 #: templates/bookings/partials/calendar_page.html:5
 msgid "Shaxmatka · 14 kun"
-msgstr ""
+msgstr "Шахматы · 14 дней"
 
 #: templates/bookings/partials/calendar_page.html:16
 msgid "Shu oy"
-msgstr ""
+msgstr "Shu oy"
 
 #: templates/bookings/partials/calendar_page.html:24
-#, fuzzy
 #| msgid "Oldingi kun"
 msgid "Oldingi oy"
-msgstr "Предыдущий день"
+msgstr "Предыдущий месяц"
 
 #: templates/bookings/partials/calendar_page.html:24
 msgid "Oldingi hafta"
 msgstr "Предыдущая неделя"
 
 #: templates/bookings/partials/calendar_page.html:36
-#, fuzzy
 #| msgid "Keyingi kun"
 msgid "Keyingi oy"
-msgstr "Следующий день"
+msgstr "В следующем месяце"
 
 #: templates/bookings/partials/calendar_page.html:36
 msgid "Keyingi hafta"
@@ -4333,10 +4255,9 @@ msgid "Kun"
 msgstr "День"
 
 #: templates/bookings/partials/calendar_page.html:60
-#, fuzzy
 #| msgid "Taqvim"
 msgid "Taqvim turi"
-msgstr "Календарь"
+msgstr "Тип календаря"
 
 #: templates/bookings/partials/calendar_page.html:67
 msgid "14 kun"
@@ -4344,7 +4265,7 @@ msgstr "14 дней"
 
 #: templates/bookings/partials/calendar_page.html:74
 msgid "1 oy"
-msgstr ""
+msgstr "1 ой"
 
 #: templates/bookings/partials/calendar_page.html:78
 #: templates/reports/dashboard.html:63 templates/reports/dashboard.html:253
@@ -4356,10 +4277,9 @@ msgid "Bo‘sh → +"
 msgstr "Свободен → +"
 
 #: templates/bookings/partials/calendar_page.html:83
-#, fuzzy
 #| msgid "Bugungi smena"
 msgid "Bugungi doska"
-msgstr "Сегодняшняя смена"
+msgstr "Сегодняшняя доска"
 
 #: templates/bookings/partials/calendar_page.html:122
 #: templates/bookings/partials/calendar_quick_form.html:3
@@ -4368,10 +4288,9 @@ msgid "Tez bron"
 msgstr "Быстрая бронь"
 
 #: templates/bookings/partials/calendar_page.html:131
-#, fuzzy
 #| msgid "Avval xonalar ro‘yxatini to‘ldiring."
 msgid "Avval filial va xonalarni qo‘shing — taqvim to‘ladi."
-msgstr "Сначала заполните список номеров."
+msgstr "Сначала добавьте филиалы и помещения — календарь заполнен."
 
 #: templates/bookings/partials/calendar_quick_form.html:23
 #: templates/bookings/reservation_form.html:119
@@ -4454,34 +4373,33 @@ msgstr[3] ""
 "  "
 
 #: templates/bookings/referrer_list.html:16
-#, fuzzy, python-format
+#, python-format
 #| msgid "Standart"
 msgid "Standart %%"
-msgstr "Стандарт"
+msgstr "по умолчанию %%"
 
 #: templates/bookings/referrer_list.html:27
-#, fuzzy
 #| msgid "nofaol"
 msgid "Nofaol"
-msgstr "неактивен"
+msgstr "Nofaol"
 
 #: templates/bookings/referrer_list.html:34
-#, fuzzy
 #| msgid "Hali to‘lov yo‘q"
 msgid "Hali yo‘naltiruvchi yo‘q"
-msgstr "Пока нет платежей"
+msgstr "Пока нет направления"
 
 #: templates/bookings/referrer_list.html:34
 msgid ""
 "Bron qilganda «kim orqali» kelganini tanlash uchun avval Vali kabi odamlarni"
 " qo‘shing."
 msgstr ""
+"Сначала добавьте таких людей, как Вали, чтобы выбрать, кто «прошел» при "
+"бронировании."
 
 #: templates/bookings/referrer_list.html:34
-#, fuzzy
 #| msgid "Yetkazib beruvchi qo‘shildi."
 msgid "Yo‘naltiruvchi qo‘shish"
-msgstr "Поставщик добавлен."
+msgstr "Добавить реферала"
 
 #: templates/bookings/reservation_amend.html:3
 #: templates/bookings/reservation_detail.html:195
@@ -4494,7 +4412,7 @@ msgstr "Изменить бронь"
 
 #: templates/bookings/reservation_detail.html:11
 msgid "pastdagi formadan oling yoki o‘tkazib yuboring."
-msgstr ""
+msgstr "Используйте форму ниже или пропустите ее."
 
 #: templates/bookings/reservation_detail.html:37
 msgid "tun"
@@ -4505,10 +4423,9 @@ msgid "Biriktirilmagan"
 msgstr "Не назначен"
 
 #: templates/bookings/reservation_detail.html:40
-#, fuzzy
 #| msgid "kecha"
 msgid "1 kecha"
-msgstr "вчера"
+msgstr "1 ночь"
 
 #: templates/bookings/reservation_detail.html:50
 msgid "Qora ro‘yxatdagi mehmon"
@@ -4525,20 +4442,22 @@ msgid "Depozit olish"
 msgstr "Принять депозит"
 
 #: templates/bookings/reservation_detail.html:93
-#, fuzzy
 #| msgid "Tez kirish"
 msgid "Zayezd (kirish)"
-msgstr "Быстрый вход"
+msgstr "Заезд (введение)"
 
 #: templates/bookings/reservation_detail.html:94
 msgid ""
 "E-mehmon komissiyasini shu yerda tanlaysiz — xohlagan mehmondan olasiz, "
 "xohlaganidan olmayapsiz."
 msgstr ""
+"Здесь вы можете выбрать комиссию электронного гостя — вы можете получить ее "
+"с любого гостя, хотите вы или нет."
 
 #: templates/bookings/reservation_detail.html:103
 msgid "O‘chirsangiz — bu mehmondan E-mehmon olinmaydi."
 msgstr ""
+"Если вы отключите эту функцию, этот гость не получит электронного гостя."
 
 #: templates/bookings/reservation_detail.html:124
 msgid "Kir xonaga kirish*"
@@ -4557,22 +4476,22 @@ msgid "hujjat qo‘shish"
 msgstr "добавить документ"
 
 #: templates/bookings/reservation_detail.html:140
-#, fuzzy
 #| msgid "To‘lov allaqachon bekor qilingan."
 msgid "E-mehmon to‘lovi allaqachon qabul qilingan."
-msgstr "Платёж уже отменён."
+msgstr "Электронный гостевой платеж уже принят."
 
 #: templates/bookings/reservation_detail.html:145
 msgid ""
 "Zayezdda olinmagan. Kerak bo‘lsa hozir oling, kerak bo‘lmasa o‘tkazib "
 "yuboring."
 msgstr ""
+"Не взято в Заезде. Получите его сейчас, если оно вам нужно, пропустите его, "
+"если нет."
 
 #: templates/bookings/reservation_detail.html:176
-#, fuzzy
 #| msgid "Mehmon to‘lovlari"
 msgid "E-mehmon to‘lovini olish"
-msgstr "Платежи гостей"
+msgstr "Получите электронный гостевой платеж"
 
 #: templates/bookings/reservation_detail.html:184
 msgid "So‘rovni tasdiqlash"
@@ -4580,10 +4499,9 @@ msgstr "Подтвердить заявку"
 
 #: templates/bookings/reservation_detail.html:192
 #: templates/bookings/transfer.html:3 templates/bookings/transfer.html:6
-#, fuzzy
 #| msgid "Xona turlari"
 msgid "Xona / tur almashtirish"
-msgstr "Типы номеров"
+msgstr "Изменение номера/типа"
 
 #: templates/bookings/reservation_detail.html:200
 msgid "O‘zgarishlar"
@@ -4597,7 +4515,7 @@ msgstr "Стойка регистрации"
 
 #: templates/bookings/reservation_form.html:18
 msgid "1"
-msgstr ""
+msgstr "1"
 
 #: templates/bookings/reservation_form.html:32
 #: templates/bookings/reservation_form.html:46
@@ -4611,13 +4529,12 @@ msgstr "+ Новый"
 
 #: templates/bookings/reservation_form.html:78
 msgid "2"
-msgstr ""
+msgstr "2"
 
 #: templates/bookings/reservation_form.html:79
-#, fuzzy
 #| msgid "Yangi xona"
 msgid "Sana va xona"
-msgstr "Новый номер"
+msgstr "Дата и номер"
 
 #: templates/bookings/reservation_form.html:94
 msgid "Xona va sanalarni tanlang"
@@ -4625,7 +4542,7 @@ msgstr "Выберите номер и даты"
 
 #: templates/bookings/reservation_form.html:100
 msgid "3"
-msgstr ""
+msgstr "3"
 
 #: templates/bookings/reservation_form.html:101
 #: templates/bookings/walk_in.html:92
@@ -4634,11 +4551,11 @@ msgstr "Дополнительно"
 
 #: templates/bookings/reservation_form.html:115
 msgid "E-mehmon komissiyasi kirish (zayezd) paytida tanlanadi."
-msgstr ""
+msgstr "Электронная гостевая комиссия выбирается при въезде (заезде)."
 
 #: templates/bookings/reservation_list.html:9
 msgid "Holat, qidiruv va tezkor folio / kirish / chiqish."
-msgstr ""
+msgstr "Статус, поиск и быстрый фолио/вход/выход."
 
 #: templates/bookings/reservation_list.html:14
 #: templates/bookings/reservation_list.html:24
@@ -4663,10 +4580,9 @@ msgid "Qo‘llash"
 msgstr "Применить"
 
 #: templates/bookings/reservation_list.html:25
-#, fuzzy
 #| msgid "Hozir mehmon yo‘q"
 msgid "Kod, mehmon, xona…"
-msgstr "Сейчас нет гостей"
+msgstr "Код, Гость, Номер…"
 
 #: templates/bookings/reservation_list.html:30
 #: templates/finance/expense_list.html:30
@@ -4680,10 +4596,9 @@ msgid "Topildi"
 msgstr "Найдено"
 
 #: templates/bookings/reservation_list.html:53
-#, fuzzy
 #| msgid "Bugungi kelishlar"
 msgid "Bugun kirish"
-msgstr "Сегодняшние заезды"
+msgstr "Войти сегодня"
 
 #: templates/bookings/reservation_list.html:61
 #: templates/finance/expense_list.html:92
@@ -4710,14 +4625,13 @@ msgstr "Открыть"
 
 #: templates/bookings/reservation_list.html:98
 #: templates/guests/guest_detail.html:72
-#, fuzzy
 #| msgid "Bron yo‘q."
 msgid "Bron yo‘q"
-msgstr "Нет брони."
+msgstr "Нет брони"
 
 #: templates/bookings/reservation_list.html:98
 msgid "Yangi rezervatsiya yarating yoki so‘rovlarni tekshiring."
-msgstr ""
+msgstr "Создайте новое бронирование или проверьте запросы."
 
 #: templates/bookings/reservation_list.html:102
 #: templates/finance/expense_list.html:109
@@ -4733,12 +4647,13 @@ msgid ""
 "Mehmon Twin, Double yoki boshqa turni so‘rasa — avval turini tanlang, keyin "
 "bo‘sh xonani."
 msgstr ""
+"Если гость просит двухместный, двухместный или другой тип - сначала выберите"
+" тип, затем свободный номер."
 
 #: templates/bookings/transfer.html:65
-#, fuzzy
 #| msgid "Faollashtirish"
 msgid "Almashtirish"
-msgstr "Активировать"
+msgstr "Almashtirish"
 
 #: templates/bookings/walk_in.html:8
 msgid "Resepsiya"
@@ -4769,6 +4684,8 @@ msgstr "Данные гостя"
 msgid ""
 "Ixtiyoriy. Belgilanmasa olinmaydi; belgilansa: tarif × tunlar × mehmonlar."
 msgstr ""
+"Необязательный. Недоступно, если не указано иное; если указано: цена × ночи "
+"× гости."
 
 #: templates/bookings/walk_in.html:123
 msgid "Kir xona ruxsati"
@@ -4852,10 +4769,9 @@ msgid ""
 msgstr "Курсы ежедневно подтягиваются с ЦБ (cbu.uz). Можно обновить вручную."
 
 #: templates/finance/exchange_rates.html:49
-#, fuzzy
 #| msgid "Yangi guruh"
 msgid "Yangi kurs"
-msgstr "Новая группа"
+msgstr "Новый курс"
 
 #: templates/finance/exchange_rates.html:63
 #| msgid "hujjat qo‘shish"
@@ -4990,14 +4906,15 @@ msgid "Olingan jami"
 msgstr "Всего получено"
 
 #: templates/finance/profit_reset.html:16
-#, fuzzy
 #| msgid ""
 #| "Yopilgandan keyin yangi davr ertasi kundan boshlanadi. Tarix saqlanadi."
 msgid ""
 "Yopilgandan keyin yangi davr odatda ertasi kundan boshlanadi. «Bugundan» "
 "belgilansa — shu kun tushumi yangi davrda qayta ulashiladi. Tarix saqlanadi."
 msgstr ""
-"После закрытия новый период начнётся со следующего дня. История сохранится."
+"После закрытия на следующий день обычно начинается новая менструация. Если "
+"указано «с сегодняшнего дня», доход этого дня будет перераспределен в новом "
+"периоде. История сохраняется."
 
 #: templates/finance/profit_reset.html:24
 msgid "Davrni yopish"
@@ -5036,6 +4953,9 @@ msgid ""
 "Faol ulushlar: %(sum)s%%. Ideal 100%% (qolgan %(gap)s%%). Har foiz sof "
 "foydadan hisoblanadi; biriktirilmagan qism «Taqsimlanmagan»da."
 msgstr ""
+"Активные акции: %(sum)s%%. В идеале 100%% (осталось %(gap)s%%). Каждый "
+"процент рассчитывается из чистой прибыли; неприсоединенная часть находится в"
+" состоянии «Нераспределено»."
 
 #: templates/finance/profit_share.html:79
 #| msgid "Filial sozlanmagan."
@@ -5066,7 +4986,7 @@ msgstr "Пока нет партнёров"
 
 #: templates/finance/profit_share.html:110
 msgid "Ulush foizlarini qo‘shing — sof foyda avtomatik taqsimlanadi."
-msgstr ""
+msgstr "Добавьте долю участия – чистая прибыль распределяется автоматически."
 
 #: templates/finance/profit_share.html:110
 #| msgid "Birinchi sherikni qo‘shing"
@@ -5158,7 +5078,7 @@ msgstr "Кассовая смена"
 
 #: templates/folio/cash_shift.html:6
 msgid "Naqd quti: ochish, harakatlar, yopish va farq nazorati"
-msgstr ""
+msgstr "Кассовый бокс: открытие, движение, закрытие и контроль разницы"
 
 #: templates/folio/cash_shift.html:12
 msgid "Faol smena"
@@ -5182,14 +5102,13 @@ msgstr "Ожидаемая наличность"
 #: templates/folio/cash_shift.html:54
 #: templates/folio/cash_shift_detail.html:49
 #: templates/folio/cash_shift_print.html:81
-#, fuzzy
 #| msgid "rasxod + oylik"
 msgid "Rasxod / oylik"
-msgstr "расходы + зарплата"
+msgstr "Оплата / ежемесячно"
 
 #: templates/folio/cash_shift.html:60
 msgid "Diagrammalar"
-msgstr ""
+msgstr "Diagrammalar"
 
 #: templates/folio/cash_shift.html:63 templates/folio/cash_shift.html:64
 msgid "To‘lov turlari"
@@ -5202,6 +5121,7 @@ msgstr "Движение наличных"
 #: templates/folio/cash_shift.html:77
 msgid "Mehmon to‘lovidan tashqari: qutiga qo‘shimcha naqd yoki mayda chiqim."
 msgstr ""
+"Дополнительно к гостевому сбору: дополнительные наличные или сдача в ящике."
 
 #: templates/folio/cash_shift.html:85
 #: templates/folio/partials/folio_body.html:106
@@ -5216,7 +5136,7 @@ msgstr "Закрыть смену"
 
 #: templates/folio/cash_shift.html:107
 msgid "Kassani sanang. Farq = sanangan − kutilgan."
-msgstr ""
+msgstr "Посчитайте коробку. Разница = рассчитанная − ожидаемая."
 
 #: templates/folio/cash_shift.html:110
 #: templates/folio/cash_shift_detail.html:58
@@ -5225,10 +5145,9 @@ msgid "Farq"
 msgstr "Разница"
 
 #: templates/folio/cash_shift.html:119
-#, fuzzy
 #| msgid "O‘chirishni tasdiqlaysizmi?"
 msgid "Smenani yopishni tasdiqlaysizmi?"
-msgstr "Подтвердить удаление?"
+msgstr "Подтвердить закрытие смены?"
 
 #: templates/folio/cash_shift.html:132
 #: templates/folio/cash_shift_detail.html:85
@@ -5238,40 +5157,36 @@ msgstr "Платежи наличными"
 
 #: templates/folio/cash_shift.html:147
 #: templates/folio/cash_shift_detail.html:93
-#, fuzzy
 #| msgid "Hali to‘lov yo‘q"
 msgid "Naqd to‘lov yo‘q"
-msgstr "Пока нет платежей"
+msgstr "Без наличной оплаты"
 
 #: templates/folio/cash_shift.html:147
 msgid "Smena davomida qabul qilingan naqd to‘lovlar shu yerda ko‘rinadi."
-msgstr ""
+msgstr "Наличные выплаты, полученные за смену, можно увидеть здесь."
 
 #: templates/folio/cash_shift.html:155
-#, fuzzy
 #| msgid "Naqd to‘lovlar"
 msgid "Naqd bo‘lmagan to‘lovlar"
-msgstr "Платежи наличными"
+msgstr "Безналичные расчеты"
 
 #: templates/folio/cash_shift.html:183
 msgid "Naqd chiqimlar (rasxod / oylik / avans)"
-msgstr ""
+msgstr "Выдача наличных (оплата/ежемесячно/аванс)"
 
 #: templates/folio/cash_shift.html:200
 #: templates/folio/cash_shift_detail.html:136
 #: templates/folio/cash_shift_print.html:137
 #: templates/hr/employee_list.html:29 templates/hr/payroll_item_form.html:10
 #: templates/hr/payroll_list.html:51
-#, fuzzy
 #| msgid "avans"
 msgid "Avans"
-msgstr "аванс"
+msgstr "Avans"
 
 #: templates/folio/cash_shift.html:212
-#, fuzzy
 #| msgid "Boshlanish"
 msgid "Boshlash"
-msgstr "Начало"
+msgstr "Boshlash"
 
 #: templates/folio/cash_shift.html:213
 msgid "Yangi smena"
@@ -5282,28 +5197,29 @@ msgid ""
 "Naqd to‘lovlar faqat ochiq smenada qabul qilinadi. Qutidagi boshlang‘ich "
 "summani kiriting."
 msgstr ""
+"Наличные платежи принимаются только во время открытых смен. Введите "
+"стартовую сумму в поле."
 
 #: templates/folio/cash_shift.html:218
 msgid "Oldingi smena yopilganini tekshiring"
-msgstr ""
+msgstr "Проверьте, закрыта ли предыдущая смена"
 
 #: templates/folio/cash_shift.html:219
 msgid "Naqdni sanab, boshlang‘ichni kiriting"
-msgstr ""
+msgstr "Подсчитайте деньги и введите стартер"
 
 #: templates/folio/cash_shift.html:220
 msgid "Smena davomida harakat va yopishni shu yerda kuzating"
-msgstr ""
+msgstr "Посмотреть действия и закрытие во время смены можно здесь."
 
 #: templates/folio/cash_shift.html:229 templates/folio/cash_shift.html:278
-#, fuzzy
 #| msgid "Smenani yopish"
 msgid "Smenani ochish"
-msgstr "Закрыть смену"
+msgstr "Открытие смены"
 
 #: templates/folio/cash_shift.html:239
 msgid "Arxiv"
-msgstr ""
+msgstr "Arxiv"
 
 #: templates/folio/cash_shift.html:240 templates/guests/guest_detail.html:46
 #: templates/services/service_list.html:31
@@ -5312,11 +5228,11 @@ msgstr "История"
 
 #: templates/folio/cash_shift.html:241
 msgid "Oxirgi 20 smena · farq grafigi"
-msgstr ""
+msgstr "Последние 20 смен · график разницы"
 
 #: templates/folio/cash_shift.html:246
 msgid "Farq grafigi"
-msgstr ""
+msgstr "График разницы"
 
 #: templates/folio/cash_shift.html:248
 msgid "Smena farqi (variance)"
@@ -5331,14 +5247,14 @@ msgid "yopish"
 msgstr "закрытие"
 
 #: templates/folio/cash_shift.html:278
-#, fuzzy
 #| msgid "Ochiq smena yo‘q."
 msgid "Hali smena yo‘q"
-msgstr "Нет открытой смены."
+msgstr "смены пока нет"
 
 #: templates/folio/cash_shift.html:278
 msgid "Birinchi smenani oching — naqd to‘lovlar shundan keyin qabul qilinadi."
 msgstr ""
+"Откройте первую смену – после этого будет приниматься наличная оплата."
 
 #: templates/folio/cash_shift_detail.html:3
 #: templates/includes/nav_hub.html:115
@@ -5353,20 +5269,18 @@ msgstr "Назад"
 
 #: templates/folio/cash_shift_detail.html:54
 #: templates/folio/cash_shift_print.html:86
-#, fuzzy
 #| msgid "Yakunlangan"
 msgid "Sanangan"
-msgstr "Завершено"
+msgstr "Sanangan"
 
 #: templates/folio/cash_shift_detail.html:93
 msgid "Shu smenada qabul qilingan naqd to‘lovlar shu yerda."
-msgstr ""
+msgstr "Вот денежные выплаты, полученные в эту смену."
 
 #: templates/folio/cash_shift_detail.html:100
-#, fuzzy
 #| msgid "Naqd to‘lovlar"
 msgid "Naqd bo‘lmagan"
-msgstr "Платежи наличными"
+msgstr "Не было наличных"
 
 #: templates/folio/cash_shift_detail.html:120
 #: templates/folio/cash_shift_print.html:126
@@ -5374,15 +5288,14 @@ msgid "Naqd chiqimlar"
 msgstr "Расходы наличными"
 
 #: templates/folio/cash_shift_print.html:66
-#, fuzzy
 #| msgid "Kassa smena ochildi."
 msgid "Kassa smena hisoboti"
-msgstr "Смена кассы открыта."
+msgstr "Отчет о смене кассира"
 
 #: templates/folio/cash_shift_print.html:94
 #: templates/folio/cash_shift_print.html:110
 msgid "Vaqt"
-msgstr ""
+msgstr "Vaqt"
 
 #: templates/folio/city_ledger_list.html:7
 msgid "Debitor qarzdorlik"
@@ -5390,7 +5303,7 @@ msgstr "Дебиторская задолженность"
 
 #: templates/folio/city_ledger_list.html:7
 msgid "Ochiq hisoblar, muddat va tezkor to‘lov."
-msgstr ""
+msgstr "Открытие счетов, срок и своевременная оплата."
 
 #: templates/folio/city_ledger_list.html:11
 msgid "Jami debitorlik"
@@ -5412,19 +5325,18 @@ msgid "PDF"
 msgstr "PDF"
 
 #: templates/folio/city_ledger_list.html:51
-#, fuzzy
 #| msgid "Ochiq smena yo‘q."
 msgid "Ochiq hisob yo‘q"
-msgstr "Нет открытой смены."
+msgstr "Нет открытого счета"
 
 #: templates/folio/city_ledger_list.html:51
 msgid "Kompaniyaga o‘tkazilgan mehmon hisoblari shu yerda ko‘rinadi."
-msgstr ""
+msgstr "Гостевые аккаунты, переданные компании, можно увидеть здесь."
 
 #: templates/folio/folio_detail.html:18
 #: templates/folio/partials/folio_body.html:29
 msgid "Ortgan"
-msgstr ""
+msgstr "Ortgan"
 
 #: templates/folio/invoice_detail.html:8 templates/includes/nav_hub.html:122
 msgid "Debitorlar"
@@ -5440,75 +5352,69 @@ msgid "Qatorlar"
 msgstr "Строки"
 
 #: templates/folio/invoice_detail.html:52 templates/hr/payroll_list.html:82
-#, fuzzy
 #| msgid "Davr yo‘q"
 msgid "Qator yo‘q"
-msgstr "Нет периода"
+msgstr "Нет линии"
 
 #: templates/folio/invoice_detail.html:71
-#, fuzzy
 #| msgid "So‘rov yo‘q"
 msgid "To‘lov yo‘q"
-msgstr "Нет заявок"
+msgstr "То'лов йо'к"
 
 #: templates/folio/invoice_detail.html:71
-#, fuzzy
 #| msgid "Qoldiqni yopish uchun oddiy yoki bo‘lingan to‘lov qo‘shing."
 msgid "Qoldiqni yopish uchun pastdagi formadan to‘lov qabul qiling."
-msgstr "Чтобы закрыть остаток, добавьте обычный или разделённый платёж."
+msgstr "Для покрытия остатка примите оплату, используя форму ниже."
 
 #: templates/folio/invoice_detail.html:81
 msgid "To‘lov qabul"
 msgstr "Приём оплаты"
 
 #: templates/folio/partials/folio_body.html:5
-#, fuzzy
 #| msgid "Oy xulosasi"
 msgid "Hisob xulosasi"
-msgstr "Итог месяца"
+msgstr "Сводка по аккаунту"
 
 #: templates/folio/partials/folio_body.html:39
 msgid "Sdachi qaytarish"
-msgstr ""
+msgstr "Сдачи возврат"
 
 #: templates/folio/partials/folio_body.html:58
 msgid "Sdachi berish"
-msgstr ""
+msgstr "Чтобы дать сдачи"
 
 #: templates/folio/partials/folio_body.html:72
 #: templates/folio/partials/folio_body.html:82
-#, fuzzy
 #| msgid "Depozit olish"
 msgid "Depozit / avans"
-msgstr "Принять депозит"
+msgstr "Депозит / первоначальный взнос"
 
 #: templates/folio/partials/folio_body.html:76
 msgid ""
 "Bu pul mehmon hisobida saqlanadi — chiqishda qarzga o‘tadi. Faqat ortiqcha "
 "bo‘lsa sdachi bering."
 msgstr ""
+"Эти деньги хранятся на счету гостя – они переводятся в кредит при выезде. "
+"Дайте, только если это слишком много."
 
 #: templates/folio/partials/folio_body.html:82
-#, fuzzy
 #| msgid "Erta joylash to‘lovi"
 msgid "Ortib qolgan to‘lov"
-msgstr "Плата за ранний заезд"
+msgstr "Переплата"
 
 #: templates/folio/partials/folio_body.html:92
 msgid "Tezkor"
 msgstr "Быстро"
 
 #: templates/folio/partials/folio_body.html:93
-#, fuzzy
 #| msgid "Xizmat va minibar"
 msgid "Xizmat / minibar"
-msgstr "Услуги и минибар"
+msgstr "Сервис/минибар"
 
 #: templates/folio/partials/folio_body.html:130
-#, fuzzy
 #| msgid "Kompaniya hisobi"
 msgid "Kompaniya hisobiga"
-msgstr "Счёт компании"
+msgstr "За счет компании"
 
 #: templates/folio/partials/folio_body.html:138
 msgid "Barcha yozuvlarni o‘tkazish"
@@ -5521,10 +5427,9 @@ msgstr "Расходы"
 
 #: templates/folio/partials/folio_body.html:167
 #: templates/folio/partials/folio_body.html:233
-#, fuzzy
 #| msgid "Bekor qilish %"
 msgid "Bekor qilish"
-msgstr "% отмены"
+msgstr "Отмена"
 
 #: templates/folio/partials/folio_body.html:171
 #: templates/folio/partials/folio_body.html:237
@@ -5540,38 +5445,36 @@ msgid "Hali to‘lov yo‘q"
 msgstr "Пока нет платежей"
 
 #: templates/folio/partials/folio_body.html:264
-#, fuzzy
 #| msgid "Qabulxona"
 msgid "Qabul"
-msgstr "Ресепшн"
+msgstr "Qabul"
 
 #: templates/folio/partials/folio_body.html:269
-#, fuzzy
 #| msgid "Bo‘lingan to‘lovni saqlash"
 msgid "Bo‘lingan to‘lov"
-msgstr "Сохранить разделённую оплату"
+msgstr "Разделенный платеж"
 
 #: templates/folio/partials/folio_body.html:367
 msgid "Hisobni yopish"
 msgstr "Закрыть счёт"
 
 #: templates/folio/partials/folio_body.html:367
-#, fuzzy
 #| msgid "Qoldiq"
 msgid "qoldiq 0"
-msgstr "Остаток"
+msgstr "остаток равен 0"
 
 #: templates/folio/partials/folio_body.html:370
-#, fuzzy
 #| msgid "Avval qoldiqni to‘lang"
 msgid "Avval qoldiqni yoping"
-msgstr "Сначала погасите остаток"
+msgstr "Сначала закройте остатки"
 
 #: templates/folio/partials/payment_modal.html:15
 msgid ""
 "Summa tanlangan valyutada. Qoldiq — mehmonxona bazaviy valyutasida (kurs "
 "bo‘yicha)."
 msgstr ""
+"Сумма указана в выбранной валюте. Баланс в базовой валюте отеля (согласно "
+"обменному курсу)."
 
 #: templates/folio/partials/payment_modal.html:37
 msgid "Qabul qilish"
@@ -5590,20 +5493,18 @@ msgid "Oraliq jami"
 msgstr "Промежуточный итог"
 
 #: templates/folio/receipt.html:178
-#, fuzzy
 #| msgid "To‘langan"
 msgid "To‘langan (sof)"
-msgstr "Оплачено"
+msgstr "Оплачено (чистыми)"
 
 #: templates/folio/receipt.html:185
-#, fuzzy
 #| msgid "Avans summasi musbat bo‘lishi kerak."
 msgid "Avans / qaytarilishi kerak"
-msgstr "Сумма аванса должна быть положительной."
+msgstr "Аванс/должен быть возвращен"
 
 #: templates/folio/receipt.html:185
 msgid "Depozit / avans (hisobda)"
-msgstr ""
+msgstr "Депозит/аванс (по счету)"
 
 #: templates/guests/company_detail.html:16
 msgid "Terms"
@@ -5631,56 +5532,52 @@ msgid "Hisoblar"
 msgstr "Счета"
 
 #: templates/guests/company_list.html:24
-#, fuzzy
 #| msgid "Xona yo‘q"
 msgid "Kompaniya yo‘q"
-msgstr "Нет номеров"
+msgstr "Нет компании"
 
 #: templates/guests/company_list.html:24
 msgid "Korporativ mehmonlar uchun kompaniya profilini qo‘shing."
-msgstr ""
+msgstr "Добавьте профиль компании для корпоративных гостей."
 
 #: templates/guests/company_list.html:24
-#, fuzzy
 #| msgid "Kompaniya qo‘shildi."
 msgid "Kompaniya qo‘shish"
-msgstr "Компания добавлена."
+msgstr "Добавить компанию"
 
 #: templates/guests/guest_detail.html:8
 #: templates/guests/partials/guest_results.html:42
-#, fuzzy
 #| msgid "Xona yo‘q"
 msgid "Telefon yo‘q"
-msgstr "Нет номеров"
+msgstr "Нет телефона"
 
 #: templates/guests/guest_detail.html:23
 msgid "Sabab ko‘rsatilmagan"
-msgstr ""
+msgstr "Причина не указана"
 
 #: templates/guests/guest_detail.html:37
 #: templates/guests/partials/guest_results.html:59
-#, fuzzy, python-format
+#, python-format
 #| msgid "O‘chirishni tasdiqlaysizmi?"
 msgid "%(name)s ni o‘chirishni xohlaysizmi?"
-msgstr "Подтвердить удаление?"
+msgstr "Вы хотите удалить %(name)s?"
 
 #: templates/guests/guest_detail.html:72
 msgid "Shu mehmon uchun yangi bron yarating."
-msgstr ""
+msgstr "Создайте новое бронирование для этого гостя."
 
 #: templates/guests/guest_detail.html:81
 msgid "Hujjatlar"
 msgstr "Документы"
 
 #: templates/guests/guest_detail.html:88
-#, fuzzy
 #| msgid "Hujjat qo‘shish"
 msgid "Hujjat yo‘q"
-msgstr "Добавить документ"
+msgstr "Нет документа"
 
 #: templates/guests/guest_detail.html:88
 msgid "Pasport yoki ID qo‘shing — check-in uchun."
-msgstr ""
+msgstr "Добавьте паспорт или удостоверение личности для регистрации."
 
 #: templates/guests/guest_detail.html:96
 msgid "Hujjat qo‘shish"
@@ -5688,21 +5585,20 @@ msgstr "Добавить документ"
 
 #: templates/guests/guest_detail.html:103
 msgid "CRM"
-msgstr ""
+msgstr "CRM"
 
 #: templates/guests/guest_detail.html:104
 msgid "Izohlar"
 msgstr "Заметки"
 
 #: templates/guests/guest_detail.html:111
-#, fuzzy
 #| msgid "Xona yo‘q"
 msgid "Izoh yo‘q"
-msgstr "Нет номеров"
+msgstr "Без комментариев"
 
 #: templates/guests/guest_list.html:9
 msgid "Qidiruv, VIP filtri va tezkor bron — bir joyda."
-msgstr ""
+msgstr "Поиск, VIP-фильтр и быстрое бронирование — все в одном месте."
 
 #: templates/guests/guest_list.html:24
 msgid "Topish"
@@ -5710,56 +5606,52 @@ msgstr "Найти"
 
 #: templates/guests/guest_list.html:31
 msgid "Ism, telefon, email…"
-msgstr ""
+msgstr "Имя, телефон, электронная почта..."
 
 #: templates/guests/guest_list.html:34 templates/inventory/stock_list.html:28
 msgid "Belgi"
-msgstr ""
+msgstr "Belgi"
 
 #: templates/guests/guest_list.html:39
-#, fuzzy
 #| msgid "Joylashgan"
 msgid "Hozir joylashgan"
-msgstr "Заселён"
+msgstr "Расположен сейчас"
 
 #: templates/guests/partials/guest_results.html:68
-#, fuzzy
 #| msgid "Mehmon yo‘q."
 msgid "Mos mehmon yo‘q"
-msgstr "Нет гостей."
+msgstr "Нет подходящих гостей"
 
 #: templates/guests/partials/guest_results.html:68
-#, fuzzy
 #| msgid "Filtrni o‘zgartiring yoki yangi rasxod qo‘shing."
 msgid "Filtrni o‘zgartiring yoki yangi mehmon qo‘shing."
-msgstr "Измените фильтр или добавьте новый расход."
+msgstr "Измените фильтр или добавьте нового гостя."
 
 #: templates/guests/partials/guest_results.html:68
 #: templates/guests/partials/guest_results.html:70
-#, fuzzy
 #| msgid "Mehmon qo‘shildi."
 msgid "Mehmon qo‘shish"
-msgstr "Гость добавлен."
+msgstr "Добавить гостя"
 
 #: templates/guests/partials/guest_results.html:70
-#, fuzzy
 #| msgid "Mehmon yo‘q."
 msgid "Mehmon yo‘q"
-msgstr "Нет гостей."
+msgstr "Нет гостей"
 
 #: templates/guests/partials/guest_results.html:70
 msgid "Yangi mehmon profilini qo‘shing — bron va hisob uchun."
-msgstr ""
+msgstr "Добавьте новый профиль гостя - для бронирования и аккаунта."
 
 #: templates/guests/partials/guest_results.html:75
-#, fuzzy
 #| msgid "Faqat birinchi 200 ta ko‘rsatilmoqda — filtrni toraytiring."
 msgid "Faqat birinchi 100 ta ko‘rsatilmoqda — qidiruvni toraytiring."
-msgstr "Показаны первые 200 — сузьте фильтр."
+msgstr "Показаны только первые 100 — сузьте поиск."
 
 #: templates/guests/partials/quick_guest_form.html:18
 msgid "Zayezd uchun pasport yoki ID raqami majburiy."
 msgstr ""
+"Для Заеза наличие паспорта или идентификационного номера является "
+"обязательным."
 
 #: templates/housekeeping/board.html:10 templates/inventory/stock_list.html:9
 #: templates/reports/dashboard.html:80
@@ -5848,35 +5740,36 @@ msgid "Filtrlash"
 msgstr "Фильтр"
 
 #: templates/hr/advance_list.html:52
-#, fuzzy
 #| msgid "Xona yo‘q"
 msgid "Avans yo‘q"
-msgstr "Нет номеров"
+msgstr "Без аванса"
 
 #: templates/hr/advance_list.html:52
 msgid "Xodimga oldindan to‘lov yozing — oylikdan ushlanadi."
-msgstr ""
+msgstr "Напишите работнику аванс – он будет вычтен из зарплаты."
 
 #: templates/hr/employee_advance_form.html:6
 msgid "Summani yozing — oylik berilganda avtomatik ushlanadi."
 msgstr ""
+"Введите сумму — она будет автоматически списана при оплате ежемесячного "
+"платежа."
 
 #: templates/hr/employee_advance_form.html:9
-#, fuzzy
 #| msgid "Ochiq qarz"
 msgid "Ochiq avans"
-msgstr "Открытый долг"
+msgstr "Открыть заранее"
 
 #: templates/hr/employee_advance_form.html:13
-#, fuzzy
 #| msgid "Ariza yuborish"
 msgid "Avans berish"
-msgstr "Отправить заявку"
+msgstr "Предоплата"
 
 #: templates/hr/employee_list.html:7
 msgid ""
 "Avans yoki oylikni xodim yonidan bering — boshqa sahifaga o‘tish shart emas."
 msgstr ""
+"Выплатите аванс или зарплату от сотрудника – не нужно переходить на другую "
+"страницу."
 
 #: templates/hr/employee_list.html:7
 #: templates/properties/property_detail.html:162
@@ -5884,16 +5777,14 @@ msgid "Jadval"
 msgstr "Таблица"
 
 #: templates/hr/employee_list.html:18
-#, fuzzy
 #| msgid "To‘langan"
 msgid "Shu oy to‘langan"
-msgstr "Оплачено"
+msgstr "Выплачено в этом месяце"
 
 #: templates/hr/employee_list.html:22
-#, fuzzy
 #| msgid "Oylik"
 msgid "oylik"
-msgstr "Зарплата"
+msgstr "oylik"
 
 #: templates/hr/employee_list.html:24
 msgid "avans"
@@ -5902,13 +5793,12 @@ msgstr "аванс"
 #: templates/hr/employee_list.html:34
 #, python-format
 msgid "%(name)s ga taxminan %(amount)s to‘lansinmi?"
-msgstr ""
+msgstr "Заплатите %(name)s около %(amount)s?"
 
 #: templates/hr/employee_list.html:35
-#, fuzzy
 #| msgid "Oylik maosh"
 msgid "Oylik to‘lash"
-msgstr "Месячный оклад"
+msgstr "Ежемесячный платеж"
 
 #: templates/hr/employee_list.html:44 templates/tenants/staff_list.html:25
 msgid "Xodim yo‘q"
@@ -5916,80 +5806,72 @@ msgstr "Нет сотрудников"
 
 #: templates/hr/employee_list.html:44
 msgid "Avval xodim qo‘shing, keyin avans yoki oylik bering."
-msgstr ""
+msgstr "Сначала добавьте сотрудника, затем выдайте аванс или зарплату."
 
 #: templates/hr/employee_list.html:44 tenants/views.py:87
 msgid "Xodim qo‘shish"
 msgstr "Добавить сотрудника"
 
 #: templates/hr/payroll_item_form.html:11
-#, fuzzy
 #| msgid "Hozirgi"
 msgid "Hozirgi sof"
-msgstr "Текущий"
+msgstr "Текущая сеть"
 
 #: templates/hr/payroll_list.html:3 templates/hr/payroll_list.html:8
-#, fuzzy
 #| msgid "Narx jadvali"
 msgid "Oylik jadvali"
-msgstr "Таблица тарифов"
+msgstr "Ежемесячный график"
 
 #: templates/hr/payroll_list.html:8
 msgid "Tekshiruv va tarix. Kunlik to‘lov — Xodimlar sahifasida."
-msgstr ""
+msgstr "Осмотр и анамнез. Суточные — на странице «Сотрудники»."
 
 #: templates/hr/payroll_list.html:12
-#, fuzzy
 #| msgid "Davr"
 msgid "Davrlar"
-msgstr "Период"
+msgstr "Davrlar"
 
 #: templates/hr/payroll_list.html:16
-#, fuzzy
 #| msgid "To‘langan"
 msgid "To‘lanmagan"
-msgstr "Оплачено"
+msgstr "Неоплачиваемый"
 
 #: templates/hr/payroll_list.html:20
-#, fuzzy
 #| msgid "To‘langan"
 msgid "To‘lanmagan summa"
-msgstr "Оплачено"
+msgstr "Непогашенная сумма"
 
 #: templates/hr/payroll_list.html:26
-#, fuzzy
 #| msgid "Avanslar"
 msgid "Avanslar tarixi"
-msgstr "Авансы"
+msgstr "История достижений"
 
 #: templates/hr/payroll_list.html:28
-#, fuzzy
 #| msgid "Sherikni tahrirlash"
 msgid "Shu oyini yangilash"
-msgstr "Редактировать партнёра"
+msgstr "Обновление в этом месяце"
 
 #: templates/hr/payroll_list.html:31
 msgid "Shu oydagi barcha to‘lanmagan oyliklar to‘lansinmi?"
-msgstr ""
+msgstr "Оплатить все неоплаченные ежемесячные платежи в этом месяце?"
 
 #: templates/hr/payroll_list.html:32
-#, fuzzy
 #| msgid "Hammasi joyida"
 msgid "Hammasini to‘lash"
-msgstr "Всё в порядке"
+msgstr "Оплати все это"
 
 #: templates/hr/payroll_list.html:69
-#, fuzzy
 #| msgid "ushlama"
 msgid "Bonus/ushlama"
-msgstr "удержание"
+msgstr "Bonus/ushlama"
 
 #: templates/hr/payroll_list.html:82
 msgid "«Shu oyini yangilash» yoki Xodimlar sahifasidan to‘lang."
 msgstr ""
+"Оплатите с помощью кнопки «Продлить в этом месяце» или со страницы "
+"«Сотрудники»."
 
 #: templates/hr/payroll_list.html:91
-#, fuzzy
 #| msgid "Davr yo‘q"
 msgid "Oylik davri yo‘q"
 msgstr "Нет периода"
@@ -5997,12 +5879,12 @@ msgstr "Нет периода"
 #: templates/hr/payroll_list.html:91
 msgid "Xodimlar sahifasidan «Oylik to‘lash» bosing yoki shu yerda yangilang."
 msgstr ""
+"На странице «Персонал» нажмите «Оплата ежемесячно» или продлите здесь."
 
 #: templates/includes/empty_state.html:4
-#, fuzzy
 #| msgid "Hali to‘lov yo‘q"
 msgid "Hali yozuv yo‘q"
-msgstr "Пока нет платежей"
+msgstr "Еще нет записей"
 
 #: templates/includes/nav_hub.html:5
 msgid "Tez kirish"
@@ -6024,7 +5906,7 @@ msgstr "Номера на сегодня"
 
 #: templates/includes/nav_hub.html:24
 msgid "Shaxmatka · 14 kun / 1 oy"
-msgstr ""
+msgstr "Шахматы · 14 дней/1 месяц"
 
 #: templates/includes/nav_hub.html:29
 msgid "Ro‘yxat va qidiruv"
@@ -6142,39 +6024,35 @@ msgstr "Список склада"
 
 #: templates/inventory/stock_list.html:9
 msgid "Ombor, minibar va muddat nazorati."
-msgstr ""
+msgstr "Склад, мини-бар и контроль периода."
 
 #: templates/inventory/stock_list.html:9
 msgid "Xona bar"
 msgstr "Минибар номера"
 
 #: templates/inventory/stock_list.html:25
-#, fuzzy
 #| msgid "Mahsulot qo‘shish"
 msgid "Mahsulot nomi…"
-msgstr "Добавить товар"
+msgstr "Название продукта…"
 
 #: templates/inventory/stock_list.html:31
-#, fuzzy
 #| msgid "Kam qolgan:"
 msgid "Kam qolgan"
-msgstr "Мало на складе:"
+msgstr "осталось немного"
 
 #: templates/inventory/stock_list.html:32
 #: templates/inventory/stock_list.html:50
 #: templates/inventory/stock_list.html:74
-#, fuzzy
 #| msgid "Muddati tugagan"
 msgid "Muddat yaqin"
-msgstr "Истёк"
+msgstr "Крайний срок близок"
 
 #: templates/inventory/stock_list.html:33
 #: templates/inventory/stock_list.html:54
 #: templates/inventory/stock_list.html:73
-#, fuzzy
 #| msgid "Muddati tugagan"
 msgid "Muddati o‘tgan"
-msgstr "Истёк"
+msgstr "Истекший"
 
 #: templates/inventory/stock_list.html:46
 #: templates/inventory/stock_list.html:75
@@ -6182,10 +6060,9 @@ msgid "Kam"
 msgstr "Мало"
 
 #: templates/inventory/stock_list.html:63
-#, fuzzy
 #| msgid "Mahsulot"
 msgid "Mahsulotlar"
-msgstr "Товар"
+msgstr "Mahsulotlar"
 
 #: templates/inventory/stock_list.html:76
 msgid "minibar"
@@ -6193,48 +6070,41 @@ msgstr "минибар"
 
 #: templates/inventory/stock_list.html:85
 msgid "kun o‘tdi"
-msgstr ""
+msgstr "рисовать отди"
 
 #: templates/inventory/stock_list.html:99
-#, fuzzy
 #| msgid "Inventar ro‘yxati"
 msgid "Inventar bo‘sh"
-msgstr "Список склада"
+msgstr "Инвентарь пуст"
 
 #: templates/inventory/stock_list.html:99
 msgid "Mahsulot qo‘shing — minibar va ombor hisobi uchun."
-msgstr ""
+msgstr "Добавить товар - для мини-бара и складского счета."
 
 #: templates/maintenance/spend_form.html:5
-#, fuzzy
 #| msgid "Joriy = Sofdan. Reinvestitsiya = foyda ulushidan."
 msgid "Joriy — sof foydadan. Reinvestitsiya — foyda ulushidan."
-msgstr "Текущий — из чистой прибыли. Реинвестиции — из доли прибыли."
+msgstr "Текущий - от чистой прибыли. Реинвестирование - из доли прибыли."
 
 #: templates/maintenance/ticket_list.html:9
 msgid "Ta’mir va reinvestitsiya"
 msgstr "Ремонт и реинвестиции"
 
 #: templates/maintenance/ticket_list.html:9
-#, fuzzy
 #| msgid "Operatsiya"
 msgid "Operatsiya · Moliya"
 msgstr "Операции · Финансы"
 
 #: templates/maintenance/ticket_list.html:9
-#, fuzzy
 #| msgid ""
 #| "Arizalar + joriy ta’mir (Sof) / reinvestitsiya (foyda ulushi)."
 msgid "Arizalar va xarajatlar: joriy ta’mir yoki reinvestitsiya."
-msgstr ""
-"Заявки и расходы: текущий ремонт или реинвестиции.Заявки + текущий ремонт "
-"(чистая прибыль) / реинвестиции (доля учредителей)."
+msgstr "Приложения и расходы: текущее обслуживание или реинвестирование."
 
 #: templates/maintenance/ticket_list.html:11
-#, fuzzy
 #| msgid "Bo‘limlar"
 msgid "Bo‘lim"
-msgstr "Раздел"
+msgstr "Болим"
 
 #: templates/maintenance/ticket_list.html:23
 #| msgid "Filtrlar"
@@ -6298,7 +6168,6 @@ msgid "Xarajat qo‘shish"
 msgstr "Добавить расход"
 
 #: templates/maintenance/ticket_list.html:139
-#, fuzzy
 #| msgid ""
 #| "Joriy — mehmonxona Sofidan. Reinvestitsiya — Sofga tegmaydi, «Foyda "
 #| "ulushi»da ayiriladi."
@@ -6306,8 +6175,8 @@ msgid ""
 "Joriy ta’mir — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, foyda "
 "ulushidan ayiriladi."
 msgstr ""
-"Текущий ремонт — из чистой прибыли. Реинвестиции — не влияют на чистую, "
-"вычитаются из доли прибыли."
+"Текущее обслуживание - из чистой прибыли. Реинвестирование – не влияет на "
+"чистую прибыль, вычитается из доли прибыли."
 
 #: templates/maintenance/ticket_list.html:150
 msgid "Joriy"
@@ -6323,10 +6192,9 @@ msgid "Hisobdan chiqarilsinmi?"
 msgstr "Снять с учёта?"
 
 #: templates/maintenance/ticket_list.html:167
-#, fuzzy
 #| msgid "Yozuv bekor"
 msgid "Xato yozuv — bekor"
-msgstr "Ошибочная запись — отмена"
+msgstr "Неправильная запись - аннулируется"
 
 #: templates/maintenance/ticket_list.html:172
 #| msgid "O‘chirilgan"
@@ -6334,10 +6202,9 @@ msgid "O‘chirilsinmi?"
 msgstr "Удалить?"
 
 #: templates/maintenance/ticket_list.html:180
-#, fuzzy
 #| msgid "Hali xarajat yo‘q"
 msgid "Xarajat yo‘q"
-msgstr "Нет расходов"
+msgstr "Нет никаких затрат"
 
 #: templates/maintenance/ticket_list.html:180
 msgid "Texnika, remont yoki mayda ta’mir summasini yozing."
@@ -6351,57 +6218,55 @@ msgstr "Настройки"
 
 #: templates/properties/property_detail.html:11
 msgid "Infratuzilma"
-msgstr ""
+msgstr "Infratuzilma"
 
 #: templates/properties/property_detail.html:12
 msgid "Qavatlar"
 msgstr "Этажи"
 
 #: templates/properties/property_detail.html:23
-#, fuzzy
 #| msgid "O‘chirishni tasdiqlaysizmi?"
 msgid "Bu qavatni o‘chirishni xohlaysizmi?"
-msgstr "Подтвердить удаление?"
+msgstr "Вы хотите удалить этот слой?"
 
 #: templates/properties/property_detail.html:36
-#, fuzzy
 #| msgid "Katalog bo‘sh"
 msgid "Katalog"
-msgstr "Каталог пуст"
+msgstr "Katalog"
 
 #: templates/properties/property_detail.html:37
 msgid "Xona turlari"
 msgstr "Типы номеров"
 
 #: templates/properties/property_detail.html:39
-#, fuzzy
 #| msgid "Turi"
 msgid "Tur"
-msgstr "Тип"
+msgstr "Tur"
 
 #: templates/properties/property_detail.html:45
-#, fuzzy
 #| msgid "Yangi mehmonxona"
 msgid "Standart mehmonxona turlari"
-msgstr "Новая гостиница"
+msgstr "Стандартные типы отелей"
 
 #: templates/properties/property_detail.html:47
 msgid ""
 "Twin, Double, Triple — yetishmayotganlari qo‘shiladi. Ortiqchalari "
 "o‘chiriladi (xonalar Double/Twin/Triple ga o‘tkaziladi)."
 msgstr ""
+"Twin, Double, Triple — недостающие будут добавлены. Резервные номера будут "
+"удалены (номера будут преобразованы в двухместные/твин/трехместные номера)."
 
 #: templates/properties/property_detail.html:50
 msgid "Hozir ortiqcha"
-msgstr ""
+msgstr "Слишком много сейчас"
 
 #: templates/properties/property_detail.html:66
 msgid "Double/Twin baza narxi"
-msgstr ""
+msgstr "Базовая цена двухместного номера/Твин"
 
 #: templates/properties/property_detail.html:71
 msgid "Har biriga BAR tarif ham yaratilsin"
-msgstr ""
+msgstr "Создайте тариф BAR для каждого"
 
 #: templates/properties/property_detail.html:75
 #, python-format
@@ -6420,23 +6285,22 @@ msgstr[3] ""
 
 #: templates/properties/property_detail.html:81
 msgid "Faqat Double/Twin/Triple qoldirish"
-msgstr ""
+msgstr "Оставляем только двухместный/твин/трехместный номер"
 
 #: templates/properties/property_detail.html:102
-#, fuzzy
 #| msgid "O‘chirishni tasdiqlaysizmi?"
 msgid "Bu xona turini o‘chirishni xohlaysizmi?"
-msgstr "Подтвердить удаление?"
+msgstr "Вы хотите удалить этот тип номера?"
 
 #: templates/properties/property_detail.html:109
-#, fuzzy
 #| msgid "Xona yo‘q"
 msgid "Xona turi yo‘q"
-msgstr "Нет номеров"
+msgstr "Нет типа номера"
 
 #: templates/properties/property_detail.html:109
 msgid "Yuqoridagi standart to‘plamni qo‘shing yoki qo‘lda yarating."
 msgstr ""
+"Добавьте набор по умолчанию, указанный выше, или создайте его вручную."
 
 #: templates/properties/property_detail.html:130
 msgid "qavat"
@@ -6455,10 +6319,9 @@ msgid "mavsum"
 msgstr "сезон"
 
 #: templates/properties/property_detail.html:165
-#, fuzzy
 #| msgid "O‘chirishni tasdiqlaysizmi?"
 msgid "Bu tarifni o‘chirishni xohlaysizmi?"
-msgstr "Подтвердить удаление?"
+msgstr "Вы хотите удалить этот тариф?"
 
 #: templates/properties/property_list.html:6
 msgid "Yangi filial"
@@ -6482,28 +6345,26 @@ msgid "Mavsum qo‘shish"
 msgstr "Добавить сезон"
 
 #: templates/properties/rate_matrix.html:40
-#, fuzzy
 #| msgid "Davr yo‘q"
 msgid "Mavsum yo‘q"
-msgstr "Нет периода"
+msgstr "Нет сезона"
 
 #: templates/properties/rate_matrix.html:40
 msgid "Pasxa, yoz yoki dam olish kunlari uchun alohida narx qo‘shing."
-msgstr ""
+msgstr "Добавьте специальную цену на Пасху, лето или выходные."
 
 #: templates/properties/simple_form.html:12
 msgid "Shablon"
-msgstr ""
+msgstr "Shablon"
 
 #: templates/properties/simple_form.html:13
-#, fuzzy
 #| msgid "Tez kirish"
 msgid "Tezkor to‘ldirish"
-msgstr "Быстрый вход"
+msgstr "Быстрая зарядка"
 
 #: templates/properties/simple_form.html:16
 msgid "Tanlang — forma maydonlari to‘ldiriladi, keyin narxni sozlab saqlang."
-msgstr ""
+msgstr "Выберите — поля формы заполнятся, затем укажите цену и сохраните."
 
 #: templates/reports/audit_log.html:3
 msgid "Nazorat jurnali"
@@ -6708,10 +6569,9 @@ msgid "Debitor CSV"
 msgstr "Дебиторы CSV"
 
 #: templates/reports/flash.html:21
-#, fuzzy
 #| msgid "Sanalar"
 msgid "Sana filtri"
-msgstr "Даты"
+msgstr "Фильтр даты"
 
 #: templates/reports/flash.html:29 templates/reports/pnl.html:49
 msgid "Ko‘rish"
@@ -6800,10 +6660,9 @@ msgid "Debitorika"
 msgstr "Дебиторка"
 
 #: templates/reports/pnl.html:26
-#, fuzzy
 #| msgid "Davr tugashi"
 msgid "Davr filtri"
-msgstr "Конец периода"
+msgstr "Фильтр периода"
 
 #: templates/reports/pnl.html:82
 msgid "Tushum turlari"
@@ -6826,10 +6685,9 @@ msgid "Foyda/zarar xulosasi"
 msgstr "Итог прибыли/убытка"
 
 #: templates/reports/pnl.html:112
-#, fuzzy
 #| msgid "Xarajat turi"
 msgid "Xarajat tafsiloti"
-msgstr "Тип начисления"
+msgstr "Подробности о стоимости"
 
 #: templates/reports/pnl.html:133
 msgid "Operatsion xarajat"
@@ -6838,6 +6696,7 @@ msgstr "Операционный расход"
 #: templates/reports/pnl.html:133
 msgid "rasxod + mehnat + komissiya + ombor + E-mehmon farq"
 msgstr ""
+"удовлетворение + труд + комиссия + склад + разница в электронном госте"
 
 #: templates/reports/pnl.html:138
 msgid ""
@@ -6870,7 +6729,7 @@ msgstr "Каталог пуст"
 
 #: templates/services/service_list.html:23
 msgid "Restoran, spa yoki boshqa xizmatlarni qo‘shing."
-msgstr ""
+msgstr "Добавьте ресторан, спа или другие услуги."
 
 #: templates/services/service_list.html:23
 msgid "Xizmat qo‘shish"
@@ -6926,7 +6785,7 @@ msgstr "Пригласить"
 
 #: templates/tenants/staff_list.html:25
 msgid "Hamkasblarni taklif qiling — rol va filial biriktiriladi."
-msgstr ""
+msgstr "Пригласите коллег — роль и ветка будут привязаны."
 
 #: templates/widget/booking.html:31
 msgid "Xonalarni ko‘rish"
@@ -6959,6 +6818,7 @@ msgstr "Если пусто — доступ ко всем филиалам."
 #: tenants/models.py:18
 msgid "Bazaviy valyuta — hisobotlar, P&L, balans shu valyutada."
 msgstr ""
+"Базовая валюта – отчеты, отчеты о прибылях и убытках, баланс в этой валюте."
 
 #: tenants/models.py:71
 msgid "Admin"
@@ -6982,21 +6842,20 @@ msgstr "Привязки филиалов"
 
 #: tenants/models.py:148
 msgid "Valyuta kursi"
-msgstr ""
+msgstr "Valyuta kursi"
 
 #: tenants/models.py:149
 msgid "Valyuta kurslari"
-msgstr ""
+msgstr "Курсы валют"
 
 #: tenants/models.py:158
 msgid "Bazaviy valyuta uchun kurs kerak emas."
-msgstr ""
+msgstr "Для базовой валюты обменный курс не требуется."
 
 #: tenants/models.py:160
-#, fuzzy
 #| msgid "Miqdor musbat bo‘lishi kerak."
 msgid "Kurs musbat bo‘lishi kerak."
-msgstr "Количество должно быть больше 0."
+msgstr "Курс должен быть позитивным."
 
 #: tenants/views.py:56
 msgid "Tarif bo‘yicha xodimlar limiti tugagan."
