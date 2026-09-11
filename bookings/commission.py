@@ -1,7 +1,6 @@
 from calendar import monthrange
 from datetime import date
 from decimal import Decimal
-import re
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -10,36 +9,9 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from folio.models import FolioCharge
+from folio.services import charge_amount_base, deduped_night_room_total
 
 from .models import BookingReferrer, ReferrerCommissionPayment, Reservation
-
-_NIGHT_DAY_RE = re.compile(r"^Night (\d{4}-\d{2}-\d{2})")
-
-
-def _charge_amount_base(charge) -> Decimal:
-    if charge.amount_base is not None:
-        return charge.amount_base
-    return charge.amount or Decimal("0")
-
-
-def _deduped_night_room_total(folio) -> Decimal:
-    """
-    «Night YYYY-MM-DD …» yozuvlari — har bir kecha bir marta.
-    Til o‘zgarganda bir kecha ikki marta yozilishi mumkin; qo‘shib yubormaslik.
-    """
-    by_day: dict[str, Decimal] = {}
-    qs = folio.charges.filter(
-        is_void=False,
-        charge_type=FolioCharge.ChargeType.ROOM,
-        description__startswith="Night ",
-    ).order_by("id")
-    for charge in qs:
-        match = _NIGHT_DAY_RE.match(charge.description or "")
-        key = match.group(1) if match else f"row:{charge.pk}"
-        if key in by_day:
-            continue
-        by_day[key] = _charge_amount_base(charge)
-    return sum(by_day.values(), Decimal("0"))
 
 
 def reservation_commission_base(reservation: Reservation) -> Decimal:
@@ -67,20 +39,17 @@ def reservation_commission_base(reservation: Reservation) -> Decimal:
 
     folio = getattr(reservation, "folio", None)
     if folio is not None:
-        night_total = _deduped_night_room_total(folio)
+        night_total = deduped_night_room_total(folio)
         if night_total > 0:
             if quote > 0 and night_total > quote:
                 return quote
             return night_total
 
-        other_total = (
-            folio.charges.filter(
-                is_void=False, charge_type=FolioCharge.ChargeType.ROOM
-            )
-            .exclude(description__startswith="Night ")
-            .aggregate(s=Sum("amount_base"))["s"]
-            or Decimal("0")
-        )
+        other_total = Decimal("0")
+        for charge in folio.charges.filter(
+            is_void=False, charge_type=FolioCharge.ChargeType.ROOM
+        ).exclude(description__startswith="Night "):
+            other_total += charge_amount_base(charge)
         # Prepaid/legacy stay: faqat bron narxining kamida yarmini qoplasa
         if other_total > 0 and (quote <= 0 or other_total >= quote * Decimal("0.5")):
             if quote > 0 and other_total > quote:

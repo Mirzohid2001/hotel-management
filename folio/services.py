@@ -1,4 +1,5 @@
 from decimal import Decimal
+import re
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
@@ -14,6 +15,20 @@ def _folio_hotel(folio):
     return getattr(res, "hotel", None) if res else None
 
 from .models import CashShift, Folio, FolioCharge, GuestPayment
+
+_NIGHT_DAY_RE = re.compile(r"^Night (\d{4}-\d{2}-\d{2})")
+
+
+def charge_amount_base(charge) -> Decimal:
+    if getattr(charge, "amount_base", None) is not None:
+        return charge.amount_base
+    return charge.amount or Decimal("0")
+
+
+def night_stay_date_key(description: str) -> str | None:
+    """Night yozuvidan kecha sanasi (YYYY-MM-DD) yoki None."""
+    match = _NIGHT_DAY_RE.match(description or "")
+    return match.group(1) if match else None
 
 
 @transaction.atomic
@@ -67,6 +82,111 @@ def folio_has_night_for_day(folio: Folio, day) -> bool:
         is_void=False,
         description__startswith=night_charge_day_prefix(day),
     ).exists()
+
+
+def deduped_night_room_total(folio) -> Decimal:
+    """
+    Folio dagi Night yozuvlari — har bir kecha sanasi bo‘yicha bir marta.
+    Til farqi bilan ikkilangan yozuvlar qo‘shilmaydi (birinchi yozuv saqlanadi).
+    """
+    by_day: dict[str, Decimal] = {}
+    qs = folio.charges.filter(
+        is_void=False,
+        charge_type=FolioCharge.ChargeType.ROOM,
+        description__startswith="Night ",
+    ).order_by("id")
+    for charge in qs:
+        key = night_stay_date_key(charge.description) or f"row:{charge.pk}"
+        if key in by_day:
+            continue
+        by_day[key] = charge_amount_base(charge)
+    return sum(by_day.values(), Decimal("0"))
+
+
+def sum_room_charges_deduped(charges) -> Decimal:
+    """
+    ROOM yig‘indisi: Night qatorlari (folio, sana) bo‘yicha dedupe.
+    ADR / tushum hisobotlarida ikkilanishni oldini oladi.
+    """
+    total = Decimal("0")
+    seen: set[tuple] = set()
+    for charge in charges:
+        desc = charge.description or ""
+        if desc.startswith("Night "):
+            day_key = night_stay_date_key(desc) or f"id:{charge.pk}"
+            key = (charge.folio_id, day_key)
+            if key in seen:
+                continue
+            seen.add(key)
+        total += charge_amount_base(charge)
+    return total
+
+
+def find_duplicate_night_charges(*, tenant=None):
+    """
+    Bir folio + bir kecha uchun 2+ Night yozuvi.
+    Qaytaradi: [(folio_id, day_key, [charge, ...]), ...]
+    """
+    from collections import defaultdict
+
+    qs = FolioCharge.objects.filter(
+        is_void=False,
+        charge_type=FolioCharge.ChargeType.ROOM,
+        description__startswith="Night ",
+    ).select_related("folio", "folio__reservation")
+    if tenant is not None:
+        qs = qs.filter(tenant=tenant)
+    groups: dict[tuple, list] = defaultdict(list)
+    for charge in qs.order_by("id"):
+        day_key = night_stay_date_key(charge.description)
+        if not day_key:
+            continue
+        groups[(charge.folio_id, day_key)].append(charge)
+    return [
+        (folio_id, day_key, items)
+        for (folio_id, day_key), items in groups.items()
+        if len(items) > 1
+    ]
+
+
+@transaction.atomic
+def void_duplicate_night_charges(*, tenant=None, user=None, dry_run: bool = True) -> dict:
+    """
+    Dublikat Night yozuvlarini bekor qiladi — har bir (folio, kecha) uchun
+    eng eski (kichik id) qoladi. dry_run=True bo‘lsa faqat hisoblaydi.
+    """
+    groups = find_duplicate_night_charges(tenant=tenant)
+    voided = []
+    kept = []
+    for folio_id, day_key, items in groups:
+        keep, *dupes = items
+        kept.append(keep.pk)
+        for charge in dupes:
+            voided.append(charge.pk)
+            if dry_run:
+                continue
+            charge.is_void = True
+            charge.void_reason = (
+                f"Duplicate Night {day_key} — kept charge #{keep.pk}"
+            )
+            charge.voided_at = timezone.now()
+            if user is not None:
+                charge.voided_by = user
+            charge.save(
+                update_fields=[
+                    "is_void",
+                    "void_reason",
+                    "voided_at",
+                    "voided_by",
+                    "updated_at",
+                ]
+            )
+    return {
+        "groups": len(groups),
+        "kept": kept,
+        "voided": voided,
+        "dry_run": dry_run,
+    }
 
 
 def folio_has_legacy_prepaid_room(folio: Folio) -> bool:

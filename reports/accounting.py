@@ -37,7 +37,9 @@ def _paid_expense_month_q(year: int, month: int) -> Q:
 
 
 def revenue_by_charge_type(tenant, year: int, month: int, *, hotel=None) -> dict:
-    from folio.services import emehmon_charge_q
+    from collections import defaultdict
+
+    from folio.services import emehmon_charge_q, sum_room_charges_deduped
 
     qs = FolioCharge.objects.filter(
         tenant=tenant,
@@ -47,17 +49,21 @@ def revenue_by_charge_type(tenant, year: int, month: int, *, hotel=None) -> dict
     ).exclude(emehmon_charge_q())
     if hotel is not None:
         qs = qs.filter(folio__reservation__hotel=hotel)
-    rows = qs.values("charge_type").annotate(total=Sum("amount_base")).order_by("charge_type")
+
+    by_type: dict[str, list] = defaultdict(list)
+    for charge in qs:
+        by_type[charge.charge_type].append(charge)
+
+    labels = dict(FolioCharge.ChargeType.choices)
     breakdown = []
     total = Decimal("0")
-    labels = dict(FolioCharge.ChargeType.choices)
-    for row in rows:
-        amt = row["total"] or Decimal("0")
+    for key, charges in sorted(by_type.items()):
+        amt = sum_room_charges_deduped(charges)
         total += amt
         breakdown.append(
             {
-                "key": row["charge_type"],
-                "label": labels.get(row["charge_type"], row["charge_type"]),
+                "key": key,
+                "label": labels.get(key, key),
                 "amount": amt,
             }
         )

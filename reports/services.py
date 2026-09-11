@@ -103,14 +103,14 @@ def revenue_on(tenant, day: date, *, hotel=None) -> Decimal:
 
 
 def charges_on(tenant, day: date, *, hotel=None) -> Decimal:
-    from folio.services import emehmon_charge_q
+    from folio.services import emehmon_charge_q, sum_room_charges_deduped
 
     qs = FolioCharge.objects.filter(
         tenant=tenant, created_at__date=day, is_void=False
     ).exclude(emehmon_charge_q())
     if hotel is not None:
         qs = qs.filter(folio__reservation__hotel=hotel)
-    return qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+    return sum_room_charges_deduped(qs)
 
 
 def expenses_in_month(tenant, year: int, month: int, *, hotel=None) -> Decimal:
@@ -166,6 +166,8 @@ def pnl_lite(tenant, year: int, month: int, *, hotel=None) -> dict:
 
 
 def adr_revpar(tenant, day: date, *, hotel=None) -> dict:
+    from folio.services import sum_room_charges_deduped
+
     occ = occupancy_stats(tenant, day, hotel=hotel)
     room_charges = FolioCharge.objects.filter(
         tenant=tenant,
@@ -175,7 +177,7 @@ def adr_revpar(tenant, day: date, *, hotel=None) -> dict:
     )
     if hotel is not None:
         room_charges = room_charges.filter(folio__reservation__hotel=hotel)
-    room_revenue = room_charges.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
+    room_revenue = sum_room_charges_deduped(room_charges)
     occupied = occ["occupied_rooms"] or 0
     total = occ["total_rooms"] or 0
     adr = (room_revenue / Decimal(occupied)) if occupied else Decimal("0")
