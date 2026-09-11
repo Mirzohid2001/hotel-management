@@ -34,6 +34,30 @@ def ensure_open_period(tenant, *, started_on: date | None = None) -> ProfitPerio
     return ProfitPeriod.objects.create(tenant=tenant, started_on=start)
 
 
+def resolve_working_period(tenant) -> tuple[ProfitPeriod, ProfitPeriod | None]:
+    """
+    Ishchi foyda davri.
+
+    «0 qilib qayta» bugun yopib, yangi davrni ertadan qo‘yganda ochiq
+    started_on > bugun bo‘ladi. Shunda bo‘sh erta ekran o‘rniga oxirgi
+    yopiq davr ko‘rsatiladi (bugungi rasxod/reinvest shu yerda).
+
+    Returns: (working_period, pending_open_or_None)
+    """
+    open_period = ensure_open_period(tenant)
+    today = timezone.localdate()
+    if open_period.started_on <= today:
+        return open_period, None
+    prior = (
+        ProfitPeriod.objects.filter(tenant=tenant, ended_on__isnull=False)
+        .order_by("-ended_on", "-id")
+        .first()
+    )
+    if prior is None:
+        return open_period, None
+    return prior, open_period
+
+
 def active_partners(tenant):
     return ProfitPartner.objects.filter(tenant=tenant, is_active=True)
 
@@ -348,7 +372,9 @@ def build_partner_ledger(
     """
     from reports.accounting import cash_pnl_for_range, reinvestment_in_range
 
-    period = period or ensure_open_period(tenant)
+    pending_open: ProfitPeriod | None = None
+    if period is None:
+        period, pending_open = resolve_working_period(tenant)
     start, end = period_bounds(period, as_of=as_of)
     pnl = cash_pnl_for_range(tenant, start, end, hotel=hotel)
     operating_net = _q(pnl["net"])
@@ -484,6 +510,7 @@ def build_partner_ledger(
 
     prior = (
         ProfitPeriod.objects.filter(tenant=tenant, ended_on__isnull=False)
+        .exclude(pk=period.pk)
         .order_by("-ended_on", "-id")
         .first()
     )
@@ -501,15 +528,16 @@ def build_partner_ledger(
             "reinvestment": _q(prior_reinv or ZERO),
             "revenue": _q(prior.revenue_snapshot or ZERO),
         }
-        if reinvestment <= 0 and prior_period["reinvestment"] > 0:
+        if reinvestment <= 0 and prior_period["reinvestment"] > 0 and not pending_open:
             next_steps.insert(
                 0,
                 {
                     "key": "prior_reinvest",
                     "tone": "info",
                     "text": _(
-                        "Bu ochiq davrda reinvestitsiya 0. Remont/rasxodlardagi "
-                        "%(a)s oxirgi yopiq davrda (%(s)s → %(e)s) — «Tarix»da."
+                        "Bu ochiq ekranda reinvestitsiya 0. Remont dagi "
+                        "%(a)s «0 qilib qayta» yopgan davrda (%(s)s → %(e)s) — kalendar "
+                        "bo‘yicha yaqin kunlar, lekin boshqa foyda davri."
                     )
                     % {
                         "a": prior_period["reinvestment"],
@@ -518,6 +546,24 @@ def build_partner_ledger(
                     },
                 },
             )
+    if pending_open is not None:
+        next_steps.insert(
+            0,
+            {
+                "key": "pending_open",
+                "tone": "info",
+                "text": _(
+                    "Yangi bo‘sh foyda davri %(d)s dan. Hozir ko‘rsatilayotgani — "
+                    "«0 qilib qayta» yopgan davr (%(s)s → %(e)s): bugungi/kechagi "
+                    "rasxod va reinvestitsiya shu yerda."
+                )
+                % {
+                    "d": pending_open.started_on,
+                    "s": start,
+                    "e": end,
+                },
+            },
+        )
 
     if withdrawn_total > 0 and remaining_total <= 0 and partners:
         next_steps.append(
@@ -562,6 +608,8 @@ def build_partner_ledger(
         "next_steps": next_steps,
         "ready_to_reset": withdrawn_total > 0 and remaining_total <= 0 and bool(partners),
         "prior_period": prior_period,
+        "pending_open_starts_on": pending_open.started_on if pending_open else None,
+        "showing_closed_working": pending_open is not None,
     }
     result["receipt"] = build_profit_receipt(result)
     return result
@@ -589,7 +637,7 @@ def record_withdrawal(
     from core.currency import to_base_amount
 
     pay_currency = currency or tenant.currency or "UZS"
-    period = ensure_open_period(tenant)
+    period, _pending = resolve_working_period(tenant)
     ledger = build_partner_ledger(tenant, period=period)
     row = next((r for r in ledger["rows"] if r["partner"].pk == partner.pk), None)
     remaining = row["remaining"] if row else ZERO

@@ -40,7 +40,7 @@
         <span>{{ step.text }}</span>
         {% if step.key == "add_partner" or step.key == "share_gap" %}
         <a class="btn btn-sm" href="{% url 'finance:profit_partner_create' %}">{% trans "Sherik qo‘shish" %}</a>
-        {% elif step.key == "period_loss" or step.key == "prior_reinvest" %}
+        {% elif step.key == "period_loss" or step.key == "prior_reinvest" or step.key == "pending_open" %}
         <a class="btn btn-sm" href="{% url 'finance:profit_history' %}">{% trans "Tarix" %}</a>
         {% if step.key == "period_loss" %}
         <a class="btn btn-sm" href="{% url 'finance:profit_reset' %}">{% trans "0 qilib qayta" %}</a>
@@ -56,15 +56,24 @@
   </section>
   {% endif %}
 
-  {% if ledger.prior_period and ledger.reinvestment <= 0 and ledger.prior_period.reinvestment > 0 %}
+  {% if ledger.showing_closed_working %}
+  <p class="panel mb-md" style="border-left:4px solid #0f766e;padding:0.75rem 1rem">
+    <strong>{% trans "Diqqat:" %}</strong>
+    {% blocktrans with start=ledger.start end=ledger.end new=ledger.pending_open_starts_on %}
+    Bu rasxodlar «o‘tgan oy» emas — kalendar bo‘yicha yaqin kunlar ({{ start }} → {{ end }}).
+    «0 qilib qayta» shu kunlarni yopiq foyda davriga yozgan; yangi bo‘sh davr {{ new }} dan.
+    Pastda aynan shu yopiq davr ko‘rsatilmoqda (reinvestitsiya shu yerda).
+    {% endblocktrans %}
+  </p>
+  {% elif ledger.prior_period and ledger.reinvestment <= 0 and ledger.prior_period.reinvestment > 0 %}
   <p class="panel mb-md" style="border-left:4px solid #0f766e;padding:0.75rem 1rem">
     <strong>{% trans "Reinvestitsiya:" %}</strong>
     {% blocktrans with start=ledger.prior_period.start end=ledger.prior_period.end %}
-    Ochiq davrda 0 — chunki Remont dagi reinvestitsiya oxirgi yopiq davrga ({{ start }} → {{ end }}) tegishli.
+    Bu ekranda 0. Remont dagi summa boshqa foyda davrida ({{ start }} → {{ end }}).
     {% endblocktrans %}
     <strong class="money">{{ ledger.prior_period.reinvestment|money }}</strong>
     ·
-    <a href="{% url 'finance:profit_period_detail' ledger.prior_period.period.pk %}">{% trans "Yopiq davrni ochish" %}</a>
+    <a href="{% url 'finance:profit_period_detail' ledger.prior_period.period.pk %}">{% trans "Davrni ochish" %}</a>
   </p>
   {% endif %}
 

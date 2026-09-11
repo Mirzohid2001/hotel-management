@@ -165,6 +165,37 @@ class ProfitShareTests(TestCase):
         self.assertEqual(closed.ended_on, self.today - timedelta(days=1))
         self.assertEqual(fresh.started_on, self.today)
 
+    def test_future_open_shows_closed_working_period(self):
+        """Yangi davr ertadan — bugun yopiq davr (reinvest bilan) ko‘rsatiladi."""
+        from finance.models import Expense
+
+        closed, fresh = reset_profit_period(self.tenant, self.user)
+        self.assertEqual(fresh.started_on, self.today + timedelta(days=1))
+        cat = ExpenseCategory.objects.filter(
+            tenant=self.tenant, name="Reinvestitsiya"
+        ).first()
+        if cat is None:
+            cat = ExpenseCategory.objects.create(
+                tenant=self.tenant, name="Reinvestitsiya"
+            )
+        Expense.objects.create(
+            tenant=self.tenant,
+            hotel=self.prop,
+            category=cat,
+            title="Xolodilnik",
+            amount=Decimal("5000000"),
+            expense_date=self.today,
+            status=Expense.Status.PAID,
+            funding=Expense.Funding.REINVESTMENT,
+            created_by=self.user,
+        )
+        # Recalc: default ledger should use closed working period
+        ledger = build_partner_ledger(self.tenant)
+        self.assertTrue(ledger["showing_closed_working"])
+        self.assertEqual(ledger["pending_open_starts_on"], fresh.started_on)
+        self.assertEqual(ledger["period"].pk, closed.pk)
+        self.assertEqual(ledger["reinvestment"], Decimal("5000000.00"))
+
     def test_loss_period_does_not_assign_negative_shares(self):
         cat = ExpenseCategory.objects.get(tenant=self.tenant, name="Ops")
         Expense.objects.create(
