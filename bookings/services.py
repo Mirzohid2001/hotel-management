@@ -627,32 +627,69 @@ def confirm_inquiry(reservation: Reservation, user, reason="") -> Reservation:
 
 @transaction.atomic
 def mark_no_show(reservation: Reservation, user, reason="") -> Reservation:
+    """
+    Kelmagan (no-show): jarima yozilmaydi.
+    Foliodagi yashash/jarima yozuvlari bekor, olingan to‘lovlar qaytariladi.
+    """
     if reservation.status != Reservation.Status.CONFIRMED:
         raise ValidationError(_("Faqat tasdiqlangan bronlar kelmagan deb belgilanadi."))
     old = reservation.status
-    settings = _property_settings(reservation)
-    fee_percent = settings.no_show_fee_percent if settings else Decimal("100")
-    fee = (reservation.total_amount * fee_percent / Decimal("100")).quantize(Decimal("0.01"))
 
     reservation.status = Reservation.Status.NO_SHOW
     reservation.save(update_fields=["status", "updated_at"])
-    log_change(reservation, user, "status", old, reservation.status, reason=reason)
+    log_change(
+        reservation,
+        user,
+        "status",
+        old,
+        reservation.status,
+        reason=reason or _("Kelmagan — jarimasiz, to‘lov qaytariladi"),
+    )
+    _settle_no_show_folio(reservation, user)
+    return reservation
 
-    if fee > 0:
-        from folio.models import FolioCharge
-        from folio.services import add_charge
 
-        folio = _ensure_fee_folio(reservation, user)
-        add_charge(
+def _settle_no_show_folio(reservation: Reservation, user) -> None:
+    """Jarimasiz: stay charge’larni void + net to‘lovni refund."""
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
+    from folio.models import Folio, GuestPayment
+    from folio.services import emehmon_charge_q, refund_overpayment, void_charge
+
+    folio = Folio.objects.filter(reservation=reservation, is_open=True).first()
+    if folio is None:
+        return
+
+    for charge in folio.charges.filter(is_void=False).exclude(emehmon_charge_q()):
+        void_charge(
+            charge,
+            user,
+            reason=str(_("Kelmagan — jarimasiz, hisob tozalandi")),
+        )
+
+    # Refresh credit after voids
+    folio = Folio.objects.get(pk=folio.pk)
+    if folio.credit_amount <= 0:
+        return
+
+    last_pay = (
+        folio.payments.filter(is_void=False)
+        .exclude(kind=GuestPayment.Kind.REFUND)
+        .order_by("-id")
+        .first()
+    )
+    method = last_pay.method if last_pay else GuestPayment.Method.CASH
+    try:
+        refund_overpayment(
             folio,
             user,
-            charge_type=FolioCharge.ChargeType.PENALTY,
-            description=_("Kelmaganlik to‘lovi (%(p)s%%)") % {"p": fee_percent},
-            unit_price=fee,
-            quantity=Decimal("1"),
-            currency=getattr(reservation, "currency", None) or reservation.tenant.currency,
+            method=method,
+            note=_("Kelmagan — to‘lovni qaytarish"),
+            currency=getattr(last_pay, "currency", None) if last_pay else None,
         )
-    return reservation
+    except DjangoValidationError:
+        # Masalan kassa smenasi yo‘q — credit folio da qoladi, kassir qo‘lda qaytaradi
+        pass
 
 
 @transaction.atomic

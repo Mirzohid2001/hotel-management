@@ -77,7 +77,10 @@ class IdealFlowTests(TestCase):
         self.assertIsNotNone(fee)
         self.assertEqual(fee.amount, Decimal("20000"))
 
-    def test_no_show_posts_penalty(self):
+    def test_no_show_no_penalty_refunds_payment(self):
+        from folio.models import GuestPayment
+        from folio.services import add_payment, ensure_folio_for_reservation
+
         reservation = create_reservation(
             tenant=self.tenant,
             user=self.user,
@@ -89,11 +92,29 @@ class IdealFlowTests(TestCase):
             check_in=self.today,
             check_out=self.today + timedelta(days=1),
         )
+        folio = ensure_folio_for_reservation(reservation, allow_pre_checkin=True)
+        add_payment(
+            folio,
+            self.user,
+            amount=Decimal("100000"),
+            method=GuestPayment.Method.CARD,
+            note="Depozit",
+        )
         mark_no_show(reservation, self.user)
         fee = FolioCharge.objects.filter(
-            folio__reservation=reservation, charge_type=FolioCharge.ChargeType.PENALTY
+            folio__reservation=reservation,
+            charge_type=FolioCharge.ChargeType.PENALTY,
+            is_void=False,
         ).first()
-        self.assertEqual(fee.amount, Decimal("100000"))
+        self.assertIsNone(fee)
+        folio.refresh_from_db()
+        active_charges = folio.charges.filter(is_void=False).count()
+        self.assertEqual(active_charges, 0)
+        self.assertEqual(folio.payments_total, Decimal("0"))
+        self.assertEqual(folio.balance, Decimal("0"))
+        refund = folio.payments.filter(kind=GuestPayment.Kind.REFUND, is_void=False).first()
+        self.assertIsNotNone(refund)
+        self.assertEqual(refund.amount, Decimal("100000"))
 
     def test_transfer_marks_old_dirty(self):
         reservation = create_reservation(

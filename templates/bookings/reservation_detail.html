@@ -189,7 +189,7 @@
   <form method="post" action="{% url 'bookings:cancel' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn-ghost">{% trans "Bekor" %}</button></form>
   <form method="post"
         action="{% url 'bookings:no_show' reservation.pk %}"
-        onsubmit="return confirm('{% trans "Mehmon kelmadi — Kelmagan deb belgilaysizmi? Jarima (sozlamadagi %) folio ga yoziladi." %}');">
+        onsubmit="return confirm('{% trans "Mehmon kelmadi — Kelmagan deb belgilaysizmi? Jarima yozilmaydi; to‘lov bo‘lsa qaytariladi." %}');">
     {% csrf_token %}
     <button type="submit" class="btn">{% trans "Kelmagan" %}</button>
   </form>

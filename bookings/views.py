@@ -445,7 +445,10 @@ def reservation_no_show(request, pk):
     reservation = _get_reservation(request, pk)
     try:
         mark_no_show(reservation, request.user, reason=request.POST.get("reason", ""))
-        messages.success(request, _("Kelmagan deb belgilandi."))
+        messages.success(
+            request,
+            _("Kelmagan deb belgilandi. Jarima yo‘q — to‘lov bo‘lsa qaytariladi."),
+        )
     except ValidationError as exc:
         messages.error(request, "; ".join(exc.messages))
     return redirect("bookings:detail", pk=pk)

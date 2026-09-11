@@ -75,7 +75,12 @@ class PropertySettings(TenantOwnedModel):
         help_text="E-mehmon: 1 mehmon × 1 kecha tarifi (odatda 9000 so‘m).",
     )
     cancel_fee_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("0"))
-    no_show_fee_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("100"))
+    no_show_fee_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("0"),
+        help_text=_("Eski sozlama; kelmaganda jarima yozilmaydi — to‘lov qaytariladi."),
+    )
     checkin_time = models.TimeField(default=time(14, 0))
     checkout_time = models.TimeField(default=time(12, 0))
     require_id_on_checkin = models.BooleanField(
