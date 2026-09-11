@@ -157,7 +157,11 @@ class ProfitResetForm(forms.Form):
         required=False,
         initial=False,
         label=_("Yangi hisobni bugundan boshlash"),
-        help_text=_("Belgilanmasa ertasi kundan boshlanadi. Belgilansa shu kun tushumi qayta ulashiladi."),
+        help_text=_(
+            "Belgilanmasa — ertasi kundan. Belgilansa — yopiq davr kechagacha, "
+            "yangi davr bugundan (bugun ikki marta hisoblanmaydi). "
+            "Agar ochiq davr allaqachon faqat bugun bo‘lsa — ertadan boshlanadi."
+        ),
     )
     note = forms.CharField(required=False, max_length=255, label=_("Izoh"))
 

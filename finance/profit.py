@@ -43,9 +43,11 @@ def active_share_total(tenant) -> Decimal:
     return _q(total)
 
 
-def period_bounds(period: ProfitPeriod, *, today: date | None = None) -> tuple[date, date]:
+def period_bounds(
+    period: ProfitPeriod, *, today: date | None = None, as_of: date | None = None
+) -> tuple[date, date]:
     today = today or timezone.localdate()
-    end = period.ended_on or today
+    end = as_of if as_of is not None else (period.ended_on or today)
     if end < period.started_on:
         end = period.started_on
     return period.started_on, end
@@ -335,16 +337,19 @@ def ledger_from_period(tenant, period: ProfitPeriod, *, hotel=None) -> dict:
     return build_partner_ledger(tenant, period=period, hotel=hotel)
 
 
-def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=None) -> dict:
+def build_partner_ledger(
+    tenant, *, period: ProfitPeriod | None = None, hotel=None, as_of: date | None = None
+) -> dict:
     """
     Sof = tushum − joriy rasxod − oylik − komissiya − ombor …
     Ulushlar sof foydadan. Reinvestitsiya Sofga kirmaydi — ulushi eng katta
     sherikning ulushidan ayiriladi (qolganlar to‘liq foizini oladi).
+    as_of — yopishda «kechagi kungacha» snayp olish uchun.
     """
     from reports.accounting import cash_pnl_for_range, reinvestment_in_range
 
     period = period or ensure_open_period(tenant)
-    start, end = period_bounds(period)
+    start, end = period_bounds(period, as_of=as_of)
     pnl = cash_pnl_for_range(tenant, start, end, hotel=hotel)
     operating_net = _q(pnl["net"])
     reinvestment = _q(reinvestment_in_range(tenant, start, end, hotel=hotel))
@@ -371,8 +376,13 @@ def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=No
     remaining_total = ZERO
     for p in partners:
         pct = _q(p.share_percent)
-        gross = _q(net * pct / HUNDRED) if net != 0 else ZERO
-        reinvest_cut = _q(reinvestment) if major is not None and p.pk == major.pk else ZERO
+        # Zarar sheriklarga «qarz» qilib bo‘linmaydi — faqat sof>0 da ulashiladi
+        gross = _q(net * pct / HUNDRED) if net > 0 else ZERO
+        reinvest_cut = (
+            _q(reinvestment)
+            if major is not None and p.pk == major.pk and net > 0
+            else ZERO
+        )
         entitled = _q(gross - reinvest_cut)
         withdrawn = withdrawn_by_partner.get(p.pk, ZERO)
         remaining = _q(entitled - withdrawn)
@@ -453,6 +463,20 @@ def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=No
                 )
                 % {"r": remaining_total},
             }
+        )
+    if net < 0:
+        next_steps.insert(
+            0,
+            {
+                "key": "period_loss",
+                "tone": "warn",
+                "text": _(
+                    "Bu ochiq davrda sof foyda manfiy (%(n)s): tushum yo‘q yoki xarajat ko‘p. "
+                    "Oldingi foyda «Tarix»da. Sheriklarga zarar ulush qilib yozilmaydi. "
+                    "Toza boshlash: «0 qilib qayta» (ertadan)."
+                )
+                % {"n": net},
+            },
         )
     if withdrawn_total > 0 and remaining_total <= 0 and partners:
         next_steps.append(
@@ -564,16 +588,40 @@ def reset_profit_period(
 ) -> tuple[ProfitPeriod, ProfitPeriod]:
     """
     Joriy davrni yopadi (0 dan qayta hisob) va yangi ochiq davr boshlaydi.
-    restart_today=True → yangi davr bugundan (shu kun tushumi qayta ulashiladi).
+
+    restart_today=True:
+      - ko‘p kunlik davr → yopiq = kechagacha; yangi = bugundan (bugun ikki marta
+        yopiq+ochiqqa tushmaydi)
+      - allaqachon faqat bugun bo‘lgan stub → ertadan boshlanadi ( −70k loop yo‘q)
     """
     period = ensure_open_period(tenant)
     end = ended_on or timezone.localdate()
     if end < period.started_on:
         raise ValidationError(_("Tugash sanasi boshlanishdan oldin bo‘lishi mumkin emas."))
 
-    ledger = build_partner_ledger(tenant, period=period)
+    close_end = end
+    start: date
+    if new_start is not None:
+        start = new_start
+        close_end = min(end, start - timedelta(days=1)) if start > period.started_on else end
+        if close_end < period.started_on:
+            close_end = period.started_on
+    elif restart_today:
+        if period.started_on < end:
+            # Bugun faqat yangi davrda
+            close_end = end - timedelta(days=1)
+            start = end
+        else:
+            # Shu kun stubini yopib, ertadan toza boshlash
+            close_end = end
+            start = end + timedelta(days=1)
+    else:
+        start = end + timedelta(days=1)
+        close_end = end
+
+    ledger = build_partner_ledger(tenant, period=period, as_of=close_end)
     snap = serialize_ledger_snapshot(ledger)
-    period.ended_on = end
+    period.ended_on = close_end
     period.closed_at = timezone.now()
     period.closed_by = user
     period.note = note or period.note
@@ -599,12 +647,6 @@ def reset_profit_period(
         ]
     )
 
-    if new_start is not None:
-        start = new_start
-    elif restart_today:
-        start = end
-    else:
-        start = end + timedelta(days=1)
     if ProfitPeriod.objects.filter(tenant=tenant, ended_on__isnull=True).exists():
         raise ValidationError(_("Allaqachon ochiq davr bor."))
     fresh = ProfitPeriod.objects.create(tenant=tenant, started_on=start)

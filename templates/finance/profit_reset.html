@@ -13,7 +13,7 @@
     · {% trans "Qoldiq" %}: <span class="money">{{ ledger.remaining_total|money }}</span>
   </p>
   <p class="muted">
-    {% trans "Yopilgandan keyin yangi davr odatda ertasi kundan boshlanadi. «Bugundan» belgilansa — shu kun tushumi yangi davrda qayta ulashiladi. Tarix saqlanadi." %}
+    {% trans "Yopilgandan keyin yangi davr odatda ertasi kundan boshlanadi. «Bugundan» — yopiq davr kechagacha qoladi, bugungi tushum/xarajat faqat yangi ochiq davrda. Allaqachon faqat bugungi stub bo‘lsa — ertadan toza boshlanadi (bir xil −summa takrorlanmaydi). Tarix saqlanadi." %}
   </p>
   <form method="post" class="app-form is-embedded">
     {% csrf_token %}

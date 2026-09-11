@@ -7,7 +7,12 @@ from django.utils import timezone
 
 from core.tests.helpers import setup_tenant_user
 from finance.models import Expense, ExpenseCategory, ProfitPartner, ProfitPeriod
-from finance.profit import build_partner_ledger, record_withdrawal, reset_profit_period
+from finance.profit import (
+    build_partner_ledger,
+    ensure_open_period,
+    record_withdrawal,
+    reset_profit_period,
+)
 from folio.models import GuestPayment
 from folio.services import ensure_folio_for_reservation
 from bookings.services import check_in_reservation, create_reservation
@@ -48,7 +53,8 @@ class ProfitShareTests(TestCase):
             price=Decimal("100000"),
         )
         self.guest = Guest.objects.create(tenant=self.tenant, first_name="P")
-        today = timezone.localdate()
+        self.today = timezone.localdate()
+        today = self.today
         res = create_reservation(
             tenant=self.tenant,
             user=self.user,
@@ -145,8 +151,42 @@ class ProfitShareTests(TestCase):
         closed, fresh = reset_profit_period(
             self.tenant, self.user, restart_today=True
         )
-        self.assertEqual(fresh.started_on, closed.ended_on)
+        # Davr bugundan boshlangan stub → ertadan toza start
+        self.assertEqual(fresh.started_on, closed.ended_on + timedelta(days=1))
 
+    def test_restart_today_splits_prior_days(self):
+        """Ko‘p kunlik davr: yopiq kechagacha, yangi bugundan."""
+        period = ensure_open_period(self.tenant)
+        period.started_on = self.today - timedelta(days=2)
+        period.save(update_fields=["started_on", "updated_at"])
+        closed, fresh = reset_profit_period(
+            self.tenant, self.user, restart_today=True
+        )
+        self.assertEqual(closed.ended_on, self.today - timedelta(days=1))
+        self.assertEqual(fresh.started_on, self.today)
+
+    def test_loss_period_does_not_assign_negative_shares(self):
+        cat = ExpenseCategory.objects.get(tenant=self.tenant, name="Ops")
+        Expense.objects.create(
+            tenant=self.tenant,
+            hotel=self.prop,
+            category=cat,
+            title="Katta rasxod",
+            amount=Decimal("5000000"),
+            expense_date=self.today,
+            status=Expense.Status.PAID,
+            created_by=self.user,
+        )
+        ledger = build_partner_ledger(self.tenant)
+        # 1_000_000 − 200_000 − 5_000_000 = −4_200_000
+        self.assertLess(ledger["net"], Decimal("0"))
+        self.assertEqual(ledger["entitled_total"], Decimal("0.00"))
+        self.assertEqual(ledger["distributable"], Decimal("0.00"))
+        for row in ledger["rows"]:
+            self.assertEqual(row["entitled"], Decimal("0.00"))
+            self.assertEqual(row["remaining"], Decimal("0.00"))
+        keys = {s["key"] for s in ledger["next_steps"]}
+        self.assertIn("period_loss", keys)
     def test_profit_share_page(self):
         url = reverse("finance:profit_share")
         resp = self.client.get(url)
