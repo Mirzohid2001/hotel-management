@@ -2742,12 +2742,11 @@ button.btn-lg {
   .section-card { padding: 1rem; }
   .list li { padding: 0.75rem 0.15rem; }
 
-  .calendar-table,
-  table.data,
-  .folio table,
-  .panel table {
-    display: block;
-    width: 100%;
+  .table-scroll,
+  .calendar-wrap,
+  .folio .panel,
+  .panel:has(> table),
+  .section-card:has(> table) {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }

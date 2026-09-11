@@ -3,7 +3,7 @@
 <html lang="{{ LANGUAGE_CODE|default:'uz' }}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}{% trans "Mehmonxona PMS" %}{% endblock %}</title>
   <link rel="icon" href="{% static 'img/favicon.ico' %}" sizes="any">
   <link rel="icon" type="image/png" href="{% static 'img/favicon-32.png' %}" sizes="32x32">
@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="{% static 'css/hero-pages.css' %}">
   <link rel="stylesheet" href="{% static 'css/components.css' %}">
   <link rel="stylesheet" href="{% static 'css/ux-polish.css' %}">
+  <link rel="stylesheet" href="{% static 'css/adaptive.css' %}">
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
   {% if user.is_authenticated and current_tenant %}
   <script src="{% static 'js/spa.js' %}" defer></script>

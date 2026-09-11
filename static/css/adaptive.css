@@ -1,0 +1,338 @@
+/**
+ * Adaptive layer — phone / tablet / safe-area.
+ * Loaded last so it can refine app/premium/hero/ux without fighting them.
+ */
+
+/* —— Viewport / shell overflow —— */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: clip;
+}
+
+.app-shell,
+.main,
+.page-content,
+#spa-root {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* iOS: stop input zoom (needs ≥16px) */
+@media (max-width: 980px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Touch targets */
+@media (max-width: 980px) {
+  .btn,
+  .btn-ghost,
+  .btn-sm,
+  .tile-btn,
+  .sidebar nav a,
+  .lang-switch a,
+  .nav-toggle,
+  .nav-close,
+  .notify-bell {
+    min-height: 44px;
+  }
+
+  .btn-sm {
+    min-height: 40px;
+    padding-inline: 0.85rem;
+  }
+
+  .sidebar nav a {
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+  }
+}
+
+/* Safe areas (notch / home indicator) */
+@supports (padding: max(0px)) {
+  .topbar {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  @media (max-width: 980px) {
+    .app-shell {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    .sidebar {
+      padding-top: max(0.75rem, env(safe-area-inset-top));
+      padding-left: max(0px, env(safe-area-inset-left));
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+
+    .main {
+      padding-left: max(0.85rem, env(safe-area-inset-left));
+      padding-right: max(0.85rem, env(safe-area-inset-right));
+      padding-bottom: max(2rem, calc(1.25rem + env(safe-area-inset-bottom)));
+    }
+
+    .topbar {
+      top: max(0.25rem, env(safe-area-inset-top));
+    }
+  }
+}
+
+/* —— Tables: scroll wrapper, don’t break table display —— */
+@media (max-width: 980px) {
+  .calendar-table,
+  table.data,
+  table.data-table,
+  .folio table,
+  .panel table,
+  .section-panel table,
+  .profit-share-page table,
+  .report-page table {
+    display: table;
+    width: max(100%, 36rem);
+  }
+
+  .table-scroll,
+  .calendar-wrap,
+  .calendar-wrap-premium,
+  .folio .table-scroll,
+  .panel .table-scroll {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    border-radius: 12px;
+  }
+
+  /* Hint that the table scrolls */
+  .table-scroll::after,
+  .calendar-wrap::after {
+    content: "";
+    pointer-events: none;
+  }
+}
+
+/* —— Forms / filters —— */
+@media (max-width: 720px) {
+  .filter-panel-grid,
+  .report-filter .filter-panel-grid {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .filter-field,
+  .filter-panel-grid .filter-field {
+    flex: 1 1 100% !important;
+    max-width: none !important;
+    width: 100%;
+  }
+
+  .filter-panel-actions,
+  .form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .filter-panel-actions .btn,
+  .filter-panel-actions .btn-ghost,
+  .form-actions .btn,
+  .form-actions .btn-ghost,
+  .form-actions a {
+    flex: 1 1 auto;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .app-form-grid,
+  .stack-form .app-form-grid,
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* —— Summary cards / finance —— */
+@media (max-width: 720px) {
+  .dash-pnl-row,
+  .pnl-summary-row,
+  .flash-mtd-row,
+  .stats-grid,
+  .folio-summary,
+  .board-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profit-receipt-panel,
+  .section-panel {
+    overflow-x: clip;
+  }
+
+  .profit-receipt-block {
+    overflow-x: auto;
+  }
+
+  .report-hero-actions,
+  .page-actions,
+  .app-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .report-hero-actions > *,
+  .page-actions > a,
+  .page-actions > .btn,
+  .app-hero-actions > a,
+  .app-hero-actions > .btn {
+    flex: 1 1 calc(50% - 0.3rem);
+    min-width: 8.5rem;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-pnl-row,
+  .pnl-summary-row,
+  .flash-mtd-row,
+  .stats-grid,
+  .folio-summary,
+  .board-stats,
+  .ops-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .room-board {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .room-tile {
+    min-height: 92px;
+  }
+
+  .report-hero-actions > *,
+  .page-actions > a,
+  .page-actions > .btn,
+  .app-hero-actions > a,
+  .app-hero-actions > .btn {
+    flex: 1 1 100%;
+  }
+
+  .guest-chip .expense-actions .btn,
+  .guest-chip .expense-actions .btn-ghost,
+  .guest-chip .hk-task-actions .btn,
+  .entity-row .btn,
+  .entity-row .btn-ghost {
+    flex: 1 1 auto;
+  }
+
+  h1 {
+    font-size: clamp(1.35rem, 7vw, 1.75rem);
+  }
+
+  .money {
+    font-variant-numeric: tabular-nums;
+    word-break: break-word;
+  }
+}
+
+/* —— Board / calendar —— */
+@media (max-width: 900px) {
+  .board-toolbar,
+  .calendar-toolbar,
+  .page-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .board-date-nav,
+  .calendar-date-nav {
+    width: 100%;
+  }
+
+  .calendar-wrap .calendar-table th,
+  .calendar-wrap .calendar-table td {
+    min-width: 2.4rem;
+  }
+
+  .calendar-wrap.is-month .calendar-table th,
+  .calendar-wrap.is-month .calendar-table td {
+    min-width: 2rem;
+  }
+}
+
+/* —— Lists / chips —— */
+@media (max-width: 720px) {
+  .list li.guest-chip,
+  .entity-row,
+  .maint-cost-row,
+  .expense-row {
+    align-items: stretch;
+  }
+
+  .list li.guest-chip > .actions,
+  .entity-row > .actions,
+  .expense-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+}
+
+/* —— Modal / panels on small screens —— */
+@media (max-width: 560px) {
+  .panel.form-narrow,
+  .form-narrow {
+    max-width: none;
+    width: 100%;
+  }
+
+  .messages li {
+    padding: 0.65rem 0.75rem;
+  }
+}
+
+/* —— Receipt / chek lines —— */
+@media (max-width: 560px) {
+  .profit-receipt-line {
+    grid-template-columns: 1.25rem 1fr auto;
+    gap: 0.35rem 0.5rem;
+    align-items: start;
+  }
+
+  .profit-receipt-amt {
+    text-align: right;
+    justify-self: end;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .profit-receipt-line .muted,
+  .profit-receipt-line [class*="note"] {
+    grid-column: 2 / -1;
+  }
+}
+
+/* Landscape phones: keep usable main padding */
+@media (max-width: 980px) and (orientation: landscape) {
+  .main {
+    padding-top: 0.65rem;
+  }
+
+  .topbar {
+    position: sticky;
+  }
+}
