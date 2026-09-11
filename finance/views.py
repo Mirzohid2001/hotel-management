@@ -417,6 +417,21 @@ def profit_share(request):
 
 @feature_required("pnl")
 @role_required(*FINANCE)
+def profit_share_print(request):
+    ledger = build_partner_ledger(tenant=request.tenant)
+    return render(
+        request,
+        "finance/profit_share_print.html",
+        {
+            "ledger": ledger,
+            "tenant_name": getattr(request.tenant, "name", "") or str(request.tenant),
+            "currency": request.tenant.currency or "UZS",
+        },
+    )
+
+
+@feature_required("pnl")
+@role_required(*FINANCE)
 @require_http_methods(["GET", "POST"])
 def profit_partner_create(request):
     form = ProfitPartnerForm(request.POST or None)

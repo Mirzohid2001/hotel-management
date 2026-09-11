@@ -1,0 +1,148 @@
+{% load money_fmt i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "Foyda ulushi — chek hisobot" %} · {{ ledger.start }} → {{ ledger.end }}</title>
+  <style>
+    :root {
+      --brand: #c04a00;
+      --ink: #1a1410;
+      --muted: #7a7168;
+      --line: #ddd4c8;
+      --warn: #9a3412;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      max-width: 720px;
+      margin: 1.5rem auto;
+      padding: 0 1rem 2.5rem;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    h1 { font-size: 1.35rem; color: var(--brand); margin: 0 0 0.2rem; }
+    h2 { font-size: 1.05rem; margin: 1.25rem 0 0.35rem; }
+    .muted { color: var(--muted); }
+    .head {
+      border-bottom: 2px solid var(--brand);
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .meta { margin: 0.15rem 0; font-size: 0.95rem; }
+    .hint { font-size: 0.88rem; color: var(--muted); margin: 0 0 0.6rem; }
+    .receipt {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.35rem 0.75rem 0.55rem;
+      margin-bottom: 1rem;
+    }
+    .line {
+      display: grid;
+      grid-template-columns: 1.5rem 1fr auto;
+      gap: 0.5rem;
+      align-items: baseline;
+      padding: 0.35rem 0;
+      border-bottom: 1px dashed var(--line);
+      font-variant-numeric: tabular-nums;
+    }
+    .line:last-child { border-bottom: 0; }
+    .line .sign { color: var(--muted); font-weight: 700; }
+    .line .lbl { font-size: 0.95rem; }
+    .line .note { display: block; font-size: 0.78rem; color: var(--muted); }
+    .line .amt { text-align: right; white-space: nowrap; font-weight: 600; }
+    .line.is-subtotal { background: #faf7f2; margin: 0 -0.75rem; padding-left: 0.75rem; padding-right: 0.75rem; }
+    .line.is-total {
+      border-bottom: 0;
+      border-top: 2px solid var(--ink);
+      margin-top: 0.25rem;
+      font-weight: 700;
+    }
+    .line.is-total .amt { color: var(--brand); font-size: 1.05rem; }
+    .line.is-warn .amt { color: var(--warn); }
+    .line.is-partner .amt { color: var(--ink); }
+    .actions { margin: 0 0 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button, .actions a {
+      background: var(--brand);
+      color: #fff;
+      border: 0;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .actions a.ghost {
+      background: transparent;
+      color: var(--brand);
+      border: 1px solid var(--brand);
+    }
+    .signs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    .sign-box {
+      border-top: 1px solid var(--line);
+      padding-top: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .sign-box .role { font-weight: 700; margin-bottom: 1.5rem; }
+    @media print {
+      .actions { display: none !important; }
+      body { margin: 0; max-width: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button type="button" onclick="window.print()">{% trans "Chop etish" %}</button>
+    <a class="ghost" href="{% url 'finance:profit_share' %}">{% trans "Orqaga" %}</a>
+  </div>
+
+  <header class="head">
+    <h1>{% trans "Foyda ulushi — chek hisobot" %}</h1>
+    <p class="meta">
+      {% if tenant_name %}{{ tenant_name }} · {% endif %}
+      {% trans "Davr" %}: {{ ledger.start }} → {{ ledger.end }}
+      · {% trans "Valyuta" %}: {{ currency }}
+    </p>
+    <p class="meta muted">
+      {% trans "Har bir qator: qayerdan keldi / qayerga ketdi." %}
+      {% trans "Sof foydadan foiz, reinvestitsiya ulushi katta sherikdan." %}
+    </p>
+  </header>
+
+  {% for section in ledger.receipt.sections %}
+  <section>
+    <h2>{{ section.title }}</h2>
+    {% if section.hint %}<p class="hint">{{ section.hint }}</p>{% endif %}
+    <div class="receipt">
+      {% for line in section.lines %}
+      <div class="line {% if line.tone %}is-{{ line.tone }}{% endif %}">
+        <span class="sign">{{ line.sign }}</span>
+        <span class="lbl">
+          {{ line.label }}
+          {% if line.note %}<span class="note">{{ line.note }}</span>{% endif %}
+        </span>
+        <span class="amt">{% if line.sign == "−" %}−{% endif %}{{ line.amount|money }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+  <div class="signs">
+    <div class="sign-box">
+      <div class="role">{% trans "Hisobchi" %}</div>
+      <div class="muted">{% trans "Imzo / sana" %} ________________</div>
+    </div>
+    <div class="sign-box">
+      <div class="role">{% trans "Direktor / uchreditel" %}</div>
+      <div class="muted">{% trans "Imzo / sana" %} ________________</div>
+    </div>
+  </div>
+</body>
+</html>

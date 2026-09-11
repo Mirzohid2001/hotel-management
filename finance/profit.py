@@ -58,6 +58,164 @@ def _major_share_partner(partners: list[ProfitPartner]) -> ProfitPartner | None:
     return max(partners, key=lambda p: (_q(p.share_percent), -p.pk))
 
 
+def _receipt_line(sign: str, label: str, amount: Decimal, *, tone: str = "", note: str = "") -> dict:
+    return {
+        "sign": sign,
+        "label": label,
+        "amount": _q(amount),
+        "tone": tone,
+        "note": note,
+    }
+
+
+def build_profit_receipt(ledger: dict) -> dict:
+    """
+    Chek/bayonnoma: har bir operatsiya qayerga qancha ketganini ochiq ko‘rsatadi.
+    """
+    pnl = ledger.get("pnl") or {}
+    sections = []
+
+    sof_lines = [
+        _receipt_line("+", _("Mehmon to‘lovlari"), pnl.get("guest_payments") or ZERO),
+        _receipt_line("+", _("Kompaniya to‘lovlari"), pnl.get("company_payments") or ZERO),
+        _receipt_line("=", _("Tushum jami"), pnl.get("revenue_total") or ZERO, tone="subtotal"),
+        _receipt_line("−", _("Rasxod (joriy)"), pnl.get("expenses_total") or ZERO),
+        _receipt_line("−", _("Mehnat (yalpi)"), pnl.get("labor_total") or ZERO),
+        _receipt_line("−", _("Yo‘naltiruvchi komissiya"), pnl.get("commission") or ZERO),
+        _receipt_line("−", _("Ombor tannarx"), pnl.get("inventory_cost") or ZERO),
+        _receipt_line("−", _("E-mehmon farq"), pnl.get("emehmon_shortfall") or ZERO),
+        _receipt_line(
+            "=",
+            _("Sof foyda"),
+            ledger.get("operating_net") or ZERO,
+            tone="total",
+            note=_("Ulushlar shu summadan hisoblanadi"),
+        ),
+    ]
+    sections.append(
+        {
+            "key": "sof",
+            "title": _("1. Sof foyda hisobi"),
+            "hint": _("Tushum minus operatsion xarajatlar. Reinvestitsiya bu yerga kirmaydi."),
+            "lines": sof_lines,
+        }
+    )
+
+    share_lines = []
+    for row in ledger.get("rows") or []:
+        if row.get("inactive"):
+            continue
+        partner = row["partner"]
+        pct = row["share_percent"]
+        share_lines.append(
+            _receipt_line(
+                "+",
+                _("%(name)s — %(pct)s%% × sof foyda")
+                % {"name": partner.name, "pct": pct},
+                row.get("gross_entitled") or ZERO,
+                note=_("Sof foydadan ulush"),
+            )
+        )
+        if row.get("reinvestment_cut"):
+            share_lines.append(
+                _receipt_line(
+                    "−",
+                    _("Reinvestitsiya (%(name)s ulushidan)")
+                    % {"name": partner.name},
+                    row["reinvestment_cut"],
+                    tone="warn",
+                    note=_("Ulushi eng katta sherikdan ayiriladi"),
+                )
+            )
+            share_lines.append(
+                _receipt_line(
+                    "=",
+                    _("%(name)s — sof ulush") % {"name": partner.name},
+                    row.get("entitled") or ZERO,
+                    tone="subtotal",
+                )
+            )
+        if row.get("withdrawn"):
+            share_lines.append(
+                _receipt_line(
+                    "−",
+                    _("Olingan (%(name)s)") % {"name": partner.name},
+                    row["withdrawn"],
+                )
+            )
+        share_lines.append(
+            _receipt_line(
+                "=",
+                _("%(name)s — qoldiq") % {"name": partner.name},
+                row.get("remaining") or ZERO,
+                tone="partner",
+            )
+        )
+
+    if ledger.get("reinvestment") and not ledger.get("reinvestment_partner"):
+        share_lines.append(
+            _receipt_line(
+                "−",
+                _("Reinvestitsiya (sherik biriktirilmagan)"),
+                ledger["reinvestment"],
+                tone="warn",
+            )
+        )
+
+    share_lines.append(
+        _receipt_line(
+            "=",
+            _("Taqsimlanadigan jami (ulushlar)"),
+            ledger.get("distributable") or ZERO,
+            tone="total",
+        )
+    )
+    if ledger.get("undistributed"):
+        share_lines.append(
+            _receipt_line(
+                "·",
+                _("Taqsimlanmagan (%(gap)s%%)")
+                % {"gap": ledger.get("share_gap") or ZERO},
+                ledger["undistributed"],
+                note=_("Ulushlar 100%% bo‘lmagani uchun"),
+            )
+        )
+    share_lines.append(
+        _receipt_line(
+            "=",
+            _("Jami qoldiq (olish mumkin)"),
+            ledger.get("remaining_total") or ZERO,
+            tone="total",
+        )
+    )
+
+    reinvest_hint = _("Avval sof foydadan foiz, keyin reinvestitsiya ulushi katta sherikdan.")
+    if ledger.get("reinvestment_partner"):
+        reinvest_hint = _(
+            "Reinvestitsiya %(name)s (%(pct)s%%) ulushidan ayiriladi."
+        ) % {
+            "name": ledger["reinvestment_partner"].name,
+            "pct": _q(ledger["reinvestment_partner"].share_percent),
+        }
+
+    sections.append(
+        {
+            "key": "share",
+            "title": _("2. Sheriklar bo‘yicha taqsimlash"),
+            "hint": reinvest_hint,
+            "lines": share_lines,
+        }
+    )
+
+    return {
+        "title": _("Foyda ulushi — chek hisobot"),
+        "start": ledger.get("start"),
+        "end": ledger.get("end"),
+        "sections": sections,
+        "currency": None,
+    }
+
+
 def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=None) -> dict:
     """
     Sof = tushum − joriy rasxod − oylik − komissiya − ombor …
@@ -198,7 +356,7 @@ def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=No
             }
         )
 
-    return {
+    result = {
         "period": period,
         "start": start,
         "end": end,
@@ -220,6 +378,8 @@ def build_partner_ledger(tenant, *, period: ProfitPeriod | None = None, hotel=No
         "next_steps": next_steps,
         "ready_to_reset": withdrawn_total > 0 and remaining_total <= 0 and bool(partners),
     }
+    result["receipt"] = build_profit_receipt(result)
+    return result
 
 
 @transaction.atomic

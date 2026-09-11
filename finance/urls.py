@@ -21,6 +21,7 @@ urlpatterns = [
     path("setup/vendors/<int:pk>/edit/", views.vendor_edit, name="vendor_edit"),
     path("setup/vendors/<int:pk>/toggle/", views.vendor_toggle, name="vendor_toggle"),
     path("profit/", views.profit_share, name="profit_share"),
+    path("profit/chek/", views.profit_share_print, name="profit_share_print"),
     path("profit/partners/new/", views.profit_partner_create, name="profit_partner_create"),
     path("profit/partners/<int:pk>/edit/", views.profit_partner_edit, name="profit_partner_edit"),
     path("profit/withdraw/", views.profit_withdraw, name="profit_withdraw"),

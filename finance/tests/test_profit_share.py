@@ -153,3 +153,19 @@ class ProfitShareTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Anvar")
         self.assertContains(resp, "Keyingi qadamlar")
+        self.assertContains(resp, "Chek hisobot")
+        self.assertContains(resp, "Sof foyda hisobi")
+
+    def test_profit_share_receipt_print(self):
+        url = reverse("finance:profit_share_print")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "chek hisobot")
+        self.assertContains(resp, "Chop etish")
+        ledger = resp.context["ledger"]
+        self.assertIn("receipt", ledger)
+        self.assertEqual(len(ledger["receipt"]["sections"]), 2)
+        # Sof lines include revenue and net
+        sof_labels = " ".join(l["label"] for l in ledger["receipt"]["sections"][0]["lines"])
+        self.assertIn("Tushum", sof_labels)
+        self.assertIn("Sof foyda", sof_labels)
