@@ -17,6 +17,7 @@
     <div class="report-hero-actions">
       <a class="btn-ghost" href="{% url 'reports:flash' %}">{% trans "Kunlik hisobot" %}</a>
       <a class="btn" href="{% url 'finance:profit_share' %}">{% trans "Foyda ulushi" %}</a>
+      <a class="btn" href="{% url 'finance:profit_share_print' %}" target="_blank" rel="noopener">{% trans "Chek" %}</a>
       {% if can_csv %}
       <a class="btn" href="{% url 'reports:export_pnl' %}?year={{ year }}&month={{ month }}&basis={{ basis }}">CSV</a>
       {% endif %}
