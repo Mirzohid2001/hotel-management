@@ -231,7 +231,16 @@
     function setOpen(open) {
       shell.classList.toggle("nav-open", open);
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
-      if (backdrop) backdrop.hidden = !open;
+      if (backdrop) {
+        backdrop.hidden = !open;
+        if (open) {
+          backdrop.removeAttribute("hidden");
+          backdrop.style.removeProperty("display");
+        } else {
+          backdrop.setAttribute("hidden", "");
+          backdrop.style.display = "none";
+        }
+      }
       document.body.classList.toggle("nav-lock", open);
     }
     toggle.addEventListener("click", function () {

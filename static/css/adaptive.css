@@ -3,7 +3,27 @@
  * Loaded last so it can refine app/premium/hero/ux without fighting them.
  */
 
-/* —— Viewport / shell overflow —— */
+/* —— Anti white-veil (iOS / HTMX back) —— */
+.main,
+#spa-root,
+#spa-root .page-content,
+#spa-root .page-content > * {
+  opacity: 1;
+}
+
+.nav-backdrop[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
+@media (max-width: 980px) {
+  .app-shell:not(.nav-open) .nav-backdrop {
+    display: none !important;
+    pointer-events: none !important;
+  }
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;

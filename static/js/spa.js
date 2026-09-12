@@ -115,18 +115,47 @@
     document.body.classList.remove("modal-open", "nav-lock");
     var modal = document.getElementById("modal-root");
     if (modal) modal.innerHTML = "";
-    if (shell.classList.contains("nav-open")) {
-      shell.classList.remove("nav-open");
-      var toggle = document.getElementById("nav-toggle");
-      if (toggle) toggle.setAttribute("aria-expanded", "false");
-      var backdrop = document.getElementById("nav-backdrop");
-      if (backdrop) backdrop.hidden = true;
+
+    shell.classList.remove("nav-open");
+    var toggle = document.getElementById("nav-toggle");
+    if (toggle) toggle.setAttribute("aria-expanded", "false");
+    var backdrop = document.getElementById("nav-backdrop");
+    if (backdrop) {
+      backdrop.hidden = true;
+      backdrop.setAttribute("hidden", "");
+      backdrop.style.display = "none";
     }
-    var pages = spaRoot.querySelectorAll(".page-content > *");
-    for (var i = 0; i < pages.length; i++) {
-      pages[i].style.animation = "none";
-      pages[i].style.opacity = "1";
-      pages[i].style.transform = "none";
+
+    var main = shell.querySelector(".main");
+    if (main) {
+      main.style.opacity = "1";
+      main.style.transform = "none";
+      main.style.animation = "none";
+      main.style.filter = "none";
+      main.style.visibility = "visible";
+    }
+
+    spaRoot.classList.remove(
+      "spa-loading",
+      "htmx-settling",
+      "htmx-request",
+      "htmx-swapping",
+      "htmx-added"
+    );
+    spaRoot.style.opacity = "1";
+    spaRoot.style.transform = "none";
+    spaRoot.style.filter = "none";
+    spaRoot.style.visibility = "visible";
+
+    var foggy = spaRoot.querySelectorAll(
+      ".page-content > *, .page-content, .board-page, .dash-page, .app-page"
+    );
+    for (var i = 0; i < foggy.length; i++) {
+      foggy[i].style.animation = "none";
+      foggy[i].style.opacity = "1";
+      foggy[i].style.transform = "none";
+      foggy[i].style.filter = "none";
+      foggy[i].style.visibility = "visible";
     }
   }
 
@@ -199,13 +228,24 @@
     if (isSpaNavigation(evt)) hideProgress();
   });
 
-  window.addEventListener("pageshow", function () {
+  window.addEventListener("pageshow", function (evt) {
     clearVisualFog();
     updateNavActive();
+    /* bfcache: animatsiya qayta ishga tushmasin */
+    if (evt.persisted) {
+      clearVisualFog();
+    }
   });
 
   window.addEventListener("popstate", function () {
     clearVisualFog();
+    /* Safari ba’zan settle kechiktiradi */
+    window.setTimeout(clearVisualFog, 0);
+    window.setTimeout(clearVisualFog, 120);
+  });
+
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) clearVisualFog();
   });
 
   /* Mobile menyu — navigatsiyadan keyin yopish */
