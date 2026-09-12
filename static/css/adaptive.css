@@ -22,6 +22,42 @@
     display: none !important;
     pointer-events: none !important;
   }
+
+  /*
+   * Sticky topbar z-index competes at the shell root (main has no stacking
+   * context). Keep menu + backdrop above the frosted topbar when open.
+   */
+  .nav-backdrop {
+    z-index: 850 !important;
+  }
+
+  .sidebar {
+    z-index: 900 !important;
+  }
+
+  .topbar {
+    z-index: 100 !important;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    padding: 0.55rem 0.65rem;
+  }
+
+  .app-shell.nav-open .topbar {
+    z-index: 40 !important;
+    pointer-events: none;
+  }
+
+  .topbar-left {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .topbar-right {
+    flex: 0 1 auto;
+    width: auto;
+    max-width: 58%;
+    justify-content: flex-end;
+  }
 }
 
 html {
@@ -116,7 +152,8 @@ body {
   .profit-share-page table,
   .report-page table {
     display: table;
-    width: max(100%, 36rem);
+    width: 100%;
+    min-width: 32rem;
   }
 
   .table-scroll,

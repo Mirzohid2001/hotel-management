@@ -2549,9 +2549,10 @@ button.btn-lg {
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 80;
-    background: rgba(20, 14, 10, 0.48);
-    backdrop-filter: blur(2px);
+    z-index: 850;
+    background: rgba(12, 8, 6, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     border: 0;
     padding: 0;
     margin: 0;
@@ -2564,7 +2565,7 @@ button.btn-lg {
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 90;
+    z-index: 900;
     width: min(300px, 88vw);
     height: 100dvh;
     max-height: 100dvh;
@@ -2591,34 +2592,61 @@ button.btn-lg {
     min-width: 0;
   }
 
+  /* Topbar sticky past menyu — menyu ochiqda parda ostida */
   .topbar {
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    margin-bottom: 1rem;
-    padding: 0.65rem 0.75rem;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+    padding: 0.55rem 0.65rem;
     position: sticky;
     top: 0.35rem;
-    z-index: 200;
+    z-index: 100;
   }
-  .topbar-left { flex: 1; min-width: 0; }
+  .app-shell.nav-open .topbar {
+    z-index: 80;
+    pointer-events: none;
+  }
+  .topbar-left {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0.4rem;
+  }
   .topbar-right {
-    width: 100%;
-    justify-content: space-between;
-    gap: 0.5rem;
+    flex: 0 1 auto;
+    width: auto;
+    max-width: 58%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .topbar-home,
+  .nav-toggle {
+    flex: 0 0 auto;
+    width: 2.5rem;
+    height: 2.5rem;
+    min-height: 2.5rem;
   }
   .notify-label { display: none; }
   .notify-bell {
     min-width: 2.5rem;
+    min-height: 2.5rem;
     justify-content: center;
   }
   .notify-dropdown {
-    right: auto;
-    left: 0;
+    right: 0;
+    left: auto;
     width: min(300px, calc(100vw - 2rem));
   }
   .lang-switch {
-    margin-left: auto;
-    font-size: 0.7rem;
+    margin-left: 0;
+    font-size: 0.68rem;
+    line-height: 1.25;
+    text-align: right;
+  }
+  .lang-switch select {
+    max-width: 7.5rem;
+    min-height: 2.1rem;
+    font-size: 0.78rem !important;
   }
 
   h1 { font-size: clamp(1.55rem, 6vw, 2rem); }

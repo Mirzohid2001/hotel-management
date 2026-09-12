@@ -3267,6 +3267,14 @@ a.cal-new.shax-walkin {
   line-height: 1.45;
 }
 
+.maint-statement-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.85rem;
+  margin: -0.25rem 0 1rem;
+}
+
 .maint-branch {
   margin: 0 0 1rem;
 }
