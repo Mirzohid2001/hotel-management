@@ -475,7 +475,19 @@ def board(request):
     ).select_related("guest", "room")
     if hotel is not None:
         active = active.filter(hotel=hotel)
+    # Departure morning: guest still checked_in but night interval ended —
+    # keep them on the board until Chiqish so staff can check them out.
+    still_in = (
+        Reservation.objects.filter(tenant=request.tenant)
+        .checked_in_on_room()
+        .select_related("guest", "room")
+    )
+    if hotel is not None:
+        still_in = still_in.filter(hotel=hotel)
     by_room = {r.room_id: r for r in active if r.room_id}
+    for r in still_in:
+        if r.room_id:
+            by_room[r.room_id] = r
     folio_map = {}
     if by_room:
         for folio in Folio.objects.filter(

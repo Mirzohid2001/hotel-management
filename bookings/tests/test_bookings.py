@@ -73,6 +73,36 @@ class BookingFlowTests(TestCase):
                 check_out=self.today + timedelta(days=3),
             )
 
+    def test_same_day_turnover_allowed(self):
+        """Checkout day is free: 18→20 then new guest from 20 is OK."""
+        create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=2),
+        )
+        next_guest = Guest.objects.create(
+            tenant=self.tenant, first_name="Next", last_name="Guest", phone="90222"
+        )
+        second = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=next_guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=self.today + timedelta(days=2),
+            check_out=self.today + timedelta(days=4),
+        )
+        self.assertEqual(second.check_in, self.today + timedelta(days=2))
+        self.assertEqual(second.nights, 2)
+
     def test_check_in_out_and_dirty(self):
         reservation = create_reservation(
             tenant=self.tenant,

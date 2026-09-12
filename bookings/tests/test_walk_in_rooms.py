@@ -101,3 +101,47 @@ class WalkInRoomAvailabilityTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "602")
         self.assertContains(resp, "Band")
+
+    def test_walk_in_after_checkout_same_day(self):
+        """After Chiqish on departure day, room is free/dirty for new walk-in."""
+        from bookings.services import check_out_reservation
+        from folio.models import GuestPayment
+        from folio.services import add_payment, ensure_stay_nights_posted
+
+        busy = Reservation.objects.get(room=self.room_busy)
+        busy.check_in = self.today - timedelta(days=1)
+        busy.check_out = self.today
+        busy.save(update_fields=["check_in", "check_out", "updated_at"])
+        ensure_stay_nights_posted(busy, self.user)
+        add_payment(
+            busy.folio,
+            self.user,
+            amount=busy.folio.balance,
+            method=GuestPayment.Method.CARD,
+        )
+        check_out_reservation(busy, self.user)
+
+        resp = self.client.get(reverse("bookings:walk_in"))
+        self.assertEqual(resp.status_code, 200)
+        form = resp.context["form"]
+        selectable_ids = [c[0] for c in form.fields["room"].choices]
+        self.assertIn(str(self.room_busy.pk), selectable_ids)
+
+        resp = self.client.post(
+            reverse("bookings:walk_in"),
+            {
+                "first_name": "Turnover",
+                "room": self.room_busy.pk,
+                "nightly_rate": "100000",
+                "currency": "UZS",
+                "nights": 1,
+                "adults": 1,
+                "allow_dirty": "1",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(
+            Reservation.objects.filter(
+                guest__first_name="Turnover", room=self.room_busy
+            ).exists()
+        )

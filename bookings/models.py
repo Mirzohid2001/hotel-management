@@ -45,7 +45,11 @@ class ReservationGroup(TenantOwnedModel):
 
 class ReservationQuerySet(models.QuerySet):
     def overlapping(self, check_in, check_out, *, room=None, exclude_pk=None):
-        """Reservations that overlap [check_in, check_out) for an optional room."""
+        """Night overlap on half-open interval [check_in, check_out).
+
+        Checkout day is free for the next guest: stay 18→20 occupies nights
+        18 and 19 only; a new stay starting on the 20th does not conflict.
+        """
         active = self.exclude(
             status__in=[
                 Reservation.Status.CANCELLED,
@@ -54,6 +58,15 @@ class ReservationQuerySet(models.QuerySet):
             ]
         )
         qs = active.filter(check_in__lt=check_out, check_out__gt=check_in)
+        if room is not None:
+            qs = qs.filter(room=room)
+        if exclude_pk:
+            qs = qs.exclude(pk=exclude_pk)
+        return qs
+
+    def checked_in_on_room(self, *, room=None, exclude_pk=None):
+        """Guests still physically in-house (status checked_in), any dates."""
+        qs = self.filter(status=Reservation.Status.CHECKED_IN, room__isnull=False)
         if room is not None:
             qs = qs.filter(room=room)
         if exclude_pk:

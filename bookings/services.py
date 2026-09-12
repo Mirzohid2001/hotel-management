@@ -64,6 +64,7 @@ def generate_reservation_code(tenant, property_obj, on_date: date | None = None)
 
 
 def assert_room_available(room, check_in, check_out, *, exclude_reservation_id=None):
+    """Date conflict on [check_in, check_out). Checkout day is bookable."""
     if room is None:
         return
     if not room.is_active:
@@ -77,6 +78,20 @@ def assert_room_available(room, check_in, check_out, *, exclude_reservation_id=N
     )
     if conflict:
         raise AvailabilityError(_("Tanlangan sanalarda xona band."))
+
+
+def assert_room_physically_free(room, *, exclude_reservation_id=None):
+    """Block immediate check-in while another guest is still checked in."""
+    if room is None:
+        return
+    if (
+        Reservation.objects.filter(tenant=room.tenant)
+        .checked_in_on_room(room=room, exclude_pk=exclude_reservation_id)
+        .exists()
+    ):
+        raise AvailabilityError(
+            _("Xonada hali mehmon bor — avval chiqish qiling, keyin yangi mehmonni joylashtiring.")
+        )
 
 
 def recompute_total(reservation: Reservation) -> Decimal:
@@ -331,6 +346,9 @@ def check_in_reservation(
         reservation.check_in,
         reservation.check_out,
         exclude_reservation_id=reservation.pk,
+    )
+    assert_room_physically_free(
+        reservation.room, exclude_reservation_id=reservation.pk
     )
     room = reservation.room
     if room.status in ROOM_NOT_READY_FOR_CHECKIN and not allow_dirty:

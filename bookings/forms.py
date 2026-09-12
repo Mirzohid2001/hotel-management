@@ -15,7 +15,7 @@ from properties.models import PropertySettings, Room, RoomType
 from .availability import room_availability_split, walk_in_room_cards
 from .commission import active_referrers
 from .models import BookingReferrer, ReferrerCommissionPayment, Reservation
-from .services import AvailabilityError, assert_room_available
+from .services import AvailabilityError, assert_room_available, assert_room_physically_free
 
 
 def _hotel_emehmon_unit(hotel) -> Decimal:
@@ -217,6 +217,10 @@ class ReservationForm(forms.ModelForm):
         help_texts = {
             "nightly_rate": _("Kelishilgan bir kechalik summa. Jami = narx × kechalar."),
             "currency": _("Narx shu valyutada — UZS, USD yoki EUR."),
+            "check_out": _(
+                "Ketish kuni (tushlikgacha). Shu kunga yangi mehmon bron qilish mumkin — "
+                "masalan 18→20 bo‘lsa, 20-chi kuni xona bo‘sh."
+            ),
         }
         widgets = {
             "check_in": forms.DateInput(attrs={"type": "date"}),
@@ -315,7 +319,13 @@ class RoomChoiceField(forms.ModelChoiceField):
 
 class ReservationAmendForm(forms.Form):
     check_in = forms.DateField(label=_("Kirish"), widget=forms.DateInput(attrs={"type": "date"}))
-    check_out = forms.DateField(label=_("Chiqish"), widget=forms.DateInput(attrs={"type": "date"}))
+    check_out = forms.DateField(
+        label=_("Chiqish"),
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text=_(
+            "Ketish kuni. Shu kunga keyingi mehmonni bron qilish mumkin (bir kunlik almashuv)."
+        ),
+    )
     room = RoomChoiceField(
         queryset=Room.objects.none(),
         required=False,
@@ -561,6 +571,7 @@ class WalkInForm(forms.Form):
         check_out = today + timedelta(days=nights)
         try:
             assert_room_available(room, today, check_out)
+            assert_room_physically_free(room)
         except AvailabilityError as exc:
             raise ValidationError(
                 exc.messages[0] if exc.messages else _("Bu xona band — boshqa xona tanlang.")
