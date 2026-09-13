@@ -88,6 +88,7 @@
           </div>
           <div class="guest">
             <a href="{% url 'bookings:detail' r.pk %}">{{ r.guest.full_name }}</a>
+            {% if r.room_type %}<span class="muted">· {{ r.room_type.name }}</span>{% endif %}
             {% if r.guest.is_blacklisted %}<span class="badge badge-blacklist">QR</span>{% endif %}
             {% if r.guest.is_vip %}<span class="badge badge-vip">VIP</span>{% endif %}
             <div class="meta room-code">{{ r.code }}</div>

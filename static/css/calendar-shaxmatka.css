@@ -251,6 +251,20 @@
   line-height: 1.2;
 }
 
+.calendar-shax-table td.cal-bar .cal-config {
+  display: inline-block;
+  margin-top: 0.12rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  background: rgba(40, 24, 16, 0.12);
+  color: inherit;
+  opacity: 0.92;
+}
+
 .calendar-shax-table td.cal-bar .cal-code {
   display: block;
   max-width: 100%;

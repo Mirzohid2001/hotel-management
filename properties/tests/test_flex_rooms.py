@@ -276,3 +276,60 @@ class MergeFlexRoomsCommandTests(TestCase):
         )
         self.dupe.refresh_from_db()
         self.assertTrue(self.dupe.is_active)
+
+    def test_partial_moves_non_overlapping_keeps_blocker(self):
+        create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.twin,
+            room=self.keeper,
+            nightly_rate=Decimal("40"),
+            check_in=self.today,
+            check_out=self.today + timedelta(days=2),
+        )
+        clash = Guest.objects.create(
+            tenant=self.tenant, first_name="Clash", last_name="X", phone="92222"
+        )
+        blocker = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=clash,
+            room_type=self.double,
+            room=self.dupe,
+            nightly_rate=Decimal("45"),
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+        )
+        ok_guest = Guest.objects.create(
+            tenant=self.tenant, first_name="Ok", last_name="Y", phone="93333"
+        )
+        movable = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=ok_guest,
+            room_type=self.double,
+            room=self.dupe,
+            nightly_rate=Decimal("45"),
+            check_in=self.today + timedelta(days=5),
+            check_out=self.today + timedelta(days=7),
+        )
+        call_command(
+            "merge_flex_rooms",
+            tenant=str(self.tenant.pk),
+            property=str(self.prop.pk),
+            apply=True,
+            partial=True,
+        )
+        self.dupe.refresh_from_db()
+        self.keeper.refresh_from_db()
+        blocker.refresh_from_db()
+        movable.refresh_from_db()
+        self.assertTrue(self.dupe.is_active)
+        self.assertEqual(blocker.room_id, self.dupe.pk)
+        self.assertEqual(movable.room_id, self.keeper.pk)
+        self.assertEqual(movable.room_type_id, self.double.pk)
+        self.assertTrue(self.keeper.allows_room_type(self.double))

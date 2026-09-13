@@ -36,7 +36,7 @@
   <ul class="kv-list">
     <li><span>{% trans "Sanalar" %}</span><span>{{ reservation.check_in }} → {{ reservation.check_out }} ({{ reservation.nights }} {% trans "tun" %})</span></li>
     <li><span>{% trans "Filial" %}</span><span>{{ reservation.hotel.name }}</span></li>
-    <li><span>{% trans "Xona" %}</span><span>{% if reservation.room %}{{ reservation.room.number }} · {{ reservation.room.get_status_display }}{% else %}{% trans "Biriktirilmagan" %}{% endif %}</span></li>
+    <li><span>{% trans "Xona" %}</span><span>{% if reservation.room %}{{ reservation.room.number }}{% if reservation.room_type %} · {{ reservation.room_type.name }}{% endif %} · {{ reservation.room.get_status_display }}{% else %}{% trans "Biriktirilmagan" %}{% endif %}</span></li>
     <li><span>{% trans "1 kecha" %}</span><span class="money">{% if reservation.nightly_rate %}{{ reservation.nightly_rate|money }}{% elif reservation.rate_plan %}{{ reservation.rate_plan.price|money }}{% else %}—{% endif %} {{ reservation.currency|default:current_tenant.currency }}</span></li>
     <li><span>{% trans "Summa" %}</span><span class="money">{{ reservation.total_amount|money }} {{ reservation.currency|default:current_tenant.currency }}</span></li>
     {% if reservation.referrer %}

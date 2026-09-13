@@ -27,7 +27,7 @@ def build_room_timeline(tenant, hotel, start: date, *, days_count: int = 14) -> 
                 Reservation.Status.NO_SHOW,
             ]
         )
-        .select_related("guest", "room")
+        .select_related("guest", "room", "room_type")
     )
     if hotel is not None:
         reservations = reservations.filter(hotel=hotel)

@@ -26,8 +26,10 @@ def base_number(number: str) -> str | None:
 class Command(BaseCommand):
     help = (
         "101 va 101-1 kabi dublikat xonalarni birlashtiradi: "
-        "asosiy xonaga Twin/Double sellable_types qo‘shadi, bronlarni ko‘chiradi, "
-        "dublikatni o‘chiradi (is_active=False). Default: dry-run."
+        "asosiy xonaga Twin/Double sellable_types qo‘shadi, bronlarni ko‘chiradi "
+        "(Reservation.room_type — Twin/Double saqlanadi), "
+        "dublikatni o‘chiradi (is_active=False). Default: dry-run. "
+        "--partial: overlap bo‘lsa ham mumkin bo‘lgan bronlarni ko‘chiradi."
     )
 
     def add_arguments(self, parser):
@@ -38,11 +40,17 @@ class Command(BaseCommand):
             action="store_true",
             help="O‘zgarishlarni saqlash (aks holda faqat ko‘rsatadi)",
         )
+        parser.add_argument(
+            "--partial",
+            action="store_true",
+            help="Overlap bronlarni SKIP qilmasdan, faqat bo‘sh kunlardagini ko‘chiradi",
+        )
 
     def handle(self, *args, **options):
         tenant = self._resolve_tenant(options.get("tenant") or "")
         prop = self._resolve_property(tenant, options.get("property") or "")
         apply = bool(options.get("apply"))
+        partial = bool(options.get("partial"))
 
         rooms_qs = Room.objects.filter(is_active=True).select_related(
             "room_type", "property", "tenant"
@@ -82,7 +90,9 @@ class Command(BaseCommand):
                     continue
                 for dupe in dupes:
                     planned += 1
-                    ok, detail = self._merge_pair(keeper, dupe, apply=apply)
+                    ok, detail = self._merge_pair(
+                        keeper, dupe, apply=apply, partial=partial
+                    )
                     if ok:
                         merged += 1
                         mark = "MERGED" if apply else "WOULD MERGE"
@@ -111,14 +121,16 @@ class Command(BaseCommand):
         if not apply and planned:
             self.stdout.write("Haqiqiy birlashtirish: --apply")
 
-    def _merge_pair(self, keeper: Room, dupe: Room, *, apply: bool) -> tuple[bool, str]:
+    def _merge_pair(
+        self, keeper: Room, dupe: Room, *, apply: bool, partial: bool
+    ) -> tuple[bool, str]:
         if keeper.pk == dupe.pk:
             return False, "same room"
         if keeper.property_id != dupe.property_id:
             return False, "different property"
 
         blocking = []
-        active = (
+        active = list(
             Reservation.objects.filter(room=dupe)
             .exclude(
                 status__in=[
@@ -126,7 +138,7 @@ class Command(BaseCommand):
                     Reservation.Status.NO_SHOW,
                 ]
             )
-            .select_related("guest")
+            .select_related("guest", "room_type")
             .order_by("check_in")
         )
         movable = []
@@ -141,10 +153,9 @@ class Command(BaseCommand):
             except AvailabilityError as exc:
                 blocking.append(f"{res.code}: {'; '.join(exc.messages)}")
                 continue
-            # Also conflict with other reservations already on keeper for same stay
             movable.append(res)
 
-        if blocking:
+        if blocking and not partial:
             return False, "; ".join(blocking[:3])
 
         types_to_add = []
@@ -154,10 +165,14 @@ class Command(BaseCommand):
             if not keeper.allows_room_type(t) and t not in types_to_add:
                 types_to_add.append(t)
 
+        left = len(blocking)
+        mode = "PARTIAL" if blocking else "FULL"
         detail = (
-            f"+types={[t.name for t in types_to_add] or ['(already)']}, "
-            f"move={len(movable)} bookings"
+            f"{mode} +types={[t.name for t in types_to_add] or ['(already)']}, "
+            f"move={len(movable)}, left_on_dupe={left}"
         )
+        if blocking:
+            detail += f" blockers=[{'; '.join(blocking[:3])}]"
         if not apply:
             return True, detail
 
@@ -165,23 +180,47 @@ class Command(BaseCommand):
             for t in types_to_add:
                 keeper.sellable_types.add(t)
             keeper.ensure_primary_sellable()
-            # Clear cached M2M so allows_room_type sees newly added types
             if hasattr(keeper, "_prefetched_objects_cache"):
                 keeper._prefetched_objects_cache.pop("sellable_types", None)
+
+            movable_ids = {r.pk for r in movable}
             for res in movable:
-                old_type = res.room_type
+                sold_as = res.room_type
                 res.room = keeper
-                if old_type and not keeper.allows_room_type(old_type):
+                # Keep Twin/Double sold-as; only fall back if somehow invalid
+                if sold_as and not keeper.allows_room_type(sold_as):
                     res.room_type = keeper.room_type
                 res.save(update_fields=["room", "room_type", "updated_at"])
-            # Move remaining history (cancelled etc.) too
-            Reservation.objects.filter(room=dupe).update(room=keeper)
-            dupe.is_active = False
-            dupe.notes = (
-                (dupe.notes + " | " if dupe.notes else "")
-                + f"merged into {keeper.number}"
-            )[:255]
-            dupe.save(update_fields=["is_active", "notes", "updated_at"])
+
+            # Move cancelled/no_show history to keeper; leave blocking active on dupe
+            Reservation.objects.filter(room=dupe).filter(
+                status__in=[
+                    Reservation.Status.CANCELLED,
+                    Reservation.Status.NO_SHOW,
+                ]
+            ).update(room=keeper)
+
+            still_active = (
+                Reservation.objects.filter(room=dupe)
+                .exclude(
+                    status__in=[
+                        Reservation.Status.CANCELLED,
+                        Reservation.Status.NO_SHOW,
+                    ]
+                )
+                .count()
+            )
+            if still_active == 0:
+                Reservation.objects.filter(room=dupe).update(room=keeper)
+                dupe.is_active = False
+                dupe.notes = (
+                    (dupe.notes + " | " if dupe.notes else "")
+                    + f"merged into {keeper.number}"
+                )[:255]
+                dupe.save(update_fields=["is_active", "notes", "updated_at"])
+                detail += ", deactivated=yes"
+            else:
+                detail += f", deactivated=no (active_left={still_active})"
         return True, detail
 
     def _resolve_tenant(self, raw: str):

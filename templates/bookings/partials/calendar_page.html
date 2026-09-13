@@ -113,6 +113,9 @@
             <td colspan="{{ seg.colspan }}" class="cal-bar status-{{ seg.status }}{% if seg.is_vip %} is-vip{% endif %}{% if seg.covers_today %} is-today-stay{% endif %}">
               <a href="{% url 'bookings:detail' seg.reservation.pk %}" class="cal-stay-chip">
                 <span class="cal-name">{{ seg.reservation.guest.first_name }}{% if seg.is_vip %} ★{% endif %}</span>
+                {% if seg.reservation.room_type_id %}
+                <span class="cal-config">{{ seg.reservation.room_type.name }}</span>
+                {% endif %}
                 <span class="cal-code">{{ seg.reservation.code }}</span>
               </a>
             </td>
