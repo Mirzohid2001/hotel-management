@@ -837,6 +837,7 @@
 .board-pill.leg-cal-confirmed::before { background: #c4a574; }
 .board-pill.leg-cal-inhouse::before { background: var(--accent); }
 .board-pill.leg-cal-vip::before { background: #2f5d50; }
+.board-pill.leg-cal-weekend::before { background: #3a2c24; }
 
 .calendar-wrap-premium {
   border-radius: var(--radius-xl, 24px);
@@ -846,12 +847,7 @@
 }
 
 .calendar-table-premium thead th {
-  background: linear-gradient(180deg, #f8f4ef 0%, #f0ebe5 100%);
   padding: 0.65rem 0.4rem;
-}
-
-.calendar-table-premium .cal-day-col.is-today {
-  background: rgba(232, 106, 12, 0.1);
 }
 
 .cal-day-num {
@@ -873,7 +869,6 @@
 
 .cal-room-cell {
   padding: 0.65rem 0.85rem !important;
-  background: #fff !important;
 }
 
 .cal-room-num {
@@ -897,7 +892,6 @@
 .calendar-table-premium td.cal-empty .cal-new {
   width: 1.75rem;
   height: 1.75rem;
-  border: 1px dashed rgba(232, 106, 12, 0.35);
 }
 
 .calendar-empty { text-align: center; padding: 2.5rem !important; }

@@ -78,7 +78,7 @@ class Guest(TenantOwnedModel):
     notes = models.TextField(blank=True)
 
     class Meta:
-        ordering = ["last_name", "first_name"]
+        ordering = ["first_name", "last_name"]
 
     def __str__(self) -> str:
         return self.full_name

@@ -1,0 +1,375 @@
+/* —— Calendar chessboard (shaxmatka) —— */
+.calendar-page .calendar-shaxmatka.calendar-wrap-premium {
+  padding: 0;
+  border-radius: 16px;
+  background: #e8e0d6;
+  border: 1px solid rgba(40, 24, 16, 0.14);
+  box-shadow: var(--shadow-card);
+  overflow: auto;
+  max-height: min(72vh, 44rem);
+  -webkit-overflow-scrolling: touch;
+}
+
+.calendar-shax-table.board-table {
+  overflow: visible;
+}
+
+.calendar-shax-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fffaf6;
+  table-layout: fixed;
+}
+
+.calendar-shax-table th,
+.calendar-shax-table td {
+  border-right: 1px solid rgba(40, 24, 16, 0.11);
+  border-bottom: 1px solid rgba(40, 24, 16, 0.13);
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.calendar-shax-table th:last-child,
+.calendar-shax-table td:last-child {
+  border-right: 0;
+}
+
+.calendar-shax-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 3.4rem;
+  padding: 0.4rem 0.25rem !important;
+  text-align: center;
+  background: linear-gradient(180deg, #2a211c 0%, #1c1612 100%) !important;
+  color: rgba(255, 246, 238, 0.92);
+  border-bottom: 2px solid rgba(232, 106, 12, 0.55);
+  border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+.calendar-shax-table thead th.cal-room-col {
+  position: sticky;
+  z-index: 8;
+  left: 0;
+  top: 0;
+  min-width: 6.75rem;
+  width: 6.75rem;
+  text-align: left;
+  padding: 0.55rem 0.85rem !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(255, 214, 180, 0.9);
+  box-shadow: 6px 0 12px rgba(0, 0, 0, 0.2);
+}
+
+.calendar-shax-table .cal-day-col {
+  min-width: 3.4rem;
+  width: 3.4rem;
+}
+
+.calendar-shax-table .cal-day-num {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #fff7f0;
+}
+
+.calendar-shax-table .cal-day-wd {
+  display: block;
+  margin-top: 0.12rem;
+  font-size: 0.62rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 220, 190, 0.72);
+}
+
+.calendar-shax-table .cal-day-col.is-weekend {
+  background: linear-gradient(180deg, #3a2c24 0%, #261c17 100%) !important;
+}
+
+.calendar-shax-table .cal-day-col.is-today {
+  background: linear-gradient(180deg, #e86a0c 0%, #c45308 100%) !important;
+  box-shadow: inset 0 -3px 0 #ffd7b0;
+}
+
+.calendar-shax-table .cal-day-col.is-today .cal-day-num,
+.calendar-shax-table .cal-day-col.is-today .cal-day-wd {
+  color: #fff;
+}
+
+.calendar-shax-table .cal-room-row td {
+  height: 3.55rem;
+  padding: 0.22rem !important;
+  background: #fffaf6;
+}
+
+.calendar-shax-table .cal-room-row.is-alt td {
+  background: #f3e9df;
+}
+
+.calendar-shax-table .cal-room-cell {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  min-width: 6.75rem;
+  width: 6.75rem;
+  padding: 0.45rem 0.75rem !important;
+  text-align: left !important;
+  background: #fff !important;
+  border-right: 2px solid rgba(40, 24, 16, 0.18) !important;
+  box-shadow: 6px 0 10px rgba(40, 24, 16, 0.07);
+}
+
+.calendar-shax-table .cal-room-row.is-alt .cal-room-cell {
+  background: #f7efe7 !important;
+}
+
+.calendar-shax-table .cal-room-num {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #1a1410;
+}
+
+.calendar-shax-table .cal-room-type {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #8a7a6c;
+}
+
+.calendar-shax-table tr.status-dirty .cal-room-cell {
+  box-shadow: inset 3px 0 0 #d97706, 6px 0 10px rgba(40, 24, 16, 0.07);
+}
+
+.calendar-shax-table tr.status-out_of_order {
+  opacity: 0.58;
+}
+
+.calendar-shax-table tr.status-out_of_order .cal-room-cell {
+  box-shadow: inset 3px 0 0 #9a3412, 6px 0 10px rgba(40, 24, 16, 0.07);
+}
+
+.calendar-shax-table td.cal-empty {
+  text-align: center;
+  background-color: inherit;
+}
+
+.calendar-shax-table .cal-room-row.is-alt td.cal-empty {
+  background-color: #f3e9df;
+}
+
+.calendar-shax-table td.cal-empty.is-today {
+  background-color: rgba(232, 106, 12, 0.09) !important;
+  box-shadow: inset 0 0 0 1px rgba(232, 106, 12, 0.3);
+}
+
+.calendar-shax-table td.cal-empty .cal-new {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  margin: 0;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px dashed rgba(40, 24, 16, 0.22);
+  background: rgba(255, 255, 255, 0.7);
+  color: rgba(40, 24, 16, 0.42);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.calendar-shax-table tr:hover td.cal-empty .cal-new,
+.calendar-shax-table td.cal-empty:hover .cal-new,
+.calendar-shax-table td.cal-empty:focus-within .cal-new {
+  opacity: 1;
+}
+
+.calendar-shax-table td.cal-empty .cal-new:hover,
+.calendar-shax-table td.cal-empty .cal-new:focus-visible {
+  border-style: solid;
+  border-color: rgba(232, 106, 12, 0.55);
+  background: #fff;
+  color: var(--accent-deep, #c45308);
+  outline: none;
+}
+
+.calendar-shax-table td.cal-bar {
+  padding: 0.28rem 0.18rem !important;
+  background: transparent !important;
+}
+
+.calendar-shax-table td.cal-bar .cal-stay-chip,
+.calendar-shax-table td.cal-bar a.cal-stay-chip {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.08rem;
+  width: 100%;
+  min-height: 2.9rem;
+  height: 100%;
+  padding: 0.35rem 0.55rem;
+  border-radius: 10px;
+  text-decoration: none;
+  text-align: left;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.calendar-shax-table td.cal-bar .cal-stay-chip:hover,
+.calendar-shax-table td.cal-bar a.cal-stay-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(40, 24, 16, 0.14);
+}
+
+.calendar-shax-table td.cal-bar .cal-name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.calendar-shax-table td.cal-bar .cal-code {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.78;
+}
+
+.calendar-shax-table td.cal-bar.status-confirmed .cal-stay-chip {
+  background: linear-gradient(165deg, #f0e0c8, #d9b88a);
+  color: #3b2a18;
+  border-color: rgba(120, 80, 35, 0.18);
+}
+
+.calendar-shax-table td.cal-bar.status-inquiry .cal-stay-chip {
+  background: linear-gradient(165deg, #f4f0ea, #e5ddd3);
+  color: #5a5048;
+  border: 1px dashed rgba(90, 80, 70, 0.35);
+}
+
+.calendar-shax-table td.cal-bar.status-checked_in .cal-stay-chip {
+  background: linear-gradient(135deg, #ff9a2e, #e86a0c);
+  color: #fff;
+  border-color: rgba(180, 70, 10, 0.25);
+  box-shadow: 0 4px 12px rgba(232, 106, 12, 0.28);
+}
+
+.calendar-shax-table td.cal-bar.status-checked_out .cal-stay-chip {
+  background: #ece7e1;
+  color: #7a7168;
+}
+
+.calendar-shax-table td.cal-bar.is-vip .cal-stay-chip {
+  background: linear-gradient(135deg, #3d6b5c, #2f5d50);
+  color: #f3fff8;
+  border-color: rgba(20, 60, 45, 0.25);
+}
+
+.calendar-shax-table td.cal-bar.is-today-stay .cal-stay-chip {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45), 0 4px 12px rgba(232, 106, 12, 0.2);
+}
+
+.calendar-shax-table .cal-room-row:hover .cal-room-cell {
+  background: #fff5eb !important;
+}
+
+.calendar-wrap.is-month.calendar-shaxmatka {
+  max-height: min(75vh, 48rem);
+}
+
+.calendar-wrap.is-month .calendar-shax-table .cal-day-col {
+  min-width: 2.4rem;
+  width: 2.4rem;
+}
+
+.calendar-wrap.is-month .calendar-shax-table .cal-day-num {
+  font-size: 0.85rem;
+}
+
+.calendar-wrap.is-month .calendar-shax-table .cal-day-wd {
+  font-size: 0.55rem;
+}
+
+.calendar-wrap.is-month .calendar-shax-table .cal-room-row td {
+  height: 2.9rem;
+}
+
+.calendar-wrap.is-month .calendar-shax-table td.cal-bar .cal-stay-chip {
+  min-height: 2.3rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 8px;
+}
+
+.calendar-wrap.is-month .calendar-shax-table .cal-code {
+  display: none;
+}
+
+.calendar-wrap.is-month .calendar-shax-table .cal-name {
+  font-size: 0.66rem;
+}
+
+.calendar-wrap.is-month .calendar-shax-table td.cal-empty .cal-new {
+  width: 1.3rem;
+  height: 1.3rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+}
+
+@media (max-width: 900px) {
+  .calendar-page .calendar-shaxmatka.calendar-wrap-premium {
+    max-height: min(68vh, 36rem);
+  }
+
+  .calendar-shax-table thead th.cal-room-col,
+  .calendar-shax-table .cal-room-cell {
+    min-width: 5.35rem;
+    width: 5.35rem;
+  }
+
+  .calendar-shax-table .cal-day-col {
+    min-width: 2.8rem;
+    width: 2.8rem;
+  }
+
+  .calendar-shax-table .cal-room-num {
+    font-size: 0.95rem;
+  }
+
+  .calendar-shax-table td.cal-empty .cal-new {
+    opacity: 0.7;
+  }
+}
+
+@media (hover: none) {
+  .calendar-shax-table td.cal-empty .cal-new {
+    opacity: 0.7;
+  }
+}

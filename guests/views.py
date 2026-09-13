@@ -22,6 +22,7 @@ from .forms import (
     GuestQuickForm,
 )
 from .models import Company, Guest, GuestDocument
+from .query import guests_for_select
 
 
 @role_required(*FRONT_OFFICE)
@@ -125,7 +126,7 @@ def guest_quick_create(request):
             number=form.cleaned_data["doc_number"],
             issued_country=(form.cleaned_data.get("issued_country") or "").strip(),
         )
-        qs = Guest.objects.filter(tenant=request.tenant).order_by("first_name", "last_name")
+        qs = guests_for_select(request.tenant)
         return oob_select_response(select_id, field_name, qs, guest.pk, required=True)
     return render(
         request,

@@ -59,14 +59,16 @@ def oob_select_response(
     options = select_options_html(queryset, selected_pk, empty_label=empty_label)
     if required:
         select = format_html(
-            '<select name="{}" id="{}" required hx-swap-oob="true">{}</select>',
+            '<select name="{}" id="{}" class="searchable-select-native" '
+            'data-searchable-native="1" required hx-swap-oob="true">{}</select>',
             name,
             select_id,
             options,
         )
     else:
         select = format_html(
-            '<select name="{}" id="{}" hx-swap-oob="true">{}</select>',
+            '<select name="{}" id="{}" class="searchable-select-native" '
+            'data-searchable-native="1" hx-swap-oob="true">{}</select>',
             name,
             select_id,
             options,

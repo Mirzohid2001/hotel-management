@@ -15,9 +15,9 @@ if TYPE_CHECKING:
     from tenants.models import Tenant
 
 CURRENCY_CHOICES = [
-    ("UZS", _("So‘m (UZS)")),
     ("USD", _("Dollar (USD)")),
     ("EUR", _("Euro (EUR)")),
+    ("UZS", _("So‘m (UZS)")),
 ]
 
 CURRENCY_CODES = frozenset(c[0] for c in CURRENCY_CHOICES)

@@ -324,9 +324,19 @@ body {
     min-width: 2.4rem;
   }
 
+  .calendar-wrap .calendar-shax-table .cal-day-col {
+    min-width: 2.75rem;
+    width: 2.75rem;
+  }
+
   .calendar-wrap.is-month .calendar-table th,
   .calendar-wrap.is-month .calendar-table td {
     min-width: 2rem;
+  }
+
+  .calendar-wrap.is-month .calendar-shax-table .cal-day-col {
+    min-width: 2.2rem;
+    width: 2.2rem;
   }
 }
 

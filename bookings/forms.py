@@ -16,6 +16,8 @@ from .availability import room_availability_split, walk_in_room_cards
 from .commission import active_referrers
 from .models import BookingReferrer, ReferrerCommissionPayment, Reservation
 from .services import AvailabilityError, assert_room_available, assert_room_physically_free
+from guests.query import guests_for_select
+from guests.widgets import SearchableSelect
 
 
 def _hotel_emehmon_unit(hotel) -> Decimal:
@@ -216,13 +218,14 @@ class ReservationForm(forms.ModelForm):
         }
         help_texts = {
             "nightly_rate": _("Kelishilgan bir kechalik summa. Jami = narx × kechalar."),
-            "currency": _("Narx shu valyutada — UZS, USD yoki EUR."),
+            "currency": _("Narx shu valyutada — USD, EUR yoki UZS."),
             "check_out": _(
                 "Ketish kuni (tushlikgacha). Shu kunga yangi mehmon bron qilish mumkin — "
                 "masalan 18→20 bo‘lsa, 20-chi kuni xona bo‘sh."
             ),
         }
         widgets = {
+            "guest": SearchableSelect(),
             "check_in": forms.DateInput(attrs={"type": "date"}),
             "check_out": forms.DateInput(attrs={"type": "date"}),
             "notes": forms.Textarea(attrs={"rows": 2}),
@@ -239,8 +242,10 @@ class ReservationForm(forms.ModelForm):
         self.tenant = tenant
         self.hotel = hotel
         if tenant is not None:
-            self.fields["guest"].queryset = Guest.objects.filter(tenant=tenant)
-            self.fields["company"].queryset = Company.objects.filter(tenant=tenant, is_active=True)
+            self.fields["guest"].queryset = guests_for_select(tenant)
+            self.fields["company"].queryset = Company.objects.filter(tenant=tenant, is_active=True).order_by(
+                "name"
+            )
             self.fields["referrer"].queryset = active_referrers(tenant)
             self.fields["referrer"].required = False
             self.fields["referrer"].empty_label = _("— yo‘q —")
@@ -262,7 +267,7 @@ class ReservationForm(forms.ModelForm):
             self.fields["nightly_rate"].required = True
             self.fields["currency"].choices = CURRENCY_CHOICES
             if not self.is_bound and not self.instance.pk:
-                self.fields["currency"].initial = getattr(tenant, "currency", None) or "UZS"
+                self.fields["currency"].initial = "USD"
             avail_url = reverse("bookings:availability")
             for name in ("check_in", "check_out", "room", "room_type"):
                 self.fields[name].widget.attrs.update(
@@ -431,8 +436,8 @@ class WalkInForm(forms.Form):
     currency = forms.ChoiceField(
         choices=CURRENCY_CHOICES,
         label=_("Valyuta"),
-        initial="UZS",
-        help_text=_("Narx shu valyutada — UZS, USD yoki EUR."),
+        initial="USD",
+        help_text=_("Narx shu valyutada — USD, EUR yoki UZS."),
     )
     nights = forms.IntegerField(
         min_value=1,
@@ -479,7 +484,7 @@ class WalkInForm(forms.Form):
         self.stay_check_out = self.stay_check_in + timedelta(days=1)
         if tenant is not None:
             self.fields["referrer"].queryset = active_referrers(tenant)
-            self.fields["currency"].initial = getattr(tenant, "currency", None) or "UZS"
+            self.fields["currency"].initial = "USD"
             nights = self._walk_in_nights()
             today = timezone.localdate()
             check_out = today + timedelta(days=nights)
@@ -580,7 +585,11 @@ class WalkInForm(forms.Form):
 
 
 class CalendarQuickBookForm(forms.Form):
-    guest = forms.ModelChoiceField(queryset=Guest.objects.none(), label=_("Mehmon"))
+    guest = forms.ModelChoiceField(
+        queryset=Guest.objects.none(),
+        label=_("Mehmon"),
+        widget=SearchableSelect(),
+    )
     nightly_rate = forms.DecimalField(
         min_value=Decimal("0.01"),
         max_digits=14,
@@ -591,7 +600,7 @@ class CalendarQuickBookForm(forms.Form):
     currency = forms.ChoiceField(
         choices=CURRENCY_CHOICES,
         label=_("Valyuta"),
-        initial="UZS",
+        initial="USD",
     )
     adults = forms.IntegerField(min_value=1, initial=2, label=_("Kattalar"))
     status = forms.ChoiceField(
@@ -611,11 +620,9 @@ class CalendarQuickBookForm(forms.Form):
     def __init__(self, *args, tenant=None, hotel=None, **kwargs):
         super().__init__(*args, **kwargs)
         if tenant is not None:
-            self.fields["guest"].queryset = Guest.objects.filter(tenant=tenant).order_by(
-                "last_name", "first_name"
-            )
+            self.fields["guest"].queryset = guests_for_select(tenant)
             if not self.is_bound:
-                self.fields["currency"].initial = getattr(tenant, "currency", None) or "UZS"
+                self.fields["currency"].initial = "USD"
 
 
 class TransferForm(forms.Form):
@@ -740,7 +747,11 @@ class GroupBookingForm(forms.Form):
 
 
 class GroupRoomForm(forms.Form):
-    guest = forms.ModelChoiceField(queryset=Guest.objects.none(), label=_("Mehmon"))
+    guest = forms.ModelChoiceField(
+        queryset=Guest.objects.none(),
+        label=_("Mehmon"),
+        widget=SearchableSelect(),
+    )
     room_type = forms.ModelChoiceField(queryset=RoomType.objects.none(), label=_("Xona turi"))
     room = forms.ModelChoiceField(queryset=Room.objects.none(), required=False, label=_("Xona"))
     nightly_rate = forms.DecimalField(
@@ -753,7 +764,7 @@ class GroupRoomForm(forms.Form):
     currency = forms.ChoiceField(
         choices=CURRENCY_CHOICES,
         label=_("Valyuta"),
-        initial="UZS",
+        initial="USD",
     )
     adults = forms.IntegerField(min_value=1, initial=1, label=_("Kattalar"))
     children = forms.IntegerField(min_value=0, initial=0, label=_("Bolalar"))
@@ -761,8 +772,8 @@ class GroupRoomForm(forms.Form):
     def __init__(self, *args, tenant=None, hotel=None, **kwargs):
         super().__init__(*args, **kwargs)
         if tenant is not None:
-            self.fields["guest"].queryset = Guest.objects.filter(tenant=tenant)
-            self.fields["currency"].initial = getattr(tenant, "currency", None) or "UZS"
+            self.fields["guest"].queryset = guests_for_select(tenant)
+            self.fields["currency"].initial = "USD"
             room_types = RoomType.objects.filter(tenant=tenant, is_active=True)
             rooms = Room.objects.filter(
                 tenant=tenant, is_active=True, room_type__is_active=True
@@ -775,10 +786,10 @@ class GroupRoomForm(forms.Form):
 
 
 def _bind_group_room_form(form, tenant, hotel=None):
-    form.fields["guest"].queryset = Guest.objects.filter(tenant=tenant)
+    form.fields["guest"].queryset = guests_for_select(tenant)
     form.fields["currency"].choices = CURRENCY_CHOICES
     if not form.is_bound:
-        form.fields["currency"].initial = getattr(tenant, "currency", None) or "UZS"
+        form.fields["currency"].initial = "USD"
     room_types = RoomType.objects.filter(tenant=tenant, is_active=True)
     rooms = Room.objects.filter(tenant=tenant, is_active=True, room_type__is_active=True)
     if hotel is not None:

@@ -39,6 +39,9 @@ class CalendarQuickBookTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, reverse("bookings:calendar_quick"))
         self.assertContains(resp, 'class="cal-new"')
+        self.assertContains(resp, "calendar-shaxmatka")
+        self.assertContains(resp, "calendar-shax-table")
+        self.assertContains(resp, "is-weekend")
 
     def test_calendar_quick_modal_get(self):
         url = reverse("bookings:calendar_quick")

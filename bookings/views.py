@@ -33,7 +33,7 @@ from .forms import (
     group_room_formset,
 )
 from .models import BookingReferrer, Reservation, ReservationGroup
-from .timeline import build_room_timeline
+from .timeline import build_room_timeline, mark_covers_today
 from .services import (
     AvailabilityError,
     DirtyRoomError,
@@ -173,7 +173,7 @@ def reservation_create(request):
                     initial.setdefault("currency", room.room_type.currency)
             except (Room.DoesNotExist, ValueError, TypeError):
                 pass
-        initial.setdefault("currency", getattr(request.tenant, "currency", None) or "UZS")
+        initial.setdefault("currency", "USD")
     form = ReservationForm(
         request.POST or None, tenant=request.tenant, hotel=hotel, initial=initial
     )
@@ -676,7 +676,6 @@ def reservation_transfer(request, pk):
     )
 
 
-@role_required(*FRONT_OFFICE)
 def _calendar_view_mode(request) -> str:
     view = (request.GET.get("view") or "14").strip().lower()
     return "month" if view in {"month", "oy", "1", "30", "31"} else "14"
@@ -699,6 +698,7 @@ def _calendar_period(start: date, view: str) -> tuple[date, int, date, date]:
     return start, 14, start - timedelta(days=7), start + timedelta(days=7)
 
 
+@role_required(*FRONT_OFFICE)
 def calendar(request):
     start_s = request.GET.get("start")
     start = timezone.localdate()
@@ -713,12 +713,13 @@ def calendar(request):
     timeline = build_room_timeline(
         request.tenant, hotel, start, days_count=days_count
     )
+    today = timezone.localdate()
+    mark_covers_today(timeline, today)
     template = (
         "bookings/partials/calendar_page.html"
         if wants_htmx_partial(request, target="calendar-page")
         else "bookings/calendar.html"
     )
-    today = timezone.localdate()
     today_start = today.replace(day=1) if view == "month" else today
     return render(
         request,
@@ -769,7 +770,7 @@ def calendar_quick_book(request):
     if room.room_type_id and getattr(room.room_type, "currency", None):
         initial["currency"] = room.room_type.currency
     else:
-        initial["currency"] = getattr(request.tenant, "currency", None) or "UZS"
+        initial["currency"] = "USD"
 
     form = CalendarQuickBookForm(
         request.POST or None,

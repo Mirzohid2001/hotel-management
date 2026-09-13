@@ -77,6 +77,7 @@
       <span class="board-pill leg-cal-confirmed">{% trans "Tasdiqlangan" %}</span>
       <span class="board-pill leg-cal-inhouse">{% trans "Mehmonxonada" %}</span>
       <span class="board-pill leg-cal-vip">VIP</span>
+      <span class="board-pill leg-cal-weekend">{% trans "Dam olish" %}</span>
       <span class="board-pill leg-vacant">{% trans "Bo‘sh → +" %}</span>
     </div>
     <div class="board-toolbar-actions">
@@ -85,41 +86,44 @@
     </div>
   </div>
 
-  <div class="calendar-wrap calendar-wrap-premium table-scroll{% if cal_view == 'month' %} is-month{% endif %}">
-    <table class="board-table calendar-table calendar-table-premium">
+  <div class="calendar-wrap calendar-wrap-premium calendar-shaxmatka table-scroll{% if cal_view == 'month' %} is-month{% endif %}">
+    <table class="board-table calendar-table calendar-table-premium calendar-shax-table">
       <thead>
         <tr>
           <th class="cal-room-col">{% trans "Xona" %}</th>
           {% for d in days %}
-          <th class="cal-day-col {% if d == today %}is-today{% endif %}">
+          {% with wd=d|date:"w" %}
+          <th class="cal-day-col{% if d == today %} is-today{% endif %}{% if wd == '0' or wd == '6' %} is-weekend{% endif %}">
             <span class="cal-day-num">{{ d|date:"d" }}</span>
             <span class="cal-day-wd">{{ d|date:"D" }}</span>
           </th>
+          {% endwith %}
           {% endfor %}
         </tr>
       </thead>
       <tbody>
       {% for row in rows %}
-        <tr class="status-{{ row.room.status }} cal-room-row">
+        <tr class="status-{{ row.room.status }} cal-room-row{% if forloop.counter|divisibleby:2 %} is-alt{% endif %}">
           <td class="cal-room-cell">
             <strong class="cal-room-num">{{ row.room.number }}</strong>
             <span class="cal-room-type">{{ row.room.room_type.name }}</span>
           </td>
           {% for seg in row.segments %}
             {% if seg.kind == 'stay' %}
-            <td colspan="{{ seg.colspan }}" class="cal-bar status-{{ seg.status }}{% if seg.is_vip %} is-vip{% endif %}">
-              <a href="{% url 'bookings:detail' seg.reservation.pk %}">
+            <td colspan="{{ seg.colspan }}" class="cal-bar status-{{ seg.status }}{% if seg.is_vip %} is-vip{% endif %}{% if seg.covers_today %} is-today-stay{% endif %}">
+              <a href="{% url 'bookings:detail' seg.reservation.pk %}" class="cal-stay-chip">
                 <span class="cal-name">{{ seg.reservation.guest.first_name }}{% if seg.is_vip %} ★{% endif %}</span>
                 <span class="cal-code">{{ seg.reservation.code }}</span>
               </a>
             </td>
             {% else %}
-            <td class="cal-empty">
+            <td class="cal-empty{% if seg.date == today %} is-today{% endif %}">
               <button type="button" class="cal-new"
                       hx-get="{% url 'bookings:calendar_quick' %}?room={{ row.room.pk }}&amp;check_in={{ seg.date|date:'Y-m-d' }}&amp;check_out={{ seg.check_out|date:'Y-m-d' }}"
                       hx-target="#modal-root" hx-select="unset"
                       hx-swap="innerHTML"
-                      title="{% trans 'Tez bron' %}">+</button>
+                      title="{% trans 'Tez bron' %}"
+                      aria-label="{% trans 'Tez bron' %}">+</button>
             </td>
             {% endif %}
           {% endfor %}
