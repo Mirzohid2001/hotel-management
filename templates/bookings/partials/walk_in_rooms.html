@@ -14,6 +14,12 @@
     {{ form.adults }}
   </p>
   <p>
+    <label for="{{ form.room_type.id_for_label }}">{{ form.room_type.label }}</label>
+    {{ form.room_type }}
+    {% if form.room_type.help_text %}<span class="muted" style="display:block;font-size:0.8rem">{{ form.room_type.help_text }}</span>{% endif %}
+    {% if form.room_type.errors %}<span class="field-error">{{ form.room_type.errors }}</span>{% endif %}
+  </p>
+  <p>
     <label for="{{ form.nightly_rate.id_for_label }}">{{ form.nightly_rate.label }}</label>
     {{ form.nightly_rate }}
     {% if form.nightly_rate.errors %}<span class="field-error">{{ form.nightly_rate.errors }}</span>{% endif %}
@@ -31,7 +37,7 @@
     {% if card.state == "occupied" %}
     <div class="walkin-room-card is-occupied" role="option" aria-disabled="true">
       <span class="walkin-room-num">{{ card.room.number }}</span>
-      <span class="walkin-room-meta">{{ card.room.room_type.name }}</span>
+      <span class="walkin-room-meta">{{ card.room.config_label }}</span>
       <span class="walkin-room-badge">{% trans "Band" %}</span>
     </div>
     {% else %}
@@ -40,9 +46,11 @@
             data-room-id="{{ card.room.pk }}"
             data-base-price="{{ card.room.room_type.base_price|default_if_none:'' }}"
             data-currency="{{ card.room.room_type.currency|default:'UZS' }}"
+            data-primary-type="{{ card.room.room_type_id }}"
+            data-sellable="{% for t in card.room.sellable_type_list %}{{ t.pk }}{% if not forloop.last %},{% endif %}{% endfor %}"
             role="option">
       <span class="walkin-room-num">{{ card.room.number }}</span>
-      <span class="walkin-room-meta">{{ card.room.room_type.name }} · {{ card.room.room_type.currency|default:"UZS" }}</span>
+      <span class="walkin-room-meta">{{ card.room.config_label }} · {{ card.room.room_type.currency|default:"UZS" }}</span>
       {% if card.state == "dirty" %}
       <span class="walkin-room-badge warn">{% trans "Kir" %}</span>
       {% else %}

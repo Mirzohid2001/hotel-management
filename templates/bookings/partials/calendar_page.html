@@ -106,7 +106,7 @@
         <tr class="status-{{ row.room.status }} cal-room-row{% if forloop.counter|divisibleby:2 %} is-alt{% endif %}">
           <td class="cal-room-cell">
             <strong class="cal-room-num">{{ row.room.number }}</strong>
-            <span class="cal-room-type">{{ row.room.room_type.name }}</span>
+            <span class="cal-room-type">{{ row.room.config_label }}</span>
           </td>
           {% for seg in row.segments %}
             {% if seg.kind == 'stay' %}

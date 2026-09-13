@@ -33,7 +33,7 @@ def walk_in_room_cards(tenant, hotel, check_in: date, check_out: date) -> list[d
         .values_list("room_id", flat=True)
     )
     cards = []
-    for room in qs.select_related("room_type").order_by("number"):
+    for room in qs.select_related("room_type").prefetch_related("sellable_types").order_by("number"):
         try:
             assert_room_available(room, check_in, check_out)
             if room.pk in in_house_ids:

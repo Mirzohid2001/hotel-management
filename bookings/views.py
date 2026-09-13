@@ -15,7 +15,7 @@ from core.htmx import modal_close_response, oob_select_response, wants_htmx_part
 from core.roles import ACCOUNTING, FRONT_OFFICE
 from folio.models import Folio
 from guests.models import Guest
-from properties.models import Room
+from properties.models import Room, RoomType
 from django.utils.html import format_html
 
 from .commission import active_referrers, build_commission_report, record_commission_payment
@@ -162,15 +162,22 @@ def reservation_create(request):
         room_id = request.GET.get("room")
         if room_id:
             try:
-                room = Room.objects.get(
+                room = Room.objects.select_related("room_type").prefetch_related(
+                    "sellable_types"
+                ).get(
                     pk=int(room_id), tenant=request.tenant, property=hotel, is_active=True
                 )
                 initial.setdefault("room", room.pk)
-                initial.setdefault("room_type", room.room_type_id)
-                if room.room_type_id and room.room_type.base_price:
-                    initial.setdefault("nightly_rate", room.room_type.base_price)
-                if room.room_type_id and getattr(room.room_type, "currency", None):
-                    initial.setdefault("currency", room.room_type.currency)
+                sellable = list(room.sellable_type_list())
+                if sellable:
+                    initial.setdefault("room_type", sellable[0].pk)
+                else:
+                    initial.setdefault("room_type", room.room_type_id)
+                price_type = sellable[0] if sellable else room.room_type
+                if price_type and price_type.base_price:
+                    initial.setdefault("nightly_rate", price_type.base_price)
+                if price_type and getattr(price_type, "currency", None):
+                    initial.setdefault("currency", price_type.currency)
             except (Room.DoesNotExist, ValueError, TypeError):
                 pass
         initial.setdefault("currency", "USD")
@@ -573,7 +580,7 @@ def walk_in(request):
                 user=request.user,
                 property_obj=hotel,
                 guest=guest,
-                room_type=room.room_type,
+                room_type=data.get("room_type") or room.room_type,
                 room=room,
                 nightly_rate=data.get("nightly_rate"),
                 currency=data.get("currency"),
@@ -752,7 +759,7 @@ def calendar_quick_book(request):
     check_in_s = request.GET.get("check_in") or request.POST.get("check_in")
     check_out_s = request.GET.get("check_out") or request.POST.get("check_out")
     try:
-        room = Room.objects.get(
+        room = Room.objects.select_related("room_type").prefetch_related("sellable_types").get(
             pk=int(room_id), tenant=request.tenant, property=hotel, is_active=True
         )
         check_in = date.fromisoformat(check_in_s)
@@ -765,10 +772,16 @@ def calendar_quick_book(request):
         return redirect("bookings:calendar")
 
     initial = {}
-    if room.room_type_id and room.room_type.base_price:
-        initial["nightly_rate"] = room.room_type.base_price
-    if room.room_type_id and getattr(room.room_type, "currency", None):
-        initial["currency"] = room.room_type.currency
+    sellable = list(room.sellable_type_list())
+    if sellable:
+        initial["room_type"] = sellable[0].pk
+    elif room.room_type_id:
+        initial["room_type"] = room.room_type_id
+    price_type = sellable[0] if sellable else room.room_type
+    if price_type and price_type.base_price:
+        initial["nightly_rate"] = price_type.base_price
+    if price_type and getattr(price_type, "currency", None):
+        initial["currency"] = price_type.currency
     else:
         initial["currency"] = "USD"
 
@@ -778,34 +791,49 @@ def calendar_quick_book(request):
         hotel=hotel,
         initial=initial,
     )
+    if sellable:
+        form.fields["room_type"].queryset = RoomType.objects.filter(
+            pk__in=[t.pk for t in sellable]
+        ).order_by("name")
+    elif room.room_type_id:
+        form.fields["room_type"].queryset = RoomType.objects.filter(pk=room.room_type_id)
+
     if request.method == "POST" and form.is_valid():
-        try:
-            reservation = create_reservation(
-                tenant=request.tenant,
-                user=request.user,
-                property_obj=hotel,
-                guest=form.cleaned_data["guest"],
-                room_type=room.room_type,
-                room=room,
-                nightly_rate=form.cleaned_data.get("nightly_rate"),
-                currency=form.cleaned_data.get("currency"),
-                check_in=check_in,
-                check_out=check_out,
-                adults=form.cleaned_data["adults"],
-                source=Reservation.Source.PHONE,
-                notes=form.cleaned_data.get("notes") or "",
-                status=form.cleaned_data["status"],
-            )
-            messages.success(
-                request, _("Bron yaratildi: %(code)s") % {"code": reservation.code}
-            )
-            if request.htmx:
-                return modal_close_response(refresh_calendar=True)
-            return redirect("bookings:detail", pk=reservation.pk)
-        except (AvailabilityError, ValidationError) as exc:
+        sold_as = form.cleaned_data.get("room_type") or room.room_type
+        if sold_as and not room.allows_room_type(sold_as):
             messages.error(
-                request, "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc)
+                request,
+                _("Bu xona «%(t)s» sifatida sotilmaydi.") % {"t": sold_as.name},
             )
+        else:
+            try:
+                reservation = create_reservation(
+                    tenant=request.tenant,
+                    user=request.user,
+                    property_obj=hotel,
+                    guest=form.cleaned_data["guest"],
+                    room_type=sold_as,
+                    room=room,
+                    nightly_rate=form.cleaned_data.get("nightly_rate"),
+                    currency=form.cleaned_data.get("currency"),
+                    check_in=check_in,
+                    check_out=check_out,
+                    adults=form.cleaned_data["adults"],
+                    source=Reservation.Source.PHONE,
+                    notes=form.cleaned_data.get("notes") or "",
+                    status=form.cleaned_data["status"],
+                )
+                messages.success(
+                    request, _("Bron yaratildi: %(code)s") % {"code": reservation.code}
+                )
+                if request.htmx:
+                    return modal_close_response(refresh_calendar=True)
+                return redirect("bookings:detail", pk=reservation.pk)
+            except (AvailabilityError, ValidationError) as exc:
+                messages.error(
+                    request,
+                    "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
+                )
 
     return render(
         request,
@@ -815,6 +843,7 @@ def calendar_quick_book(request):
             "room": room,
             "check_in": check_in,
             "check_out": check_out,
+            "sellable_types": sellable,
         },
     )
 

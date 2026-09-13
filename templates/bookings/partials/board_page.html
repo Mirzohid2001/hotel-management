@@ -73,7 +73,7 @@
           <span class="room-tile-badge">OOO</span>
           <div class="room-tile-top">
             <div class="num">{{ row.room.number }}</div>
-            <div class="meta">{{ row.room.room_type.name }}</div>
+            <div class="meta">{{ row.room.config_label }}</div>
           </div>
         </article>
       {% elif row.reservation %}
@@ -83,7 +83,7 @@
           <div class="room-tile-top">
             <div class="num">{{ row.room.number }}</div>
             <div class="meta">
-              {{ row.room.room_type.name }} · {{ r.get_status_display }}
+              {{ row.room.config_label }} · {{ r.get_status_display }}
             </div>
           </div>
           <div class="guest">
@@ -126,7 +126,7 @@
           <span class="room-tile-badge">{% trans "Kir" %}</span>
           <div class="room-tile-top">
             <div class="num">{{ row.room.number }}</div>
-            <div class="meta">{{ row.room.room_type.name }} · {{ row.room.get_status_display }}</div>
+            <div class="meta">{{ row.room.config_label }} · {{ row.room.get_status_display }}</div>
           </div>
           <div class="guest">
             <a class="btn btn-sm btn-ghost-tile" href="{% url 'housekeeping:board' %}">{% trans "Tozalash" %}</a>
@@ -137,7 +137,7 @@
           <span class="room-tile-badge ok">{% trans "Bo‘sh" %}</span>
           <div class="room-tile-top">
             <div class="num">{{ row.room.number }}</div>
-            <div class="meta">{{ row.room.room_type.name }}</div>
+            <div class="meta">{{ row.room.config_label }}</div>
           </div>
           <div class="guest">
             <a class="btn btn-sm" href="{% url 'bookings:walk_in' %}?room={{ row.room.pk }}">{% trans "Joylash" %}</a>

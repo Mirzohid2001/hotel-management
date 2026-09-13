@@ -9,6 +9,7 @@
     </div>
     <p class="muted" style="margin:0 0 0.75rem">
       {% trans "Xona" %} <strong>{{ room.number }}</strong>
+      · {{ room.config_label }}
       · {{ check_in }} → {{ check_out }}
     </p>
     <form class="stack-form quick-add-form"

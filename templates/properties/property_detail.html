@@ -127,7 +127,7 @@
           <strong class="entity-title">{% trans "Xona" %} {{ room.number }}</strong>
           <span class="status-pill">{{ room.get_status_display }}</span>
         </span>
-        <span class="entity-meta">{{ room.room_type.name }}{% if room.floor %} · {% trans "qavat" %} {{ room.floor.number }}{% endif %}</span>
+        <span class="entity-meta">{{ room.config_label }}{% if room.floor %} · {% trans "qavat" %} {{ room.floor.number }}{% endif %}</span>
       </span>
       <span class="detail-actions">
         <a class="btn-ghost btn-sm" href="{% url 'properties:room_edit' property_obj.pk room.pk %}">{% trans "Tahrirlash" %}</a>

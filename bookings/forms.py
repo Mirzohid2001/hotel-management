@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.forms import formset_factory
 from django.urls import reverse
 from django.utils import timezone
@@ -179,7 +180,22 @@ class CommissionPaymentForm(forms.Form):
         return currency
 
 
+class RoomChoiceField(forms.ModelChoiceField):
+    """Xona tanlashda tur ko‘rinsin: 103 · Twin / Double."""
+
+    def label_from_instance(self, obj):
+        status = obj.get_status_display() if hasattr(obj, "get_status_display") else ""
+        type_name = obj.config_label() if hasattr(obj, "config_label") else (
+            obj.room_type.name if obj.room_type_id else "—"
+        )
+        if status:
+            return f"{obj.number} · {type_name} · {status}"
+        return f"{obj.number} · {type_name}"
+
+
 class ReservationForm(forms.ModelForm):
+    room = RoomChoiceField(queryset=Room.objects.none(), required=False, label=_("Xona"))
+
     class Meta:
         model = Reservation
         fields = (
@@ -204,7 +220,7 @@ class ReservationForm(forms.ModelForm):
             "company": _("Kompaniya"),
             "referrer": _("Kim orqali"),
             "commission_percent": _("Yo‘naltiruvchi foizi %"),
-            "room_type": _("Xona turi"),
+            "room_type": _("Xona turi (Twin / Double)"),
             "room": _("Xona"),
             "nightly_rate": _("Narx (1 kecha)"),
             "currency": _("Valyuta"),
@@ -219,6 +235,9 @@ class ReservationForm(forms.ModelForm):
         help_texts = {
             "nightly_rate": _("Kelishilgan bir kechalik summa. Jami = narx × kechalar."),
             "currency": _("Narx shu valyutada — USD, EUR yoki UZS."),
+            "room_type": _(
+                "Bitta xonani Twin yoki Double qilib sotish mumkin — shu yerda tanlang."
+            ),
             "check_out": _(
                 "Ketish kuni (tushlikgacha). Shu kunga yangi mehmon bron qilish mumkin — "
                 "masalan 18→20 bo‘lsa, 20-chi kuni xona bo‘sh."
@@ -255,7 +274,7 @@ class ReservationForm(forms.ModelForm):
             )
             rooms = Room.objects.filter(
                 tenant=tenant, is_active=True, room_type__is_active=True
-            )
+            ).select_related("room_type").prefetch_related("sellable_types")
             room_types = RoomType.objects.filter(tenant=tenant, is_active=True)
             if hotel is not None:
                 rooms = rooms.filter(property=hotel)
@@ -263,7 +282,7 @@ class ReservationForm(forms.ModelForm):
             self.fields["room_type"].queryset = room_types
             self.fields["room"].queryset = rooms
             self.fields["company"].required = False
-            self.fields["room"].required = False
+            # room already declared as RoomChoiceField(required=False)
             self.fields["nightly_rate"].required = True
             self.fields["currency"].choices = CURRENCY_CHOICES
             if not self.is_bound and not self.instance.pk:
@@ -308,18 +327,15 @@ class ReservationForm(forms.ModelForm):
                 or getattr(self.tenant, "currency", None)
                 or "UZS"
             )
+        room = cleaned.get("room")
+        room_type = cleaned.get("room_type")
+        if room and room_type and not room.allows_room_type(room_type):
+            self.add_error(
+                "room_type",
+                _("Bu xonani «%(t)s» qilib bron qilib bo‘lmaydi. Twin/Double sozlamasini tekshiring.")
+                % {"t": room_type},
+            )
         return cleaned
-
-
-class RoomChoiceField(forms.ModelChoiceField):
-    """Xona tanlashda tur ko‘rinsin: 103 · Double · Juftlik."""
-
-    def label_from_instance(self, obj):
-        status = obj.get_status_display() if hasattr(obj, "get_status_display") else ""
-        type_name = obj.room_type.name if obj.room_type_id else "—"
-        if status:
-            return f"{obj.number} · {type_name} · {status}"
-        return f"{obj.number} · {type_name}"
 
 
 class ReservationAmendForm(forms.Form):
@@ -335,7 +351,17 @@ class ReservationAmendForm(forms.Form):
         queryset=Room.objects.none(),
         required=False,
         label=_("Xona"),
-        help_text=_("Boshqa turdagi xona tanlansa (masalan Twin↔Double) — tur avtomatik yangilanadi."),
+        help_text=_(
+            "Yangi xona ham Twin/Double bo‘lsa — eski konfiguratsiya saqlanadi. "
+            "Aks holda asosiy turiga o‘tadi."
+        ),
+    )
+    room_type = forms.ModelChoiceField(
+        queryset=RoomType.objects.none(),
+        required=False,
+        label=_("Twin / Double"),
+        help_text=_("Shu xonani Twin yoki Double qilib qayta belgilash."),
+        empty_label=None,
     )
     nightly_rate = forms.DecimalField(
         min_value=Decimal("0.01"),
@@ -365,11 +391,35 @@ class ReservationAmendForm(forms.Form):
                     room_type__is_active=True,
                 )
                 .select_related("room_type")
+                .prefetch_related("sellable_types")
                 .exclude(status=Room.Status.OUT_OF_ORDER)
             )
+            types = RoomType.objects.filter(
+                tenant=reservation.tenant,
+                property=reservation.hotel,
+                is_active=True,
+            ).order_by("name")
+            # Prefer sellable types of current/selected room
+            current_room = reservation.room
+            if self.is_bound:
+                raw_room = self.data.get(self.add_prefix("room"))
+                if raw_room:
+                    current_room = (
+                        Room.objects.filter(pk=raw_room)
+                        .prefetch_related("sellable_types")
+                        .select_related("room_type")
+                        .first()
+                        or current_room
+                    )
+            if current_room is not None:
+                sellable = current_room.sellable_type_list()
+                if sellable:
+                    types = types.filter(pk__in=[t.pk for t in sellable])
+            self.fields["room_type"].queryset = types
             self.fields["check_in"].initial = reservation.check_in
             self.fields["check_out"].initial = reservation.check_out
             self.fields["room"].initial = reservation.room_id
+            self.fields["room_type"].initial = reservation.room_type_id
             from bookings.services import room_nightly_price
 
             self.fields["nightly_rate"].initial = (
@@ -382,6 +432,17 @@ class ReservationAmendForm(forms.Form):
             )
             self.fields["adults"].initial = reservation.adults
             self.fields["children"].initial = reservation.children
+
+    def clean(self):
+        cleaned = super().clean()
+        room = cleaned.get("room") or (self.reservation.room if self.reservation else None)
+        room_type = cleaned.get("room_type")
+        if room and room_type and not room.allows_room_type(room_type):
+            self.add_error(
+                "room_type",
+                _("Bu xonani «%(t)s» qilib belgilab bo‘lmaydi.") % {"t": room_type},
+            )
+        return cleaned
 
 
 class WalkInForm(forms.Form):
@@ -424,6 +485,13 @@ class WalkInForm(forms.Form):
         widget=forms.TextInput(attrs={"placeholder": "AA 1234567"}),
     )
     room = forms.ChoiceField(choices=[], label=_("Xona"), widget=forms.HiddenInput())
+    room_type = forms.ModelChoiceField(
+        queryset=RoomType.objects.none(),
+        required=False,
+        label=_("Twin / Double"),
+        help_text=_("Xona Twin ham Double ham bo‘lsa — qaysi variantini tanlang."),
+        empty_label=None,
+    )
     nightly_rate = forms.DecimalField(
         min_value=Decimal("0.01"),
         max_digits=14,
@@ -485,6 +553,10 @@ class WalkInForm(forms.Form):
         if tenant is not None:
             self.fields["referrer"].queryset = active_referrers(tenant)
             self.fields["currency"].initial = "USD"
+            types = RoomType.objects.filter(tenant=tenant, is_active=True)
+            if hotel is not None:
+                types = types.filter(property=hotel)
+            self.fields["room_type"].queryset = types.order_by("name")
             nights = self._walk_in_nights()
             today = timezone.localdate()
             check_out = today + timedelta(days=nights)
@@ -540,24 +612,6 @@ class WalkInForm(forms.Form):
                 return 1
         return max(1, int(self.fields["nights"].initial or 1))
 
-    def clean(self):
-        cleaned = super().clean()
-        referrer = cleaned.get("referrer")
-        percent = cleaned.get("commission_percent")
-        if not referrer:
-            cleaned["commission_percent"] = None
-        elif percent is None:
-            cleaned["commission_percent"] = referrer.default_commission_percent
-
-        nightly = cleaned.get("nightly_rate")
-        if nightly is None or nightly <= 0:
-            self.add_error("nightly_rate", _("1 kecha narxini kiriting."))
-
-        nights = max(1, int(cleaned.get("nights") or 1))
-        guests = max(1, int(cleaned.get("adults") or 1))
-        cleaned = _fill_emehmon_amount(self, cleaned, nights=nights, guests=guests)
-        return cleaned
-
     def clean_room(self):
         raw = self.cleaned_data.get("room")
         if not raw:
@@ -565,7 +619,7 @@ class WalkInForm(forms.Form):
         try:
             qs = Room.objects.filter(
                 tenant=self.tenant, is_active=True, pk=int(raw)
-            ).select_related("room_type")
+            ).select_related("room_type").prefetch_related("sellable_types")
             if self.hotel is not None:
                 qs = qs.filter(property=self.hotel)
             room = qs.get()
@@ -583,12 +637,48 @@ class WalkInForm(forms.Form):
             ) from exc
         return room
 
+    def clean(self):
+        cleaned = super().clean()
+        referrer = cleaned.get("referrer")
+        percent = cleaned.get("commission_percent")
+        if not referrer:
+            cleaned["commission_percent"] = None
+        elif percent is None:
+            cleaned["commission_percent"] = referrer.default_commission_percent
+
+        nightly = cleaned.get("nightly_rate")
+        if nightly is None or nightly <= 0:
+            self.add_error("nightly_rate", _("1 kecha narxini kiriting."))
+
+        nights = max(1, int(cleaned.get("nights") or 1))
+        guests = max(1, int(cleaned.get("adults") or 1))
+        cleaned = _fill_emehmon_amount(self, cleaned, nights=nights, guests=guests)
+
+        room = cleaned.get("room")
+        room_type = cleaned.get("room_type")
+        if room and room_type is None:
+            room_type = room.room_type
+            cleaned["room_type"] = room_type
+        if room and room_type and not room.allows_room_type(room_type):
+            allowed = ", ".join(t.name for t in room.sellable_type_list()) or room.room_type.name
+            self.add_error(
+                "room_type",
+                _("Bu xona uchun faqat: %(t)s") % {"t": allowed},
+            )
+        return cleaned
+
 
 class CalendarQuickBookForm(forms.Form):
     guest = forms.ModelChoiceField(
         queryset=Guest.objects.none(),
         label=_("Mehmon"),
         widget=SearchableSelect(),
+    )
+    room_type = forms.ModelChoiceField(
+        queryset=RoomType.objects.none(),
+        required=False,
+        label=_("Twin / Double"),
+        empty_label=None,
     )
     nightly_rate = forms.DecimalField(
         min_value=Decimal("0.01"),
@@ -619,8 +709,14 @@ class CalendarQuickBookForm(forms.Form):
 
     def __init__(self, *args, tenant=None, hotel=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.tenant = tenant
+        self.hotel = hotel
         if tenant is not None:
             self.fields["guest"].queryset = guests_for_select(tenant)
+            types = RoomType.objects.filter(tenant=tenant, is_active=True)
+            if hotel is not None:
+                types = types.filter(property=hotel)
+            self.fields["room_type"].queryset = types.order_by("name")
             if not self.is_bound:
                 self.fields["currency"].initial = "USD"
 
@@ -669,6 +765,7 @@ class TransferForm(forms.Form):
                     room_type__is_active=True,
                 )
                 .select_related("room_type")
+                .prefetch_related("sellable_types")
                 .exclude(pk=reservation.room_id)
                 .exclude(status=Room.Status.OUT_OF_ORDER)
                 .order_by("number")
@@ -694,20 +791,29 @@ class TransferForm(forms.Form):
             elif self.initial.get("room_type"):
                 selected_type_id = self.initial.get("room_type")
             if selected_type_id:
-                rooms = rooms.filter(room_type_id=selected_type_id)
+                try:
+                    type_pk = int(selected_type_id)
+                except (TypeError, ValueError):
+                    type_pk = None
+                if type_pk:
+                    rooms = rooms.filter(
+                        Q(room_type_id=type_pk) | Q(sellable_types__id=type_pk)
+                    ).distinct()
             self.fields["room"].queryset = rooms
             self.room_options = [
                 {
                     "id": r.pk,
                     "number": r.number,
                     "type_id": r.room_type_id,
-                    "type_name": r.room_type.name,
+                    "type_name": r.config_label(),
                     "status": r.get_status_display(),
                     "status_code": r.status,
+                    "sellable_ids": [t.pk for t in r.sellable_type_list()],
                 }
                 for r in (
                     Room.objects.filter(pk__in=available_ids)
                     .select_related("room_type")
+                    .prefetch_related("sellable_types")
                     .order_by("number")
                 )
             ]
@@ -716,12 +822,12 @@ class TransferForm(forms.Form):
         cleaned = super().clean()
         room = cleaned.get("room")
         room_type = cleaned.get("room_type")
-        if room and room_type and room.room_type_id != room_type.id:
+        if room and room_type and not room.allows_room_type(room_type):
             raise ValidationError(
-                _("Tanlangan xona «%(room)s» turi «%(got)s», filtr esa «%(want)s».")
+                _("Tanlangan xona «%(room)s» «%(want)s» sifatida sotilmaydi (faqat: %(got)s).")
                 % {
                     "room": room.number,
-                    "got": room.room_type.name,
+                    "got": room.config_label(),
                     "want": room_type.name,
                 }
             )

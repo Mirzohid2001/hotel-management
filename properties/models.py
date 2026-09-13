@@ -142,7 +142,21 @@ class Room(TenantOwnedModel):
         OUT_OF_ORDER = "out_of_order", _("Nosoz")
 
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="rooms")
-    room_type = models.ForeignKey(RoomType, on_delete=models.PROTECT, related_name="rooms")
+    room_type = models.ForeignKey(
+        RoomType,
+        on_delete=models.PROTECT,
+        related_name="rooms",
+        help_text=_("Asosiy / default tur (taqvimda birinchi ko‘rsatiladi)."),
+    )
+    sellable_types = models.ManyToManyField(
+        RoomType,
+        blank=True,
+        related_name="sellable_in_rooms",
+        help_text=_(
+            "Shu jismoniy xonani qanday tur sifatida sotish mumkin "
+            "(masalan Twin va Double). Bo‘sh qoldirilsa faqat asosiy tur."
+        ),
+    )
     floor = models.ForeignKey(
         Floor, on_delete=models.SET_NULL, null=True, blank=True, related_name="rooms"
     )
@@ -163,6 +177,42 @@ class Room(TenantOwnedModel):
             raise ValidationError(_("Xona turi shu mehmonxonaga tegishli bo‘lishi kerak."))
         if self.floor_id and self.property_id and self.floor.property_id != self.property_id:
             raise ValidationError(_("Qavat shu mehmonxonaga tegishli bo‘lishi kerak."))
+
+    def sellable_type_list(self):
+        """Types this physical room can be sold as (Twin/Double/…)."""
+        if self.pk:
+            types = list(
+                self.sellable_types.filter(is_active=True, property_id=self.property_id).order_by(
+                    "name"
+                )
+            )
+            if types:
+                if self.room_type_id and all(t.pk != self.room_type_id for t in types):
+                    types.insert(0, self.room_type)
+                return types
+        if self.room_type_id:
+            return [self.room_type]
+        return []
+
+    def allows_room_type(self, room_type) -> bool:
+        if room_type is None:
+            return True
+        return any(t.pk == room_type.pk for t in self.sellable_type_list())
+
+    def config_label(self) -> str:
+        names = [t.name for t in self.sellable_type_list()]
+        if not names:
+            return self.room_type.name if self.room_type_id else ""
+        if len(names) == 1:
+            return names[0]
+        return " / ".join(names)
+
+    def ensure_primary_sellable(self):
+        """Keep primary room_type inside sellable_types."""
+        if not self.pk or not self.room_type_id:
+            return
+        if not self.sellable_types.filter(pk=self.room_type_id).exists():
+            self.sellable_types.add(self.room_type)
 
 
 class RatePlan(TenantOwnedModel):

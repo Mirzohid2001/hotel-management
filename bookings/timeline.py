@@ -14,7 +14,7 @@ def build_room_timeline(tenant, hotel, start: date, *, days_count: int = 14) -> 
     end = days[-1] + timedelta(days=1)
     rooms = Room.objects.filter(tenant=tenant, is_active=True).select_related(
         "room_type", "property"
-    )
+    ).prefetch_related("sellable_types")
     if hotel is not None:
         rooms = rooms.filter(property=hotel)
 

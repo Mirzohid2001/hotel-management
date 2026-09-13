@@ -45,6 +45,7 @@
           {% for opt in room_options %}
           <option value="{{ opt.id }}"
                   data-type="{{ opt.type_id }}"
+                  data-sellable="{% for sid in opt.sellable_ids %}{{ sid }}{% if not forloop.last %},{% endif %}{% endfor %}"
                   {% if form.room.value|stringformat:"s" == opt.id|stringformat:"s" %}selected{% endif %}>
             {{ opt.number }} · {{ opt.type_name }} · {{ opt.status }}
           </option>
@@ -78,7 +79,8 @@
     var keep = roomSel.value;
     Array.prototype.forEach.call(roomSel.options, function (opt, i) {
       if (i === 0) return;
-      var show = !typeId || opt.getAttribute("data-type") === typeId;
+      var sellable = (opt.getAttribute("data-sellable") || "").split(",").filter(Boolean);
+      var show = !typeId || sellable.indexOf(typeId) !== -1 || opt.getAttribute("data-type") === typeId;
       opt.hidden = !show;
       opt.disabled = !show;
     });

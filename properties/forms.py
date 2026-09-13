@@ -117,16 +117,30 @@ class FloorQuickForm(forms.Form):
 
 
 class RoomForm(forms.ModelForm):
+    sellable_types = forms.ModelMultipleChoiceField(
+        queryset=RoomType.objects.none(),
+        required=False,
+        label=_("Sotiladigan turlar"),
+        help_text=_(
+            "Bitta jismoniy xona: Twin va Double ni belgilang — bron paytida tanlanadi. "
+            "Bo‘sh qoldirilsa faqat asosiy tur."
+        ),
+        widget=forms.CheckboxSelectMultiple,
+    )
+
     class Meta:
         model = Room
-        fields = ("room_type", "floor", "number", "status", "notes", "is_active")
+        fields = ("room_type", "sellable_types", "floor", "number", "status", "notes", "is_active")
         labels = {
-            "room_type": _("Xona turi"),
+            "room_type": _("Asosiy tur"),
             "floor": _("Qavat"),
             "number": _("Raqam"),
             "status": _("Holat"),
             "notes": _("Izoh"),
             "is_active": _("Faol"),
+        }
+        help_texts = {
+            "room_type": _("Default tur (masalan Twin). Qo‘shimcha Double ni pastroqda belgilang."),
         }
 
     def __init__(self, *args, property_obj=None, **kwargs):
@@ -138,8 +152,27 @@ class RoomForm(forms.ModelForm):
                     Q(is_active=True) | Q(pk=self.instance.room_type_id)
                 )
             self.fields["room_type"].queryset = types
+            self.fields["sellable_types"].queryset = types
             self.fields["floor"].queryset = Floor.objects.filter(property=property_obj)
             self.fields["floor"].required = False
+            if self.instance and self.instance.pk:
+                self.fields["sellable_types"].initial = list(
+                    self.instance.sellable_types.values_list("pk", flat=True)
+                )
+            elif not self.is_bound:
+                # New room: default sellable = primary type once chosen via JS/manual
+                pass
+
+    def save(self, commit=True):
+        room = super().save(commit=commit)
+        if commit:
+            selected = list(self.cleaned_data.get("sellable_types") or [])
+            primary = self.cleaned_data.get("room_type")
+            if primary and primary not in selected:
+                selected.insert(0, primary)
+            room.sellable_types.set(selected)
+            room.ensure_primary_sellable()
+        return room
 
 
 class RatePlanForm(forms.ModelForm):

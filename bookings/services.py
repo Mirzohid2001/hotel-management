@@ -165,8 +165,11 @@ def create_reservation(
     if guest is not None and getattr(guest, "is_blacklisted", False):
         reason = getattr(guest, "blacklist_reason", "") or "blacklisted"
         raise ValidationError(_("Mehmon qora ro‘yxatda: %(r)s") % {"r": reason})
-    if room and room.room_type_id != room_type.id:
-        raise AvailabilityError(_("Xona turi mos kelmaydi."))
+    if room and not room.allows_room_type(room_type):
+        raise AvailabilityError(
+            _("Bu xonani «%(t)s» sifatida sotib bo‘lmaydi — Twin/Double sozlamasini tekshiring.")
+            % {"t": room_type}
+        )
     if referrer and commission_percent is None:
         commission_percent = referrer.default_commission_percent
     if not referrer:
@@ -504,7 +507,11 @@ def apply_amendment(reservation: Reservation, user, data: dict) -> Reservation:
     pairs = [
         ("check_in", reservation.check_in, new_check_in),
         ("check_out", reservation.check_out, new_check_out),
-        ("room", reservation.room_id, new_room.pk if new_room else None),
+        (
+            "room",
+            reservation.room_id,
+            new_room.pk if new_room is not None else reservation.room_id,
+        ),
         ("rate_plan", reservation.rate_plan_id, new_rate.pk if new_rate else None),
         ("nightly_rate", reservation.nightly_rate, new_nightly),
         ("currency", reservation.currency, data.get("currency")),
@@ -517,7 +524,6 @@ def apply_amendment(reservation: Reservation, user, data: dict) -> Reservation:
 
     reservation.check_in = new_check_in
     reservation.check_out = new_check_out
-    reservation.room = new_room
     if "nightly_rate" in data:
         reservation.nightly_rate = new_nightly
         # Qo‘lda narx berilsa — eski tarif bog‘lanishini olib tashlash
@@ -529,16 +535,28 @@ def apply_amendment(reservation: Reservation, user, data: dict) -> Reservation:
         reservation.rate_plan = new_rate
     if data.get("currency"):
         reservation.currency = data["currency"]
-    if new_room:
+
+    target_room = new_room if new_room is not None else reservation.room
+    if new_room is not None:
+        reservation.room = new_room
+
+    requested_type = data.get("room_type")
+    if target_room is not None:
         old_type_id = reservation.room_type_id
-        reservation.room_type = new_room.room_type
-        if old_type_id != new_room.room_type_id:
+        if requested_type and target_room.allows_room_type(requested_type):
+            target_type = requested_type
+        elif reservation.room_type and target_room.allows_room_type(reservation.room_type):
+            target_type = reservation.room_type
+        else:
+            target_type = target_room.room_type
+        reservation.room_type = target_type
+        if old_type_id != target_type.id:
             log_change(
                 reservation,
                 user,
                 "room_type",
                 old_type_id,
-                new_room.room_type_id,
+                target_type.id,
                 reason=reason,
             )
             # Qo‘lda narx yo‘q va tarif eski turga bog‘liq — yangi tur BAR
@@ -548,19 +566,19 @@ def apply_amendment(reservation: Reservation, user, data: dict) -> Reservation:
                 and (
                     reservation.rate_plan_id is None
                     or getattr(reservation.rate_plan, "room_type_id", None)
-                    != new_room.room_type_id
+                    != target_type.id
                 )
             ):
                 auto_rate = (
                     RatePlan.objects.filter(
                         property=reservation.hotel,
-                        room_type=new_room.room_type,
+                        room_type=target_type,
                         is_active=True,
                         is_default=True,
                     ).first()
                     or RatePlan.objects.filter(
                         property=reservation.hotel,
-                        room_type=new_room.room_type,
+                        room_type=target_type,
                         is_active=True,
                     ).first()
                 )
@@ -778,7 +796,7 @@ def transfer_room(
 ) -> Reservation:
     """
     Joylashgan mehmonni boshqa xonaga o‘tkazish.
-    Double↔Twin va boshqa turlar ham mumkin — room_type yangi xonadan olinadi.
+    Agar yangi xona ham shu Twin/Double konfiguratsiyani sotsa — sold-as saqlanadi.
     """
     if reservation.status != Reservation.Status.CHECKED_IN:
         raise ValidationError(_("Faqat joylashgan mehmonlar xona o‘tkazishi mumkin."))
@@ -795,6 +813,11 @@ def transfer_room(
     old_room = reservation.room
     old_type_id = reservation.room_type_id
     old_rate_id = reservation.rate_plan_id
+    sold_as = reservation.room_type
+    if sold_as and new_room.allows_room_type(sold_as):
+        target_type = sold_as
+    else:
+        target_type = new_room.room_type
 
     log_change(
         reservation,
@@ -805,14 +828,14 @@ def transfer_room(
         reason=reason or "transfer",
     )
     reservation.room = new_room
-    reservation.room_type = new_room.room_type
-    if old_type_id != new_room.room_type_id:
+    reservation.room_type = target_type
+    if old_type_id != target_type.id:
         log_change(
             reservation,
             user,
             "room_type",
             old_type_id,
-            new_room.room_type_id,
+            target_type.id,
             reason=reason or "transfer",
         )
 
@@ -822,19 +845,19 @@ def transfer_room(
         and reservation.nightly_rate is None
         and (
             reservation.rate_plan_id is None
-            or reservation.rate_plan.room_type_id != new_room.room_type_id
+            or reservation.rate_plan.room_type_id != target_type.id
         )
     ):
         new_rate = (
             RatePlan.objects.filter(
                 property=reservation.hotel,
-                room_type=new_room.room_type,
+                room_type=target_type,
                 is_active=True,
                 is_default=True,
             ).first()
             or RatePlan.objects.filter(
                 property=reservation.hotel,
-                room_type=new_room.room_type,
+                room_type=target_type,
                 is_active=True,
             ).first()
         )

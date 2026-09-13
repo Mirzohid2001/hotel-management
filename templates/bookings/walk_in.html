@@ -217,8 +217,24 @@
     hidden.value = card.getAttribute("data-room-id");
     var rateInput = form.querySelector('[name="nightly_rate"]');
     var currencyInput = form.querySelector('[name="currency"]');
+    var typeInput = form.querySelector('[name="room_type"]');
     var base = card.getAttribute("data-base-price");
     var cur = card.getAttribute("data-currency");
+    var sellable = (card.getAttribute("data-sellable") || "").split(",").filter(Boolean);
+    var primary = card.getAttribute("data-primary-type");
+    if (typeInput && typeInput.tagName === "SELECT") {
+      Array.prototype.forEach.call(typeInput.options, function (opt) {
+        if (!opt.value) return;
+        var ok = !sellable.length || sellable.indexOf(opt.value) !== -1;
+        opt.hidden = !ok;
+        opt.disabled = !ok;
+      });
+      if (primary && sellable.indexOf(primary) !== -1) {
+        typeInput.value = primary;
+      } else if (sellable.length) {
+        typeInput.value = sellable[0];
+      }
+    }
     if (rateInput && base) {
       rateInput.value = base;
     }

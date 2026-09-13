@@ -125,7 +125,9 @@ def property_detail(request, pk):
             "property_obj": prop,
             "settings_obj": settings_obj,
             "room_types": prop.room_types.filter(is_active=True),
-            "rooms": prop.rooms.select_related("room_type", "floor"),
+            "rooms": prop.rooms.select_related("room_type", "floor").prefetch_related(
+                "sellable_types"
+            ),
             "rate_plans": prop.rate_plans.select_related("room_type").prefetch_related("seasons"),
             "floors": prop.floors.all(),
             "missing_room_presets": missing_presets,

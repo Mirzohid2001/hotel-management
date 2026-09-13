@@ -24,6 +24,14 @@
             {% trans "+ Yangi" %}
           </button>
         </div>
+        {% if field.help_text %}<span class="muted" style="display:block;font-size:0.82rem;margin-top:0.25rem">{{ field.help_text }}</span>{% endif %}
+        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+      </div>
+      {% elif field.name == "sellable_types" %}
+      <div class="form-field field-span-2">
+        <label>{{ field.label }}</label>
+        {% if field.help_text %}<p class="muted" style="margin:0 0 0.5rem;font-size:0.85rem">{{ field.help_text }}</p>{% endif %}
+        <div class="checkbox-list">{{ field }}</div>
         {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
       </div>
       {% elif field.name == "floor" %}
