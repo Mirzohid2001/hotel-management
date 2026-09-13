@@ -25,6 +25,26 @@
 
   var progress = document.getElementById("spa-progress");
 
+  function closeNotifyPanels() {
+    document.querySelectorAll("details.notify-panel[open]").forEach(function (panel) {
+      panel.removeAttribute("open");
+    });
+  }
+
+  document.addEventListener("click", function (evt) {
+    var item = evt.target.closest && evt.target.closest(".notify-item");
+    if (item) {
+      closeNotifyPanels();
+      return;
+    }
+    var panel = evt.target.closest && evt.target.closest("details.notify-panel");
+    if (!panel) closeNotifyPanels();
+  });
+
+  document.addEventListener("keydown", function (evt) {
+    if (evt.key === "Escape") closeNotifyPanels();
+  });
+
   var NAV_RULES = [
     { key: "dashboard", test: function (p) { return /^\/reports\/dashboard\/?$/.test(p); } },
     { key: "board", test: function (p) { return /^\/bookings\/board\/?$/.test(p); } },
@@ -202,6 +222,7 @@
     if (!isSpaNavigation(evt)) return;
     hideProgress();
     updateNavActive();
+    closeNotifyPanels();
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
     document.dispatchEvent(new CustomEvent("spa:navigated", { detail: { path: window.location.pathname } }));
 
@@ -214,6 +235,7 @@
   document.body.addEventListener("htmx:historyRestore", function () {
     clearVisualFog();
     updateNavActive();
+    closeNotifyPanels();
   });
 
   document.body.addEventListener("htmx:responseError", function (evt) {
