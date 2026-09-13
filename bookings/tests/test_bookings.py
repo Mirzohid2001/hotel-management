@@ -3,9 +3,10 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
-from bookings.models import Reservation
+from bookings.models import BookingReferrer, Reservation
 from bookings.services import (
     AvailabilityError,
     apply_amendment,
@@ -15,7 +16,7 @@ from bookings.services import (
 )
 from core.tests.helpers import setup_tenant_user
 from folio.models import GuestPayment
-from guests.models import Guest
+from guests.models import Company, Guest
 from properties.models import Property, RatePlan, Room, RoomType
 
 
@@ -164,6 +165,81 @@ class BookingFlowTests(TestCase):
         self.assertIsNone(reservation.rate_plan_id)
         self.assertEqual(reservation.total_amount, Decimal("900000"))
         self.assertTrue(reservation.change_logs.filter(field="check_out").exists())
+
+    def test_amend_updates_referrer_guest_source(self):
+        other = Guest.objects.create(
+            tenant=self.tenant, first_name="Nodira", last_name="Aliyeva", phone="90222"
+        )
+        company = Company.objects.create(tenant=self.tenant, name="Tour LLC")
+        referrer = BookingReferrer.objects.create(
+            tenant=self.tenant, name="Vali", default_commission_percent=Decimal("10")
+        )
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            nightly_rate=Decimal("200000"),
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+        )
+        apply_amendment(
+            reservation,
+            self.user,
+            {
+                "check_in": self.today,
+                "check_out": self.today + timedelta(days=1),
+                "room": self.room,
+                "nightly_rate": Decimal("200000"),
+                "adults": 1,
+                "children": 0,
+                "guest": other,
+                "company": company,
+                "referrer": referrer,
+                "commission_percent": Decimal("12"),
+                "source": Reservation.Source.WEBSITE,
+                "notes": "from site",
+                "reason": "missed fields",
+            },
+        )
+        reservation.refresh_from_db()
+        self.assertEqual(reservation.guest_id, other.pk)
+        self.assertEqual(reservation.company_id, company.pk)
+        self.assertEqual(reservation.referrer_id, referrer.pk)
+        self.assertEqual(reservation.commission_percent, Decimal("12"))
+        self.assertEqual(reservation.source, Reservation.Source.WEBSITE)
+        self.assertEqual(reservation.notes, "from site")
+        self.assertTrue(reservation.change_logs.filter(field="referrer").exists())
+
+    def test_amend_page_exposes_create_fields(self):
+        self.client.force_login(self.user)
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            nightly_rate=Decimal("200000"),
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+        )
+        resp = self.client.get(reverse("bookings:amend", args=[reservation.pk]))
+        self.assertEqual(resp.status_code, 200)
+        for name in (
+            "guest",
+            "company",
+            "referrer",
+            "commission_percent",
+            "source",
+            "notes",
+            "check_in",
+            "currency",
+            "nightly_rate",
+        ):
+            self.assertContains(resp, f'name="{name}"')
 
     def test_manual_nightly_rate_sets_total(self):
         reservation = create_reservation(

@@ -339,6 +339,33 @@ class ReservationForm(forms.ModelForm):
 
 
 class ReservationAmendForm(forms.Form):
+    guest = forms.ModelChoiceField(
+        queryset=Guest.objects.none(),
+        label=_("Mehmon"),
+        widget=SearchableSelect(),
+    )
+    company = forms.ModelChoiceField(
+        queryset=Company.objects.none(),
+        required=False,
+        label=_("Kompaniya"),
+        empty_label=_("— yo‘q —"),
+    )
+    referrer = forms.ModelChoiceField(
+        queryset=BookingReferrer.objects.none(),
+        required=False,
+        label=_("Kim orqali"),
+        empty_label=_("— yo‘q —"),
+    )
+    commission_percent = forms.DecimalField(
+        required=False,
+        min_value=Decimal("0"),
+        max_value=Decimal("100"),
+        decimal_places=2,
+        max_digits=5,
+        label=_("Yo‘naltiruvchi foizi %"),
+        widget=forms.NumberInput(attrs={"step": "0.01", "min": "0", "max": "100"}),
+        help_text=_("Ixtiyoriy. Faqat «Kim orqali» tanlanganda — shu odamga xona summasidan foiz."),
+    )
     check_in = forms.DateField(label=_("Kirish"), widget=forms.DateInput(attrs={"type": "date"}))
     check_out = forms.DateField(
         label=_("Chiqish"),
@@ -377,15 +404,35 @@ class ReservationAmendForm(forms.Form):
     )
     adults = forms.IntegerField(min_value=1, label=_("Kattalar"))
     children = forms.IntegerField(min_value=0, label=_("Bolalar"))
+    source = forms.ChoiceField(choices=Reservation.Source.choices, label=_("Manba"))
+    notes = forms.CharField(
+        required=False,
+        label=_("Izoh"),
+        widget=forms.Textarea(attrs={"rows": 2}),
+    )
     reason = forms.CharField(required=False, max_length=255, label=_("Sabab"))
 
     def __init__(self, *args, reservation=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.reservation = reservation
         if reservation is not None:
+            tenant = reservation.tenant
+            self.fields["guest"].queryset = guests_for_select(tenant)
+            companies = Company.objects.filter(tenant=tenant, is_active=True).order_by("name")
+            if reservation.company_id:
+                companies = (
+                    companies | Company.objects.filter(pk=reservation.company_id)
+                ).distinct()
+            self.fields["company"].queryset = companies
+            referrers = active_referrers(tenant)
+            if reservation.referrer_id:
+                referrers = (
+                    referrers | BookingReferrer.objects.filter(pk=reservation.referrer_id)
+                ).distinct()
+            self.fields["referrer"].queryset = referrers.order_by("name")
             self.fields["room"].queryset = (
                 Room.objects.filter(
-                    tenant=reservation.tenant,
+                    tenant=tenant,
                     property=reservation.hotel,
                     is_active=True,
                     room_type__is_active=True,
@@ -395,7 +442,7 @@ class ReservationAmendForm(forms.Form):
                 .exclude(status=Room.Status.OUT_OF_ORDER)
             )
             types = RoomType.objects.filter(
-                tenant=reservation.tenant,
+                tenant=tenant,
                 property=reservation.hotel,
                 is_active=True,
             ).order_by("name")
@@ -416,6 +463,10 @@ class ReservationAmendForm(forms.Form):
                 if sellable:
                     types = types.filter(pk__in=[t.pk for t in sellable])
             self.fields["room_type"].queryset = types
+            self.fields["guest"].initial = reservation.guest_id
+            self.fields["company"].initial = reservation.company_id
+            self.fields["referrer"].initial = reservation.referrer_id
+            self.fields["commission_percent"].initial = reservation.commission_percent
             self.fields["check_in"].initial = reservation.check_in
             self.fields["check_out"].initial = reservation.check_out
             self.fields["room"].initial = reservation.room_id
@@ -428,13 +479,44 @@ class ReservationAmendForm(forms.Form):
                 else room_nightly_price(reservation)
             )
             self.fields["currency"].initial = (
-                reservation.currency or reservation.tenant.currency or "UZS"
+                reservation.currency or tenant.currency or "UZS"
             )
             self.fields["adults"].initial = reservation.adults
             self.fields["children"].initial = reservation.children
+            self.fields["source"].initial = reservation.source
+            self.fields["notes"].initial = reservation.notes
+            avail_url = reverse("bookings:availability")
+            for name in ("check_in", "check_out", "room", "room_type"):
+                self.fields[name].widget.attrs.update(
+                    {
+                        "hx-get": avail_url,
+                        "hx-trigger": "change delay:200ms",
+                        "hx-target": "#availability-box",
+                        "hx-include": "closest form",
+                        "hx-select": "unset",
+                        "hx-swap": "outerHTML",
+                    }
+                )
 
     def clean(self):
         cleaned = super().clean()
+        referrer = cleaned.get("referrer")
+        percent = cleaned.get("commission_percent")
+        if not referrer:
+            cleaned["commission_percent"] = None
+        elif percent is None:
+            cleaned["commission_percent"] = referrer.default_commission_percent
+        elif percent < 0 or percent > 100:
+            self.add_error("commission_percent", _("Foiz 0–100 oralig‘ida bo‘lishi kerak."))
+
+        guest = cleaned.get("guest")
+        if guest is not None and getattr(guest, "is_blacklisted", False):
+            self.add_error(
+                "guest",
+                _("Mehmon qora ro‘yxatda: %(r)s")
+                % {"r": getattr(guest, "blacklist_reason", "") or "blacklisted"},
+            )
+
         room = cleaned.get("room") or (self.reservation.room if self.reservation else None)
         room_type = cleaned.get("room_type")
         if room and room_type and not room.allows_room_type(room_type):

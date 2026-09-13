@@ -497,12 +497,21 @@ def apply_amendment(reservation: Reservation, user, data: dict) -> Reservation:
     if new_check_out <= new_check_in:
         raise ValidationError(_("Chiqish sanasi kirishdan keyin bo‘lishi kerak."))
 
+    if "guest" in data and data.get("guest") is not None:
+        new_guest = data["guest"]
+        if getattr(new_guest, "is_blacklisted", False):
+            bl_reason = getattr(new_guest, "blacklist_reason", "") or "blacklisted"
+            raise ValidationError(_("Mehmon qora ro‘yxatda: %(r)s") % {"r": bl_reason})
+
     assert_room_available(
         new_room or reservation.room,
         new_check_in,
         new_check_out,
         exclude_reservation_id=reservation.pk,
     )
+
+    def _fk_id(obj):
+        return obj.pk if obj is not None else None
 
     pairs = [
         ("check_in", reservation.check_in, new_check_in),
@@ -518,6 +527,21 @@ def apply_amendment(reservation: Reservation, user, data: dict) -> Reservation:
         ("adults", reservation.adults, new_adults),
         ("children", reservation.children, new_children),
     ]
+    if "guest" in data and data.get("guest") is not None:
+        pairs.append(("guest", reservation.guest_id, data["guest"].pk))
+    if "company" in data:
+        pairs.append(("company", reservation.company_id, _fk_id(data.get("company"))))
+    if "referrer" in data:
+        pairs.append(("referrer", reservation.referrer_id, _fk_id(data.get("referrer"))))
+    if "commission_percent" in data or "referrer" in data:
+        new_pct = data.get("commission_percent")
+        if "referrer" in data and not data.get("referrer"):
+            new_pct = None
+        pairs.append(("commission_percent", reservation.commission_percent, new_pct))
+    if "source" in data and data.get("source"):
+        pairs.append(("source", reservation.source, data.get("source")))
+    if "notes" in data:
+        pairs.append(("notes", reservation.notes or "", data.get("notes") or ""))
     for field, old, new in pairs:
         if old != new:
             log_change(reservation, user, field, old, new, reason=reason)
@@ -594,6 +618,22 @@ def apply_amendment(reservation: Reservation, user, data: dict) -> Reservation:
                     reservation.rate_plan = auto_rate
     reservation.adults = new_adults
     reservation.children = new_children
+    if "guest" in data and data.get("guest") is not None:
+        reservation.guest = data["guest"]
+    if "company" in data:
+        reservation.company = data.get("company")
+    if "referrer" in data:
+        reservation.referrer = data.get("referrer")
+        if not reservation.referrer:
+            reservation.commission_percent = None
+        elif "commission_percent" in data:
+            reservation.commission_percent = data.get("commission_percent")
+    elif "commission_percent" in data and reservation.referrer_id:
+        reservation.commission_percent = data.get("commission_percent")
+    if "source" in data and data.get("source"):
+        reservation.source = data["source"]
+    if "notes" in data:
+        reservation.notes = data.get("notes") or ""
     reservation.total_amount = recompute_total(reservation)
     reservation.full_clean()
     reservation.save()
