@@ -823,6 +823,72 @@
 
 .calendar-hero .board-date-label { color: rgba(230, 240, 248, 0.65); }
 
+.calendar-range-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-width: min(100%, 17.5rem);
+  padding: 0.45rem 0.7rem 0.55rem;
+}
+
+.calendar-range-fields {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.calendar-range-input {
+  flex: 1 1 6.5rem;
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 10px;
+  background: rgba(12, 16, 22, 0.28);
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.28rem 0.4rem;
+  color-scheme: dark;
+}
+
+.calendar-range-input:focus {
+  outline: 2px solid rgba(255, 180, 90, 0.55);
+  outline-offset: 1px;
+}
+
+.calendar-range-sep {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+}
+
+.calendar-range-go {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.32rem 0.65rem;
+  cursor: pointer;
+}
+
+.calendar-range-go:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .calendar-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
 .calendar-toolbar {

@@ -1,39 +1,59 @@
 {% load i18n %}
-<div id="calendar-page" class="calendar-page{% if cal_view == 'month' %} is-month{% endif %}">
+<div id="calendar-page" class="calendar-page{% if cal_view == 'month' %} is-month{% endif %}{% if cal_view == 'custom' %} is-custom{% endif %}">
   <header class="calendar-hero">
     <div class="calendar-hero-text">
-      <p class="eyebrow">{% trans "Bron rejasi" %} · {% if cal_view == 'month' %}{% trans "Shaxmatka · 1 oy" %}{% else %}{% trans "Shaxmatka · 14 kun" %}{% endif %}</p>
+      <p class="eyebrow">{% trans "Bron rejasi" %} · {% if cal_view == 'month' %}{% trans "Shaxmatka · 1 oy" %}{% elif cal_view == 'custom' %}{% trans "Shaxmatka · tanlangan davr" %}{% else %}{% trans "Shaxmatka · 14 kun" %}{% endif %}</p>
       <h1>{% trans "Taqvim" %}</h1>
       {% if hotel %}<p class="calendar-hero-sub">{{ hotel.display_label }}</p>{% endif %}
     </div>
     <nav class="calendar-date-nav" aria-label="{% trans 'Davr' %}">
       <a class="calendar-nav-btn"
-         href="?start={{ today_start|date:'Y-m-d' }}&amp;view={{ cal_view }}"
-         hx-get="{% url 'bookings:calendar' %}?start={{ today_start|date:'Y-m-d' }}&amp;view={{ cal_view }}"
+         href="?start={{ today_start|date:'Y-m-d' }}{% if cal_view == 'custom' %}&amp;end={{ today_end|date:'Y-m-d' }}&amp;view=custom{% elif cal_view == 'month' %}&amp;view=month{% else %}&amp;view=14{% endif %}"
+         hx-get="{% url 'bookings:calendar' %}?start={{ today_start|date:'Y-m-d' }}{% if cal_view == 'custom' %}&amp;end={{ today_end|date:'Y-m-d' }}&amp;view=custom{% elif cal_view == 'month' %}&amp;view=month{% else %}&amp;view=14{% endif %}"
          hx-target="#calendar-page"
          hx-select="unset"
          hx-swap="outerHTML"
          hx-push-url="true">{% if cal_view == 'month' %}{% trans "Shu oy" %}{% else %}{% trans "Bugun" %}{% endif %}</a>
       <a class="board-date-btn"
-         href="?start={{ prev|date:'Y-m-d' }}&amp;view={{ cal_view }}"
-         hx-get="{% url 'bookings:calendar' %}?start={{ prev|date:'Y-m-d' }}&amp;view={{ cal_view }}"
+         href="?start={{ prev|date:'Y-m-d' }}{% if cal_view == 'custom' %}&amp;end={{ prev_end|date:'Y-m-d' }}&amp;view=custom{% elif cal_view == 'month' %}&amp;view=month{% else %}&amp;view=14{% endif %}"
+         hx-get="{% url 'bookings:calendar' %}?start={{ prev|date:'Y-m-d' }}{% if cal_view == 'custom' %}&amp;end={{ prev_end|date:'Y-m-d' }}&amp;view=custom{% elif cal_view == 'month' %}&amp;view=month{% else %}&amp;view=14{% endif %}"
          hx-target="#calendar-page"
          hx-select="unset"
          hx-swap="outerHTML"
          hx-push-url="true"
-         aria-label="{% if cal_view == 'month' %}{% trans 'Oldingi oy' %}{% else %}{% trans 'Oldingi hafta' %}{% endif %}">←</a>
-      <div class="board-date-pill calendar-range-pill">
+         aria-label="{% if cal_view == 'month' %}{% trans 'Oldingi oy' %}{% else %}{% trans 'Oldingi davr' %}{% endif %}">←</a>
+
+      <form class="board-date-pill calendar-range-pill calendar-range-form"
+            method="get"
+            action="{% url 'bookings:calendar' %}"
+            hx-get="{% url 'bookings:calendar' %}"
+            hx-target="#calendar-page"
+            hx-select="unset"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+            id="calendar-range-form">
+        <input type="hidden" name="view" value="custom">
         <span class="board-date-label">{% trans "Davr" %}</span>
-        <strong>{% if cal_view == 'month' %}{{ start|date:"F Y" }}{% else %}{{ start|date:"d.m" }} — {{ end|date:"d.m.Y" }}{% endif %}</strong>
-      </div>
+        <div class="calendar-range-fields">
+          <label class="sr-only" for="cal-start">{% trans "Boshlanish" %}</label>
+          <input id="cal-start" class="calendar-range-input" type="date" name="start"
+                 value="{{ start|date:'Y-m-d' }}" required>
+          <span class="calendar-range-sep" aria-hidden="true">—</span>
+          <label class="sr-only" for="cal-end">{% trans "Tugash" %}</label>
+          <input id="cal-end" class="calendar-range-input" type="date" name="end"
+                 value="{{ period_end|date:'Y-m-d' }}" required>
+          <button type="submit" class="calendar-range-go">{% trans "OK" %}</button>
+        </div>
+      </form>
+
       <a class="board-date-btn"
-         href="?start={{ next|date:'Y-m-d' }}&amp;view={{ cal_view }}"
-         hx-get="{% url 'bookings:calendar' %}?start={{ next|date:'Y-m-d' }}&amp;view={{ cal_view }}"
+         href="?start={{ next|date:'Y-m-d' }}{% if cal_view == 'custom' %}&amp;end={{ next_end|date:'Y-m-d' }}&amp;view=custom{% elif cal_view == 'month' %}&amp;view=month{% else %}&amp;view=14{% endif %}"
+         hx-get="{% url 'bookings:calendar' %}?start={{ next|date:'Y-m-d' }}{% if cal_view == 'custom' %}&amp;end={{ next_end|date:'Y-m-d' }}&amp;view=custom{% elif cal_view == 'month' %}&amp;view=month{% else %}&amp;view=14{% endif %}"
          hx-target="#calendar-page"
          hx-select="unset"
          hx-swap="outerHTML"
          hx-push-url="true"
-         aria-label="{% if cal_view == 'month' %}{% trans 'Keyingi oy' %}{% else %}{% trans 'Keyingi hafta' %}{% endif %}">→</a>
+         aria-label="{% if cal_view == 'month' %}{% trans 'Keyingi oy' %}{% else %}{% trans 'Keyingi davr' %}{% endif %}">→</a>
     </nav>
   </header>
 
@@ -58,7 +78,7 @@
 
   <div class="calendar-toolbar">
     <div class="calendar-view-toggle" role="group" aria-label="{% trans 'Taqvim turi' %}">
-      <a class="cal-view-btn{% if cal_view != 'month' %} is-active{% endif %}"
+      <a class="cal-view-btn{% if cal_view == '14' %} is-active{% endif %}"
          href="?start={{ start|date:'Y-m-d' }}&amp;view=14"
          hx-get="{% url 'bookings:calendar' %}?start={{ start|date:'Y-m-d' }}&amp;view=14"
          hx-target="#calendar-page"
@@ -72,6 +92,13 @@
          hx-select="unset"
          hx-swap="outerHTML"
          hx-push-url="true">{% trans "1 oy" %}</a>
+      <a class="cal-view-btn{% if cal_view == 'custom' %} is-active{% endif %}"
+         href="?start={{ start|date:'Y-m-d' }}&amp;end={{ period_end|date:'Y-m-d' }}&amp;view=custom"
+         hx-get="{% url 'bookings:calendar' %}?start={{ start|date:'Y-m-d' }}&amp;end={{ period_end|date:'Y-m-d' }}&amp;view=custom"
+         hx-target="#calendar-page"
+         hx-select="unset"
+         hx-swap="outerHTML"
+         hx-push-url="true">{% trans "Davr" %}</a>
     </div>
     <div class="board-legend board-legend-pills">
       <span class="board-pill leg-cal-confirmed">{% trans "Tasdiqlangan" %}</span>
@@ -143,3 +170,26 @@
     </table>
   </div>
 </div>
+<script>
+(function () {
+  var form = document.getElementById("calendar-range-form");
+  if (!form) return;
+  var start = form.querySelector("#cal-start");
+  var end = form.querySelector("#cal-end");
+  if (!start || !end) return;
+  function sync() {
+    if (start.value) end.min = start.value;
+    if (end.value) start.max = end.value;
+    if (start.value && end.value && end.value < start.value) {
+      var tmp = start.value;
+      start.value = end.value;
+      end.value = tmp;
+      end.min = start.value;
+      start.max = end.value;
+    }
+  }
+  start.addEventListener("change", sync);
+  end.addEventListener("change", sync);
+  sync();
+})();
+</script>

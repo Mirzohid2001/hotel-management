@@ -684,12 +684,18 @@ def reservation_transfer(request, pk):
 
 
 def _calendar_view_mode(request) -> str:
-    view = (request.GET.get("view") or "14").strip().lower()
-    return "month" if view in {"month", "oy", "1", "30", "31"} else "14"
+    view = (request.GET.get("view") or "").strip().lower()
+    if view in {"month", "oy", "1", "30", "31"}:
+        return "month"
+    if view in {"custom", "range", "davr"}:
+        return "custom"
+    if request.GET.get("end"):
+        return "custom"
+    return "14"
 
 
-def _calendar_period(start: date, view: str) -> tuple[date, int, date, date]:
-    """Return (period_start, days_count, prev_start, next_start)."""
+def _calendar_period(start: date, view: str, end: date | None = None) -> tuple[date, int, date, date, date]:
+    """Return (period_start, days_count, prev_start, next_start, period_end_inclusive)."""
     if view == "month":
         month_start = start.replace(day=1)
         days_count = monthrange(month_start.year, month_start.month)[1]
@@ -701,26 +707,50 @@ def _calendar_period(start: date, view: str) -> tuple[date, int, date, date]:
             next_start = date(month_start.year + 1, 1, 1)
         else:
             next_start = date(month_start.year, month_start.month + 1, 1)
-        return month_start, days_count, prev_start, next_start
-    return start, 14, start - timedelta(days=7), start + timedelta(days=7)
+        period_end = month_start + timedelta(days=days_count - 1)
+        return month_start, days_count, prev_start, next_start, period_end
+
+    if view == "custom" and end is not None:
+        if end < start:
+            start, end = end, start
+        days_count = (end - start).days + 1
+        days_count = max(1, min(days_count, 62))
+        period_end = start + timedelta(days=days_count - 1)
+        prev_start = start - timedelta(days=days_count)
+        next_start = start + timedelta(days=days_count)
+        return start, days_count, prev_start, next_start, period_end
+
+    period_end = start + timedelta(days=13)
+    return start, 14, start - timedelta(days=7), start + timedelta(days=7), period_end
 
 
 @role_required(*FRONT_OFFICE)
 def calendar(request):
+    today = timezone.localdate()
     start_s = request.GET.get("start")
-    start = timezone.localdate()
+    end_s = request.GET.get("end")
+    start = today
     if start_s:
         try:
             start = date.fromisoformat(start_s)
         except ValueError:
             pass
+    custom_end = None
+    if end_s:
+        try:
+            custom_end = date.fromisoformat(end_s)
+        except ValueError:
+            pass
     view = _calendar_view_mode(request)
-    start, days_count, prev_start, next_start = _calendar_period(start, view)
+    if view == "custom" and custom_end is None:
+        custom_end = start + timedelta(days=13)
+    start, days_count, prev_start, next_start, period_end = _calendar_period(
+        start, view, custom_end
+    )
     hotel = _active_hotel(request)
     timeline = build_room_timeline(
         request.tenant, hotel, start, days_count=days_count
     )
-    today = timezone.localdate()
     mark_covers_today(timeline, today)
     template = (
         "bookings/partials/calendar_page.html"
@@ -728,6 +758,11 @@ def calendar(request):
         else "bookings/calendar.html"
     )
     today_start = today.replace(day=1) if view == "month" else today
+    today_end = (
+        today_start + timedelta(days=monthrange(today_start.year, today_start.month)[1] - 1)
+        if view == "month"
+        else today + timedelta(days=days_count - 1)
+    )
     return render(
         request,
         template,
@@ -736,14 +771,23 @@ def calendar(request):
             "rows": timeline["rows"],
             "prev": prev_start,
             "next": next_start,
+            "prev_end": prev_start + timedelta(days=days_count - 1),
+            "next_end": next_start + timedelta(days=days_count - 1),
             "start": timeline["start"],
             "end": timeline["end"],
+            "period_end": period_end,
             "today": today,
             "today_start": today_start,
+            "today_end": today_end,
             "cal_stats": timeline["stats"],
             "hotel": hotel,
             "cal_view": view,
             "days_count": days_count,
+            "cal_query": (
+                f"start={start.isoformat()}&end={period_end.isoformat()}&view=custom"
+                if view == "custom"
+                else f"start={start.isoformat()}&view={view}"
+            ),
         },
     )
 
