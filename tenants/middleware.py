@@ -57,11 +57,13 @@ def tenant_context(request):
         subscription = tenant.get_active_subscription()
         if subscription and subscription.is_currently_valid():
             features = set(subscription.plan.limits.get("features", []))
-        from core.notifications import build_notifications
+        from core.notifications import build_notifications, dismissed_keys
         from properties.active import property_scope_is_all, tenant_properties as list_properties
 
         tenant_properties = list(list_properties(tenant, request.membership))
-        notifications = build_notifications(tenant, hotel=active_property)
+        notifications = build_notifications(
+            tenant, hotel=active_property, dismissed=dismissed_keys(request)
+        )
     return {
         "current_tenant": tenant,
         "current_membership": getattr(request, "membership", None),

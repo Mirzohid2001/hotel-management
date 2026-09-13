@@ -7109,6 +7109,18 @@ msgstr "Bu saytdan widget ochishga ruxsat yo‘q."
 msgid "Onlayn bron — real vaqt bandligi"
 msgstr "Onlayn bron — real vaqt bandligi"
 
+msgid "Davrdagi bronlar jami"
+msgstr "Davrdagi bronlar jami"
+
+msgid "Barcha davr"
+msgstr "Barcha davr"
+
+msgid "Tanlangan davr bo‘yicha bronlar jami, holat va qidiruv."
+msgstr "Tanlangan davr bo‘yicha bronlar jami, holat va qidiruv."
+
+msgid "Davr jami va qidiruv"
+msgstr "Davr jami va qidiruv"
+
 #, fuzzy
 #~| msgid "Tasdiqlash"
 #~ msgid "Taqsimlash"

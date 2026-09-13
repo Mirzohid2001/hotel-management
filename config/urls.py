@@ -20,6 +20,7 @@ urlpatterns = [
     path("inventory/", include("inventory.urls")),
     path("maintenance/", include("maintenance.urls")),
     path("widget/", include("widget.urls")),
+    path("notifications/", include("core.urls")),
     path("", include("reports.urls")),
 ]
 

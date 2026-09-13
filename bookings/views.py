@@ -34,6 +34,12 @@ from .forms import (
 )
 from .models import BookingReferrer, Reservation, ReservationGroup
 from .timeline import build_room_timeline, mark_covers_today
+from .totals import (
+    default_month_bounds,
+    parse_iso_date,
+    period_booking_summary,
+    reservations_in_period,
+)
 from .services import (
     AvailabilityError,
     DirtyRoomError,
@@ -80,12 +86,19 @@ def reservation_list(request):
 
     status = request.GET.get("status", "")
     q = (request.GET.get("q") or "").strip()
+    today = timezone.localdate()
+    if "date_from" in request.GET or "date_to" in request.GET:
+        date_from = parse_iso_date(request.GET.get("date_from"))
+        date_to = parse_iso_date(request.GET.get("date_to"))
+    else:
+        date_from, date_to = default_month_bounds(today)
     qs = Reservation.objects.filter(tenant=request.tenant).select_related(
         "guest", "room", "hotel", "group"
     )
     hotel = _active_hotel(request)
     if hotel is not None:
         qs = qs.filter(hotel=hotel)
+    qs = reservations_in_period(qs, date_from, date_to)
     if status:
         qs = qs.filter(status=status)
     if q:
@@ -98,7 +111,7 @@ def reservation_list(request):
         )
     qs = qs.order_by("-check_in", "-pk")
     filter_count = qs.count()
-    today = timezone.localdate()
+    period_sum = period_booking_summary(request.tenant, qs, status=status)
     base = Reservation.objects.filter(tenant=request.tenant)
     if hotel is not None:
         base = base.filter(hotel=hotel)
@@ -109,8 +122,12 @@ def reservation_list(request):
             "reservations": qs[:200],
             "status": status,
             "q": q,
+            "date_from": date_from.isoformat() if date_from else "",
+            "date_to": date_to.isoformat() if date_to else "",
             "statuses": Reservation.Status.choices,
             "filter_count": filter_count,
+            "booking_total": period_sum["total"],
+            "booking_total_count": period_sum["count"],
             "checked_in_count": base.filter(status=Reservation.Status.CHECKED_IN).count(),
             "confirmed_count": base.filter(status=Reservation.Status.CONFIRMED).count(),
             "arrivals_today": base.filter(
@@ -752,6 +769,11 @@ def calendar(request):
         request.tenant, hotel, start, days_count=days_count
     )
     mark_covers_today(timeline, today)
+    period_qs = Reservation.objects.filter(tenant=request.tenant)
+    if hotel is not None:
+        period_qs = period_qs.filter(hotel=hotel)
+    period_qs = reservations_in_period(period_qs, start, period_end)
+    period_sum = period_booking_summary(request.tenant, period_qs)
     template = (
         "bookings/partials/calendar_page.html"
         if wants_htmx_partial(request, target="calendar-page")
@@ -780,6 +802,8 @@ def calendar(request):
             "today_start": today_start,
             "today_end": today_end,
             "cal_stats": timeline["stats"],
+            "booking_total": period_sum["total"],
+            "booking_total_count": period_sum["count"],
             "hotel": hotel,
             "cal_view": view,
             "days_count": days_count,

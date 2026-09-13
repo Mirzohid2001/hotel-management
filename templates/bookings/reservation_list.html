@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n money_fmt %}
 {% block title %}{% trans "Bronlar" %}{% endblock %}
 {% block body_class %}page-bookings{% endblock %}
 {% block content %}
 <div class="expense-page booking-list-page">
 {% url 'bookings:inquiries' as inquiries_url %}
 {% url 'bookings:create' as create_url %}
-{% include "includes/page_header.html" with title=_("Bronlar") eyebrow=_("Front office") subtitle=_("Holat, qidiruv va tezkor folio / kirish / chiqish.") secondary_url=inquiries_url secondary_label=_("So‘rov") primary_url=create_url primary_label=_("Yangi bron") %}
+{% include "includes/page_header.html" with title=_("Bronlar") eyebrow=_("Front office") subtitle=_("Tanlangan davr bo‘yicha bronlar jami, holat va qidiruv.") secondary_url=inquiries_url secondary_label=_("So‘rov") primary_url=create_url primary_label=_("Yangi bron") %}
 
 <form method="get" class="expense-filter panel">
   <div class="expense-filter-head">
@@ -19,7 +19,7 @@
       <a class="btn-ghost btn-sm" href="{% url 'bookings:list' %}">{% trans "Tozalash" %}</a>
     </div>
   </div>
-  <div class="expense-filter-grid guest-filter-grid">
+  <div class="expense-filter-grid booking-filter-grid">
     <label class="expense-field expense-field-wide">
       <span>{% trans "Qidiruv" %}</span>
       <input type="search" name="q" value="{{ q }}" placeholder="{% trans 'Kod, mehmon, xona…' %}" autocomplete="off">
@@ -33,15 +33,35 @@
         {% endfor %}
       </select>
     </label>
+    <label class="expense-field">
+      <span>{% trans "Dan" %}</span>
+      <input type="date" name="date_from" value="{{ date_from }}">
+    </label>
+    <label class="expense-field">
+      <span>{% trans "Gacha" %}</span>
+      <input type="date" name="date_to" value="{{ date_to }}">
+    </label>
   </div>
 </form>
 
 <div class="expense-summary guest-summary">
+  <div class="expense-summary-card is-accent booking-total-card">
+    <span class="expense-summary-lbl">{% trans "Davrdagi bronlar jami" %}</span>
+    <strong class="expense-summary-val money">{{ booking_total|money }}</strong>
+    <small class="booking-total-meta">
+      {{ booking_total_count }} {% trans "Bron" %}
+      {% if date_from or date_to %}
+      · {{ date_from|default:"…" }} → {{ date_to|default:"…" }}
+      {% else %}
+      · {% trans "Barcha davr" %}
+      {% endif %}
+    </small>
+  </div>
   <div class="expense-summary-card">
     <span class="expense-summary-lbl">{% trans "Topildi" %}</span>
     <strong class="expense-summary-val">{{ filter_count }}</strong>
   </div>
-  <div class="expense-summary-card is-accent">
+  <div class="expense-summary-card">
     <span class="expense-summary-lbl">{% trans "Joylashgan" %}</span>
     <strong class="expense-summary-val">{{ checked_in_count }}</strong>
   </div>
@@ -75,6 +95,7 @@
           {{ r.guest.full_name }}
           · {{ r.check_in|date:"d.m.Y" }} → {{ r.check_out|date:"d.m.Y" }}
           {% if r.room %}· {% trans "Xona" %} {{ r.room.number }}{% endif %}
+          · <span class="money">{{ r.total_amount|money }}</span>
         </span>
       </span>
       <span class="expense-actions row-actions">

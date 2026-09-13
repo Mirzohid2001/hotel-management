@@ -2323,6 +2323,34 @@ button.tile-btn {
 .notify-item.kind-web_booking { border-left-color: #2563eb; }
 .notify-item.kind-departure { border-left-color: var(--warn); }
 .notify-item.kind-overdue { border-left-color: var(--danger); }
+.notify-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+.notify-row .notify-item {
+  flex: 1;
+  min-width: 0;
+}
+.notify-dismiss-form {
+  display: flex;
+  align-items: flex-start;
+  margin: 0;
+}
+.notify-dismiss {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0.55rem 0.7rem 0.4rem;
+  border-radius: 10px;
+}
+.notify-dismiss:hover {
+  color: var(--ink);
+  background: rgba(26, 20, 16, 0.06);
+}
 
 .hk-board .hk-form {
   display: flex;

@@ -10,17 +10,17 @@
   <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=m7">
-  <link rel="stylesheet" href="{% static 'css/premium.css' %}?v=m7">
-  <link rel="stylesheet" href="{% static 'css/hero-pages.css' %}?v=m7">
-  <link rel="stylesheet" href="{% static 'css/components.css' %}?v=m7">
-  <link rel="stylesheet" href="{% static 'css/ux-polish.css' %}?v=m7">
-  <link rel="stylesheet" href="{% static 'css/calendar-shaxmatka.css' %}?v=m7">
-  <link rel="stylesheet" href="{% static 'css/adaptive.css' %}?v=m7">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=m8">
+  <link rel="stylesheet" href="{% static 'css/premium.css' %}?v=m8">
+  <link rel="stylesheet" href="{% static 'css/hero-pages.css' %}?v=m8">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}?v=m8">
+  <link rel="stylesheet" href="{% static 'css/ux-polish.css' %}?v=m8">
+  <link rel="stylesheet" href="{% static 'css/calendar-shaxmatka.css' %}?v=m8">
+  <link rel="stylesheet" href="{% static 'css/adaptive.css' %}?v=m8">
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
   {% if user.is_authenticated and current_tenant %}
-  <script src="{% static 'js/searchable-select.js' %}?v=m7" defer></script>
-  <script src="{% static 'js/spa.js' %}?v=m7" defer></script>
+  <script src="{% static 'js/searchable-select.js' %}?v=m8" defer></script>
+  <script src="{% static 'js/spa.js' %}?v=m8" defer></script>
   <script src="{% static 'js/chart.umd.min.js' %}" defer></script>
   <script src="{% static 'js/charts.js' %}" defer></script>
   {% endif %}
@@ -176,11 +176,20 @@
             </summary>
             <div class="notify-dropdown">
               {% for n in notifications.items %}
-              <a class="notify-item kind-{{ n.kind }}"
-                 href="{% if n.pk %}{% if n.url_name == 'folio:detail' %}{% url 'folio:detail' n.pk %}{% else %}{% url 'bookings:detail' n.pk %}{% endif %}{% else %}{% url n.url_name %}{% endif %}">
-                <strong>{{ n.title }}</strong>
-                <span>{{ n.detail }}</span>
-              </a>
+              <div class="notify-row">
+                <a class="notify-item kind-{{ n.kind }}"
+                   href="{% url 'core:notify_open' %}?key={{ n.key|urlencode }}&amp;next={{ n.url|urlencode }}"
+                   hx-boost="false">
+                  <strong>{{ n.title }}</strong>
+                  <span>{{ n.detail }}</span>
+                </a>
+                <form method="post" action="{% url 'core:notify_dismiss' %}" class="notify-dismiss-form" hx-boost="false">
+                  {% csrf_token %}
+                  <input type="hidden" name="key" value="{{ n.key }}">
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button type="submit" class="notify-dismiss" title="{% trans 'Yopish' %}" aria-label="{% trans 'Yopish' %}">×</button>
+                </form>
+              </div>
               {% empty %}
               <p class="notify-empty">{% trans "Yangi ogohlantirish yo‘q" %}</p>
               {% endfor %}

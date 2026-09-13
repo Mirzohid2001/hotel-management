@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n money_fmt %}
 <div id="calendar-page" class="calendar-page{% if cal_view == 'month' %} is-month{% endif %}{% if cal_view == 'custom' %} is-custom{% endif %}">
   <header class="calendar-hero">
     <div class="calendar-hero-text">
@@ -56,6 +56,17 @@
          aria-label="{% if cal_view == 'month' %}{% trans 'Keyingi oy' %}{% else %}{% trans 'Keyingi davr' %}{% endif %}">→</a>
     </nav>
   </header>
+
+  <div class="calendar-period-sum">
+    <div>
+      <p class="calendar-period-sum-lbl">{% trans "Davrdagi bronlar jami" %}</p>
+      <p class="calendar-period-sum-meta">
+        {{ start|date:"d.m.Y" }} — {{ period_end|date:"d.m.Y" }}
+        · {{ booking_total_count }} {% trans "Bron" %}
+      </p>
+    </div>
+    <strong class="money calendar-period-sum-val">{{ booking_total|money }}</strong>
+  </div>
 
   <div class="board-stats calendar-stats">
     <div class="board-stat">

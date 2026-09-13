@@ -2814,6 +2814,69 @@ a.cal-new.shax-walkin {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.booking-list-page .guest-summary {
+  grid-template-columns: minmax(14rem, 1.7fr) repeat(4, minmax(0, 1fr));
+}
+
+.booking-total-card .expense-summary-val {
+  color: var(--accent-deep);
+}
+
+.booking-total-meta {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.booking-filter-grid {
+  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(10rem, 1fr));
+}
+
+.booking-filter-grid .expense-field-wide {
+  grid-column: 1 / -1;
+}
+
+.calendar-period-sum {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(232, 106, 12, 0.12), rgba(255, 143, 31, 0.05));
+  border: 1px solid rgba(232, 106, 12, 0.16);
+  box-shadow: var(--shadow-card);
+}
+
+.calendar-period-sum-lbl {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.calendar-period-sum-meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.calendar-period-sum-val {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--accent-deep);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
 .guest-filter-grid {
   grid-template-columns: minmax(0, 2fr) minmax(12rem, 1fr);
 }
@@ -2827,12 +2890,31 @@ a.cal-new.shax-walkin {
   background: rgba(255, 246, 244, 0.7);
 }
 
+@media (max-width: 1100px) {
+  .booking-list-page .guest-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .booking-list-page .booking-total-card {
+    grid-column: 1 / -1;
+  }
+  .booking-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 900px) {
   .guest-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .guest-filter-grid {
     grid-template-columns: 1fr;
+  }
+  .booking-filter-grid {
+    grid-template-columns: 1fr;
+  }
+  .calendar-period-sum {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 

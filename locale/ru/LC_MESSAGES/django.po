@@ -6996,6 +6996,18 @@ msgstr "С этого сайта виджет открывать нельзя."
 msgid "Onlayn bron — real vaqt bandligi"
 msgstr "Онлайн-бронь — занятость в реальном времени"
 
+msgid "Davrdagi bronlar jami"
+msgstr "Итого брони за период"
+
+msgid "Barcha davr"
+msgstr "Весь период"
+
+msgid "Tanlangan davr bo‘yicha bronlar jami, holat va qidiruv."
+msgstr "Сумма броней за выбранный период, статус и поиск."
+
+msgid "Davr jami va qidiruv"
+msgstr "Итого за период и поиск"
+
 msgid "Foyda ulushi — chek hisobot"
 msgstr "Доля прибыли — чек-отчёт"
 

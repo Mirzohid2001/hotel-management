@@ -1,5 +1,8 @@
 """In-app operational alerts for the topbar."""
 
+from urllib.parse import urlparse
+
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
@@ -7,13 +10,72 @@ from bookings.models import Reservation
 from folio.models import Folio
 from maintenance.models import MaintenanceTicket
 
+SESSION_KEY = "dismissed_notify"
 
-def build_notifications(tenant, hotel=None):
+
+def notification_entry(*, kind, title, detail, url_name, pk=None, object_id=None):
+    oid = object_id if object_id is not None else pk
+    if pk is not None and url_name in {"bookings:detail", "folio:detail"}:
+        url = reverse(url_name, args=[pk])
+    else:
+        url = reverse(url_name)
+    return {
+        "kind": kind,
+        "title": title,
+        "detail": detail,
+        "url_name": url_name,
+        "pk": pk,
+        "url": url,
+        "key": f"{kind}:{oid}",
+    }
+
+
+def dismissed_keys(request) -> set[str]:
+    if request is None or not hasattr(request, "session"):
+        return set()
+    today = timezone.localdate().isoformat()
+    data = request.session.get(SESSION_KEY) or {}
+    return set(data.get(today) or [])
+
+
+def dismiss_notification(request, key: str) -> None:
+    key = (key or "").strip()
+    if not key or request is None:
+        return
+    today = timezone.localdate().isoformat()
+    data = request.session.get(SESSION_KEY) or {}
+    day_keys = [k for k in (data.get(today) or []) if k]
+    if key not in day_keys:
+        day_keys.append(key)
+    request.session[SESSION_KEY] = {today: day_keys}
+
+
+def safe_next_url(value: str | None, fallback: str = "/", *, allowed_host: str | None = None) -> str:
+    value = (value or "").strip()
+    if not value:
+        return fallback
+    parsed = urlparse(value)
+    if parsed.scheme or parsed.netloc:
+        host = (allowed_host or "").split(":")[0]
+        incoming = parsed.netloc.split(":")[0]
+        if not host or incoming != host:
+            return fallback
+        path = parsed.path or "/"
+        if parsed.query:
+            path = f"{path}?{parsed.query}"
+        value = path
+    if not value.startswith("/") or value.startswith("//"):
+        return fallback
+    return value
+
+
+def build_notifications(tenant, hotel=None, dismissed=None):
     if tenant is None:
         return {"items": [], "count": 0}
 
     today = timezone.localdate()
     items = []
+    dismissed = set(dismissed or ())
 
     web_bookings = Reservation.objects.filter(
         tenant=tenant,
@@ -24,13 +86,13 @@ def build_notifications(tenant, hotel=None):
         web_bookings = web_bookings.filter(hotel=hotel)
     for r in web_bookings.order_by("-created_at")[:6]:
         items.append(
-            {
-                "kind": "web_booking",
-                "title": _("Veb-bron · %(code)s") % {"code": r.code},
-                "detail": f"{r.guest.full_name} · {r.get_status_display()}",
-                "url_name": "bookings:detail",
-                "pk": r.pk,
-            }
+            notification_entry(
+                kind="web_booking",
+                title=_("Veb-bron · %(code)s") % {"code": r.code},
+                detail=f"{r.guest.full_name} · {r.get_status_display()}",
+                url_name="bookings:detail",
+                pk=r.pk,
+            )
         )
 
     arrivals = Reservation.objects.filter(
@@ -42,14 +104,14 @@ def build_notifications(tenant, hotel=None):
         arrivals = arrivals.filter(hotel=hotel)
     for r in arrivals.order_by("check_in")[:8]:
         items.append(
-            {
-                "kind": "arrival",
-                "title": _("Kelish · %(code)s") % {"code": r.code},
-                "detail": f"{r.guest.full_name}"
+            notification_entry(
+                kind="arrival",
+                title=_("Kelish · %(code)s") % {"code": r.code},
+                detail=f"{r.guest.full_name}"
                 + (f" · {r.room.number}" if r.room_id else ""),
-                "url_name": "bookings:detail",
-                "pk": r.pk,
-            }
+                url_name="bookings:detail",
+                pk=r.pk,
+            )
         )
 
     departures = Reservation.objects.filter(
@@ -61,14 +123,14 @@ def build_notifications(tenant, hotel=None):
         departures = departures.filter(hotel=hotel)
     for r in departures.order_by("check_out")[:8]:
         items.append(
-            {
-                "kind": "departure",
-                "title": _("Ketish · %(code)s") % {"code": r.code},
-                "detail": f"{r.guest.full_name}"
+            notification_entry(
+                kind="departure",
+                title=_("Ketish · %(code)s") % {"code": r.code},
+                detail=f"{r.guest.full_name}"
                 + (f" · {r.room.number}" if r.room_id else ""),
-                "url_name": "bookings:detail",
-                "pk": r.pk,
-            }
+                url_name="bookings:detail",
+                pk=r.pk,
+            )
         )
 
     # Debt alerts: unpaid after stay ended (checked out / cancel / no-show),
@@ -93,13 +155,13 @@ def build_notifications(tenant, hotel=None):
         if not (is_closed_status or is_departure_day_owing):
             continue
         items.append(
-            {
-                "kind": "overdue",
-                "title": _("Qarz · %(code)s") % {"code": res.code},
-                "detail": f"{res.guest.full_name} · {folio.balance}",
-                "url_name": "folio:detail",
-                "pk": res.pk,
-            }
+            notification_entry(
+                kind="overdue",
+                title=_("Qarz · %(code)s") % {"code": res.code},
+                detail=f"{res.guest.full_name} · {folio.balance}",
+                url_name="folio:detail",
+                pk=res.pk,
+            )
         )
 
     if tenant.has_feature("inventory"):
@@ -111,47 +173,47 @@ def build_notifications(tenant, hotel=None):
 
         for item in expired_stock_items(tenant, hotel=hotel)[:5]:
             items.append(
-                {
-                    "kind": "stock_expired",
-                    "title": _("Muddati o‘tgan · %(name)s") % {"name": item.name},
-                    "detail": _("%(qty)s %(unit)s · %(d)s")
+                notification_entry(
+                    kind="stock_expired",
+                    title=_("Muddati o‘tgan · %(name)s") % {"name": item.name},
+                    detail=_("%(qty)s %(unit)s · %(d)s")
                     % {
                         "qty": item.quantity_on_hand,
                         "unit": item.get_unit_display(),
                         "d": item.expiry_date,
                     },
-                    "url_name": "inventory:list",
-                    "pk": None,
-                }
+                    url_name="inventory:list",
+                    object_id=item.pk,
+                )
             )
 
         for item in expiring_soon_stock_items(tenant, hotel=hotel)[:5]:
             days = item.days_until_expiry
             items.append(
-                {
-                    "kind": "stock_expiring",
-                    "title": _("Muddat yaqin · %(name)s") % {"name": item.name},
-                    "detail": _("%(days)s kun · %(d)s")
+                notification_entry(
+                    kind="stock_expiring",
+                    title=_("Muddat yaqin · %(name)s") % {"name": item.name},
+                    detail=_("%(days)s kun · %(d)s")
                     % {"days": days if days is not None else "—", "d": item.expiry_date},
-                    "url_name": "inventory:list",
-                    "pk": None,
-                }
+                    url_name="inventory:list",
+                    object_id=item.pk,
+                )
             )
 
         for item in low_stock_items(tenant, hotel=hotel).order_by("quantity_on_hand")[:4]:
             items.append(
-                {
-                    "kind": "stock",
-                    "title": _("Kam ombor · %(name)s") % {"name": item.name},
-                    "detail": _("%(qty)s %(unit)s (min %(min)s)")
+                notification_entry(
+                    kind="stock",
+                    title=_("Kam ombor · %(name)s") % {"name": item.name},
+                    detail=_("%(qty)s %(unit)s (min %(min)s)")
                     % {
                         "qty": item.quantity_on_hand,
                         "unit": item.get_unit_display(),
                         "min": item.reorder_level,
                     },
-                    "url_name": "inventory:list",
-                    "pk": None,
-                }
+                    url_name="inventory:list",
+                    object_id=item.pk,
+                )
             )
 
     if tenant.has_feature("maintenance"):
@@ -166,14 +228,16 @@ def build_notifications(tenant, hotel=None):
             open_tickets = open_tickets.filter(room__property=hotel)
         for ticket in open_tickets.order_by("-created_at")[:4]:
             items.append(
-                {
-                    "kind": "maintenance",
-                    "title": _("Ta’mir · %(title)s") % {"title": ticket.title},
-                    "detail": ticket.room.number if ticket.room_id else "—",
-                    "url_name": "maintenance:list",
-                    "pk": None,
-                }
+                notification_entry(
+                    kind="maintenance",
+                    title=_("Ta’mir · %(title)s") % {"title": ticket.title},
+                    detail=ticket.room.number if ticket.room_id else "—",
+                    url_name="maintenance:list",
+                    object_id=ticket.pk,
+                )
             )
 
+    if dismissed:
+        items = [i for i in items if i["key"] not in dismissed]
     items = items[:16]
     return {"items": items, "count": len(items), "day": today}
