@@ -191,6 +191,17 @@ def sync_reservation_occupants(reservation, companions=None, *, primary_guest=No
     extra_adults = 0
     extra_children = 0
     for row in companions:
+        # Bo‘sh formset qatorlari (faqat UZ default) — e’tiborsiz.
+        if not row:
+            continue
+        if not (
+            row.get("guest")
+            or (row.get("first_name") or "").strip()
+            or (row.get("last_name") or "").strip()
+            or (row.get("doc_number") or "").strip()
+            or (row.get("phone") or "").strip()
+        ):
+            continue
         guest = resolve_occupant_guest(reservation.tenant, row)
         if guest.pk in seen:
             raise ValidationError(

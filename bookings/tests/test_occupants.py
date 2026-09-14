@@ -202,6 +202,74 @@ class OccupantStayTests(TestCase):
         self.assertEqual(extra.guest.first_name, "Malika")
         self.assertTrue(extra.guest.documents.filter(number="AA5556666").exists())
 
+    def test_create_view_ignores_empty_companion_defaults(self):
+        """Browser posts UZ/passport defaults on hidden empty cards — must not fail."""
+        self._hotel_session()
+        payload = {
+            "guest": str(self.guest.pk),
+            "room_type": str(self.rt.pk),
+            "room": str(self.room.pk),
+            "nightly_rate": "120000",
+            "currency": "USD",
+            "check_in": self.today.isoformat(),
+            "check_out": (self.today + timedelta(days=1)).isoformat(),
+            "adults": "2",
+            "children": "0",
+            "source": Reservation.Source.PHONE,
+            "status": Reservation.Status.CONFIRMED,
+            "occ-TOTAL_FORMS": "6",
+            "occ-INITIAL_FORMS": "0",
+            "occ-MIN_NUM_FORMS": "0",
+            "occ-MAX_NUM_FORMS": "8",
+            "occ-0-kind": ReservationOccupant.Kind.ADULT,
+            "occ-0-first_name": "Malika",
+            "occ-0-last_name": "Saidova",
+            "occ-0-doc_number": "AA5556666",
+            "occ-0-doc_type": GuestDocument.DocType.PASSPORT,
+            "occ-0-nationality": "UZ",
+            "occ-0-issued_country": "UZ",
+        }
+        for i in range(1, 6):
+            payload[f"occ-{i}-kind"] = ReservationOccupant.Kind.ADULT
+            payload[f"occ-{i}-nationality"] = "UZ"
+            payload[f"occ-{i}-issued_country"] = "UZ"
+            payload[f"occ-{i}-doc_type"] = GuestDocument.DocType.PASSPORT
+            payload[f"occ-{i}-first_name"] = ""
+            payload[f"occ-{i}-last_name"] = ""
+            payload[f"occ-{i}-phone"] = ""
+            payload[f"occ-{i}-doc_number"] = ""
+            payload[f"occ-{i}-guest"] = ""
+        response = self.client.post(reverse("bookings:create"), payload)
+        self.assertEqual(response.status_code, 302, response.content[:500])
+        reservation = Reservation.objects.get(guest=self.guest)
+        self.assertEqual(reservation.occupants.count(), 2)
+
+    def test_create_solo_with_default_empty_occupant_cards(self):
+        """1 adult — hidden empty cards with UZ defaults must not block create."""
+        self._hotel_session()
+        payload = {
+            "guest": str(self.guest.pk),
+            "room_type": str(self.rt.pk),
+            "room": str(self.room.pk),
+            "nightly_rate": "120000",
+            "currency": "USD",
+            "check_in": self.today.isoformat(),
+            "check_out": (self.today + timedelta(days=1)).isoformat(),
+            "adults": "1",
+            "children": "0",
+            "source": Reservation.Source.PHONE,
+            "status": Reservation.Status.CONFIRMED,
+            **self._occ_mgmt(),
+        }
+        for i in range(6):
+            payload[f"occ-{i}-nationality"] = "UZ"
+            payload[f"occ-{i}-issued_country"] = "UZ"
+            payload[f"occ-{i}-doc_type"] = GuestDocument.DocType.PASSPORT
+        response = self.client.post(reverse("bookings:create"), payload)
+        self.assertEqual(response.status_code, 302, response.content[:500])
+        reservation = Reservation.objects.get(guest=self.guest)
+        self.assertEqual(reservation.occupants.count(), 1)
+
     def _hotel_session(self):
         session = self.client.session
         session[SESSION_PROPERTY_KEY] = self.prop.pk

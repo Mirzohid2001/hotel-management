@@ -1069,17 +1069,16 @@ class OccupantForm(forms.Form):
         required=False,
         max_length=80,
         label=_("Fuqarolik"),
-        initial="UZ",
         widget=forms.TextInput(attrs={"placeholder": "UZ"}),
     )
     doc_type = forms.ChoiceField(
         required=False,
         label=_("Hujjat turi"),
         choices=[
+            ("", "—"),
             (GuestDocument.DocType.PASSPORT, _("Pasport")),
             (GuestDocument.DocType.ID_CARD, _("ID karta")),
         ],
-        initial=GuestDocument.DocType.PASSPORT,
     )
     doc_number = forms.CharField(
         required=False,
@@ -1091,7 +1090,6 @@ class OccupantForm(forms.Form):
         required=False,
         max_length=80,
         label=_("Berilgan mamlakat"),
-        initial="UZ",
         widget=forms.TextInput(attrs={"placeholder": "UZ"}),
     )
 
@@ -1101,15 +1099,30 @@ class OccupantForm(forms.Form):
         if tenant is not None:
             self.fields["guest"].queryset = guests_for_select(tenant)
 
+    @staticmethod
+    def row_has_person(data: dict | None) -> bool:
+        """True only when a real companion was entered (ignore UZ defaults / empty formset rows)."""
+        if not data or data.get("_empty") or data.get("DELETE"):
+            return False
+        if data.get("guest") is not None:
+            return True
+        return bool(
+            (data.get("first_name") or "").strip()
+            or (data.get("last_name") or "").strip()
+            or (data.get("doc_number") or "").strip()
+            or (data.get("phone") or "").strip()
+        )
+
     def is_empty(self) -> bool:
         data = getattr(self, "cleaned_data", None)
         if data is not None:
-            return bool(data.get("_empty"))
+            return not self.row_has_person(data)
         raw_guest = (self.data.get(self.add_prefix("guest")) or "").strip()
         first = (self.data.get(self.add_prefix("first_name")) or "").strip()
         last = (self.data.get(self.add_prefix("last_name")) or "").strip()
         doc = (self.data.get(self.add_prefix("doc_number")) or "").strip()
-        return not raw_guest and not first and not last and not doc
+        phone = (self.data.get(self.add_prefix("phone")) or "").strip()
+        return not raw_guest and not first and not last and not doc and not phone
 
     def clean(self):
         cleaned = super().clean()
@@ -1137,6 +1150,7 @@ class OccupantForm(forms.Form):
             cleaned["_empty"] = False
             return cleaned
 
+        # Fuqarolik/mamlakat defaultlari (UZ) yolg‘iz o‘zi — bo‘sh qator.
         if not first and not last and not doc_number and not phone:
             cleaned["_empty"] = True
             return cleaned
@@ -1157,7 +1171,7 @@ class BaseOccupantFormSet(forms.BaseFormSet):
             if not hasattr(form, "cleaned_data"):
                 continue
             data = form.cleaned_data
-            if not data or data.get("_empty") or data.get("DELETE"):
+            if not OccupantForm.row_has_person(data):
                 continue
             guest = data.get("guest")
             if guest is None:
@@ -1179,7 +1193,7 @@ class BaseOccupantFormSet(forms.BaseFormSet):
             if not hasattr(form, "cleaned_data"):
                 continue
             data = form.cleaned_data
-            if data.get("_empty") or data.get("DELETE"):
+            if not OccupantForm.row_has_person(data):
                 continue
             guest = data.get("guest")
             if guest is not None:
