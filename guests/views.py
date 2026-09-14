@@ -40,12 +40,12 @@ def guest_list(request):
         )
 
     in_house_qs = Reservation.objects.filter(
-        guest_id=OuterRef("pk"),
+        Q(guest_id=OuterRef("pk")) | Q(occupants__guest_id=OuterRef("pk")),
         tenant_id=request.tenant.id,
         status=Reservation.Status.CHECKED_IN,
     )
     any_res_qs = Reservation.objects.filter(
-        guest_id=OuterRef("pk"),
+        Q(guest_id=OuterRef("pk")) | Q(occupants__guest_id=OuterRef("pk")),
         tenant_id=request.tenant.id,
     )
     guests = guests.annotate(
@@ -147,16 +147,18 @@ def guest_detail(request, pk):
     doc_form = GuestDocumentForm()
     note_form = GuestNoteForm()
     reservations = list(
-        Reservation.objects.filter(tenant=request.tenant, guest=guest)
+        Reservation.objects.filter(tenant=request.tenant)
+        .filter(Q(guest=guest) | Q(occupants__guest=guest))
         .select_related("room", "hotel")
+        .distinct()
         .order_by("-check_in", "-pk")[:30]
     )
     in_house_reservation_id = (
         Reservation.objects.filter(
             tenant=request.tenant,
-            guest=guest,
             status=Reservation.Status.CHECKED_IN,
         )
+        .filter(Q(guest=guest) | Q(occupants__guest=guest))
         .order_by("-check_in")
         .values_list("pk", flat=True)
         .first()
@@ -196,7 +198,11 @@ def guest_edit(request, pk):
 @require_POST
 def guest_delete(request, pk):
     guest = get_object_or_404(Guest, pk=pk, tenant=request.tenant)
-    if Reservation.objects.filter(tenant=request.tenant, guest=guest).exists():
+    if (
+        Reservation.objects.filter(tenant=request.tenant)
+        .filter(Q(guest=guest) | Q(occupants__guest=guest))
+        .exists()
+    ):
         messages.error(
             request,
             _(

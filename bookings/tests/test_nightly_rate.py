@@ -53,6 +53,12 @@ class ManualNightlyRateChainTests(TestCase):
             check_in=self.today,
             check_out=self.today + timedelta(days=3),
             adults=2,
+            occupants=[
+                {
+                    "first_name": "Hamroh",
+                    "kind": "adult",
+                }
+            ],
         )
         self.assertEqual(reservation.total_amount, Decimal("825000"))
         self.assertIsNone(reservation.rate_plan_id)

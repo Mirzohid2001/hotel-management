@@ -21,6 +21,7 @@ from .forms import (
     ProfitWithdrawalForm,
     VendorForm,
 )
+from core.dates import parse_user_date
 from tenants.models import ExchangeRate
 from core.currency import CURRENCY_CHOICES, DEFAULT_RATES_TO_UZS, get_rate_to_base
 from django.utils import timezone
@@ -64,13 +65,7 @@ def _render_expense_row(request, expense):
 
 
 def _parse_date(value: str):
-    value = (value or "").strip()
-    if not value:
-        return None
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
+    return parse_user_date(value)
 
 
 @feature_required("expenses")

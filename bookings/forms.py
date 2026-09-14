@@ -10,12 +10,12 @@ from django.utils import timezone
 from core.currency import CURRENCY_CHOICES
 from django.utils.translation import gettext_lazy as _
 
-from guests.models import Company, Guest
+from guests.models import Company, Guest, GuestDocument
 from properties.models import PropertySettings, Room, RoomType
 
 from .availability import room_availability_split, walk_in_room_cards
 from .commission import active_referrers
-from .models import BookingReferrer, ReferrerCommissionPayment, Reservation
+from .models import BookingReferrer, ReferrerCommissionPayment, Reservation, ReservationOccupant
 from .services import AvailabilityError, assert_room_available, assert_room_physically_free
 from guests.query import guests_for_select
 from guests.widgets import SearchableSelect
@@ -253,6 +253,12 @@ class ReservationForm(forms.ModelForm):
             ),
             "nightly_rate": forms.NumberInput(
                 attrs={"step": "0.01", "min": "0", "placeholder": "0"}
+            ),
+            "adults": forms.NumberInput(
+                attrs={"min": "1", "step": "1", "data-occupant-count": "adults"}
+            ),
+            "children": forms.NumberInput(
+                attrs={"min": "0", "step": "1", "data-occupant-count": "children"}
             ),
         }
 
@@ -601,6 +607,13 @@ class WalkInForm(forms.Form):
         label=_("Kattalar"),
         widget=forms.NumberInput(attrs={"min": 1, "step": 1}),
     )
+    children = forms.IntegerField(
+        min_value=0,
+        initial=0,
+        required=False,
+        label=_("Bolalar"),
+        widget=forms.NumberInput(attrs={"min": 0, "step": 1}),
+    )
     notes = forms.CharField(
         required=False,
         label=_("Izoh"),
@@ -671,14 +684,19 @@ class WalkInForm(forms.Form):
                 }
             )
         nights = self._walk_in_nights()
-        adults_initial = 1
+        guests_initial = 1
         if self.is_bound:
             try:
-                adults_initial = max(1, int(self.data.get("adults") or 1))
+                adults_n = max(1, int(self.data.get("adults") or 1))
             except (TypeError, ValueError):
-                adults_initial = 1
+                adults_n = 1
+            try:
+                children_n = max(0, int(self.data.get("children") or 0))
+            except (TypeError, ValueError):
+                children_n = 0
+            guests_initial = max(1, adults_n + children_n)
         _add_emehmon_payment_fields(
-            self, hotel=hotel, nights=nights, guests=adults_initial
+            self, hotel=hotel, nights=nights, guests=guests_initial
         )
 
     def _walk_in_nights(self) -> int:
@@ -733,7 +751,9 @@ class WalkInForm(forms.Form):
             self.add_error("nightly_rate", _("1 kecha narxini kiriting."))
 
         nights = max(1, int(cleaned.get("nights") or 1))
-        guests = max(1, int(cleaned.get("adults") or 1))
+        if cleaned.get("children") is None:
+            cleaned["children"] = 0
+        guests = max(1, int(cleaned.get("adults") or 1) + int(cleaned.get("children") or 0))
         cleaned = _fill_emehmon_amount(self, cleaned, nights=nights, guests=guests)
 
         room = cleaned.get("room")
@@ -1000,3 +1020,212 @@ def group_room_formset(tenant, data=None, hotel=None):
         _bind_group_room_form(form, tenant, hotel)
     _bind_group_room_form(fs.empty_form, tenant, hotel)
     return fs
+
+
+def occupant_post_bound(data) -> bool:
+    if not data:
+        return False
+    return data.get("occ-TOTAL_FORMS") not in (None, "")
+
+
+OCCUPANT_FORMSET_EXTRA = 6
+OCCUPANT_FORMSET_MAX = 8
+
+
+class OccupantForm(forms.Form):
+    """One extra person in the room (not the primary paying guest)."""
+
+    guest = forms.ModelChoiceField(
+        queryset=Guest.objects.none(),
+        required=False,
+        label=_("Mavjud mehmon"),
+        widget=SearchableSelect(search_placeholder=_("Ism yoki familiya…")),
+        empty_label=_("— yangi kishi —"),
+    )
+    kind = forms.ChoiceField(
+        choices=ReservationOccupant.Kind.choices,
+        initial=ReservationOccupant.Kind.ADULT,
+        label=_("Turi"),
+    )
+    first_name = forms.CharField(
+        required=False,
+        max_length=120,
+        label=_("Ism"),
+        widget=forms.TextInput(attrs={"autocomplete": "off"}),
+    )
+    last_name = forms.CharField(
+        required=False,
+        max_length=120,
+        label=_("Familiya"),
+        widget=forms.TextInput(attrs={"autocomplete": "off"}),
+    )
+    phone = forms.CharField(
+        required=False,
+        max_length=32,
+        label=_("Telefon"),
+        widget=forms.TextInput(attrs={"autocomplete": "off", "inputmode": "tel"}),
+    )
+    nationality = forms.CharField(
+        required=False,
+        max_length=80,
+        label=_("Fuqarolik"),
+        initial="UZ",
+        widget=forms.TextInput(attrs={"placeholder": "UZ"}),
+    )
+    doc_type = forms.ChoiceField(
+        required=False,
+        label=_("Hujjat turi"),
+        choices=[
+            (GuestDocument.DocType.PASSPORT, _("Pasport")),
+            (GuestDocument.DocType.ID_CARD, _("ID karta")),
+        ],
+        initial=GuestDocument.DocType.PASSPORT,
+    )
+    doc_number = forms.CharField(
+        required=False,
+        max_length=64,
+        label=_("Pasport / ID"),
+        widget=forms.TextInput(attrs={"placeholder": "AA 1234567", "autocomplete": "off"}),
+    )
+    issued_country = forms.CharField(
+        required=False,
+        max_length=80,
+        label=_("Berilgan mamlakat"),
+        initial="UZ",
+        widget=forms.TextInput(attrs={"placeholder": "UZ"}),
+    )
+
+    def __init__(self, *args, tenant=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tenant = tenant
+        if tenant is not None:
+            self.fields["guest"].queryset = guests_for_select(tenant)
+
+    def is_empty(self) -> bool:
+        data = getattr(self, "cleaned_data", None)
+        if data is not None:
+            return bool(data.get("_empty"))
+        raw_guest = (self.data.get(self.add_prefix("guest")) or "").strip()
+        first = (self.data.get(self.add_prefix("first_name")) or "").strip()
+        last = (self.data.get(self.add_prefix("last_name")) or "").strip()
+        doc = (self.data.get(self.add_prefix("doc_number")) or "").strip()
+        return not raw_guest and not first and not last and not doc
+
+    def clean(self):
+        cleaned = super().clean()
+        guest = cleaned.get("guest")
+        first = (cleaned.get("first_name") or "").strip()
+        last = (cleaned.get("last_name") or "").strip()
+        phone = (cleaned.get("phone") or "").strip()
+        nationality = (cleaned.get("nationality") or "").strip()
+        doc_number = (cleaned.get("doc_number") or "").strip()
+        issued = (cleaned.get("issued_country") or "").strip()
+        cleaned["first_name"] = first
+        cleaned["last_name"] = last
+        cleaned["phone"] = phone
+        cleaned["nationality"] = nationality
+        cleaned["doc_number"] = doc_number
+        cleaned["issued_country"] = issued
+
+        if guest is not None:
+            if getattr(guest, "is_blacklisted", False):
+                self.add_error(
+                    "guest",
+                    _("Mehmon qora ro‘yxatda: %(r)s")
+                    % {"r": getattr(guest, "blacklist_reason", "") or "blacklisted"},
+                )
+            cleaned["_empty"] = False
+            return cleaned
+
+        if not first and not last and not doc_number and not phone:
+            cleaned["_empty"] = True
+            return cleaned
+
+        if not first:
+            self.add_error("first_name", _("Ism kiriting."))
+        cleaned["_empty"] = False
+        return cleaned
+
+
+class BaseOccupantFormSet(forms.BaseFormSet):
+    exclude_guest_ids: set | None = None
+
+    def clean(self):
+        exclude = set(getattr(self, "exclude_guest_ids", None) or [])
+        seen = set()
+        for form in self.forms:
+            if not hasattr(form, "cleaned_data"):
+                continue
+            data = form.cleaned_data
+            if not data or data.get("_empty") or data.get("DELETE"):
+                continue
+            guest = data.get("guest")
+            if guest is None:
+                continue
+            if guest.pk in exclude:
+                form.add_error(
+                    "guest",
+                    _("Asosiy mehmonni hamroh qilib qo‘shib bo‘lmaydi."),
+                )
+            elif guest.pk in seen:
+                form.add_error("guest", _("Bu mehmon allaqachon ro‘yxatda."))
+            seen.add(guest.pk)
+
+    def cleaned_occupants(self) -> list[dict]:
+        rows = []
+        exclude = set(getattr(self, "exclude_guest_ids", None) or [])
+        seen_ids = set()
+        for form in self.forms:
+            if not hasattr(form, "cleaned_data"):
+                continue
+            data = form.cleaned_data
+            if data.get("_empty") or data.get("DELETE"):
+                continue
+            guest = data.get("guest")
+            if guest is not None:
+                if guest.pk in exclude or guest.pk in seen_ids:
+                    continue
+                seen_ids.add(guest.pk)
+            rows.append(data)
+        return rows
+
+
+def _bind_occupant_form(form, tenant):
+    form.tenant = tenant
+    form.fields["guest"].queryset = guests_for_select(tenant)
+    form.fields["guest"].required = False
+    form.fields["guest"].empty_label = _("— yangi kishi —")
+
+
+def occupant_formset(tenant, data=None, *, initial=None, extra=None):
+    extra_count = OCCUPANT_FORMSET_EXTRA if extra is None else extra
+    FormSet = formset_factory(
+        OccupantForm,
+        formset=BaseOccupantFormSet,
+        extra=extra_count,
+        max_num=OCCUPANT_FORMSET_MAX,
+        validate_max=True,
+        can_delete=True,
+    )
+    kwargs = {"prefix": "occ", "initial": initial or []}
+    fs = FormSet(data, **kwargs) if data is not None else FormSet(**kwargs)
+    for form in fs.forms:
+        _bind_occupant_form(form, tenant)
+    _bind_occupant_form(fs.empty_form, tenant)
+    return fs
+
+
+def occupant_formset_for_reservation(reservation, data=None):
+    extras = list(
+        reservation.occupants.filter(is_primary=False)
+        .select_related("guest")
+        .order_by("sort_order", "id")
+    )
+    initial = [{"guest": occ.guest_id, "kind": occ.kind} for occ in extras]
+    extra = max(OCCUPANT_FORMSET_EXTRA - len(initial), 1)
+    return occupant_formset(reservation.tenant, data, initial=initial, extra=extra)
+
+
+def occupants_complete(adults, children, companions: list) -> bool:
+    expected_extra = max(0, int(adults or 1) + int(children or 0) - 1)
+    return len(companions) >= expected_extra

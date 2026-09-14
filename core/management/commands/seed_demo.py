@@ -323,6 +323,7 @@ class Command(BaseCommand):
                 source=Reservation.Source.WALKIN,
                 notes="Demo check-in · Double",
                 adults=2,
+                occupants=[{"guest": guest_b, "kind": "adult"}],
                 referrer=referrer,
                 commission_percent=Decimal("10"),
             )

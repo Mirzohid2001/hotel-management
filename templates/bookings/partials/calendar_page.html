@@ -36,12 +36,14 @@
         <span class="board-date-label">{% trans "Davr" %}</span>
         <div class="calendar-range-fields">
           <label class="sr-only" for="cal-start">{% trans "Boshlanish" %}</label>
-          <input id="cal-start" class="calendar-range-input" type="date" name="start"
-                 value="{{ start|date:'Y-m-d' }}" required>
+          <input id="cal-start" class="calendar-range-input" type="text" name="start"
+                 value="{{ start|date:'d.m.Y' }}" required inputmode="numeric" maxlength="10"
+                 autocomplete="off" placeholder="dd.mm.yyyy" data-date-dmy enterkeyhint="done">
           <span class="calendar-range-sep" aria-hidden="true">—</span>
           <label class="sr-only" for="cal-end">{% trans "Tugash" %}</label>
-          <input id="cal-end" class="calendar-range-input" type="date" name="end"
-                 value="{{ period_end|date:'Y-m-d' }}" required>
+          <input id="cal-end" class="calendar-range-input" type="text" name="end"
+                 value="{{ period_end|date:'d.m.Y' }}" required inputmode="numeric" maxlength="10"
+                 autocomplete="off" placeholder="dd.mm.yyyy" data-date-dmy enterkeyhint="done">
           <button type="submit" class="calendar-range-go">{% trans "OK" %}</button>
         </div>
       </form>
@@ -181,26 +183,3 @@
     </table>
   </div>
 </div>
-<script>
-(function () {
-  var form = document.getElementById("calendar-range-form");
-  if (!form) return;
-  var start = form.querySelector("#cal-start");
-  var end = form.querySelector("#cal-end");
-  if (!start || !end) return;
-  function sync() {
-    if (start.value) end.min = start.value;
-    if (end.value) start.max = end.value;
-    if (start.value && end.value && end.value < start.value) {
-      var tmp = start.value;
-      start.value = end.value;
-      end.value = tmp;
-      end.min = start.value;
-      start.max = end.value;
-    }
-  }
-  start.addEventListener("change", sync);
-  end.addEventListener("change", sync);
-  sync();
-})();
-</script>

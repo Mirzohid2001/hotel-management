@@ -24,7 +24,8 @@
       <button type="submit">{% trans "Bron yaratish" %}</button>
     </form>
     <p class="muted" style="margin:0.75rem 0 0;font-size:0.82rem">
-      <a href="{% url 'bookings:create' %}?room={{ room.pk }}&amp;check_in={{ check_in|date:'Y-m-d' }}&amp;check_out={{ check_out|date:'Y-m-d' }}">{% trans "To‘liq forma" %}</a>
+      {% trans "Hamrohlar (2-chi mehmon) to‘liq formada yoki bron sahifasida kiritiladi." %}
+      · <a href="{% url 'bookings:create' %}?room={{ room.pk }}&amp;check_in={{ check_in|date:'Y-m-d' }}&amp;check_out={{ check_out|date:'Y-m-d' }}">{% trans "To‘liq forma" %}</a>
     </p>
   </div>
 </div>

@@ -201,6 +201,9 @@ class IdealFlowTests(TestCase):
             number="501",
         )
 
+        companion = Guest.objects.create(
+            tenant=self.tenant, first_name="Hamroh", last_name="Twin"
+        )
         reservation = create_reservation(
             tenant=self.tenant,
             user=self.user,
@@ -212,6 +215,7 @@ class IdealFlowTests(TestCase):
             check_in=self.today,
             check_out=self.today + timedelta(days=2),
             adults=2,
+            occupants=[{"guest": companion, "kind": "adult"}],
         )
         check_in_reservation(reservation, self.user)
         old_type = reservation.room_type_id

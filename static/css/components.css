@@ -268,3 +268,86 @@ table.data .money {
     max-width: none;
   }
 }
+
+.occupant-block {
+  margin: 0;
+}
+.occupant-block-head {
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.occupant-block-hint {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+.occupant-grid {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+}
+.occupant-card {
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--line-soft, #eadfce);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--panel, #fff) 92%, #f4e6d4 8%);
+}
+.occupant-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 0.75rem;
+}
+.occupant-card-head strong {
+  font-size: 0.92rem;
+}
+.occupant-kind-field select {
+  min-width: 7.5rem;
+}
+.occupant-remove {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.occupant-card-grid {
+  margin: 0;
+}
+.occupant-empty-hint {
+  margin: 0.75rem 0 0;
+}
+.occupant-saved-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+.occupant-saved {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line-soft, #eadfce);
+  border-radius: 14px;
+  background: var(--panel, #fff);
+}
+.occupant-saved .badge {
+  margin-left: 0.25rem;
+}
+.occupant-missing-note {
+  margin: 0.65rem 0 0;
+}
+@media (max-width: 720px) {
+  .occupant-card-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .occupant-remove {
+    margin-left: 0;
+  }
+}

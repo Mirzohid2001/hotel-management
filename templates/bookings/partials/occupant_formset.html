@@ -1,0 +1,81 @@
+{% load i18n %}
+<section class="occupant-block" data-occupant-root
+         {% if reservation %}data-adults="{{ reservation.adults }}" data-children="{{ reservation.children }}"{% endif %}
+         {% if missing_adults or missing_children %}data-extra-adults="{{ missing_adults|default:0 }}" data-extra-children="{{ missing_children|default:0 }}"{% endif %}>
+  <div class="dash-section-head occupant-block-head">
+    <div>
+      <p class="eyebrow">{% trans "Xona" %}</p>
+      <h2>{% trans "Xonadagi mehmonlar" %}</h2>
+    </div>
+    <p class="muted occupant-block-hint">
+      {% trans "Asosiy mehmondan tashqari har bir kishi: ism va pasport/ID." %}
+    </p>
+  </div>
+  {{ occupant_formset.management_form }}
+  {% if occupant_formset.non_form_errors %}
+  <div class="form-errors">{{ occupant_formset.non_form_errors }}</div>
+  {% endif %}
+  <div class="occupant-grid">
+    {% for form in occupant_formset %}
+    <article class="occupant-card" data-occupant-row hidden>
+      <header class="occupant-card-head">
+        <strong>{% trans "Hamroh" %} {{ forloop.counter }}</strong>
+        <span class="occupant-kind-field">{{ form.kind }}</span>
+        {% if form.DELETE %}
+        <label class="occupant-remove">{{ form.DELETE }} {% trans "O‘chirish" %}</label>
+        {% endif %}
+      </header>
+      {% if form.non_field_errors %}
+      <div class="form-errors">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <div class="form-grid occupant-card-grid">
+        <div class="form-field field-with-add field-span-2">
+          <label for="{{ form.guest.id_for_label }}">{{ form.guest.label }}</label>
+          <div class="field-row">
+            {{ form.guest }}
+            <button type="button" class="btn-ghost"
+                    hx-get="{% url 'guests:quick_guest' %}"
+                    hx-vals='{"select_id":"{{ form.guest.id_for_label }}","field_name":"{{ form.guest.html_name }}"}'
+                    hx-target="#modal-root" hx-select="unset"
+                    hx-swap="innerHTML">{% trans "+ Yangi" %}</button>
+          </div>
+          {% if form.guest.errors %}<span class="field-error">{{ form.guest.errors }}</span>{% endif %}
+        </div>
+        <p class="form-field">
+          <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<span class="field-error">{{ form.first_name.errors }}</span>{% endif %}
+        </p>
+        <p class="form-field">
+          <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+          {{ form.last_name }}
+        </p>
+        <p class="form-field">
+          <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+          {{ form.phone }}
+        </p>
+        <p class="form-field">
+          <label for="{{ form.nationality.id_for_label }}">{{ form.nationality.label }}</label>
+          {{ form.nationality }}
+        </p>
+        <p class="form-field">
+          <label for="{{ form.doc_type.id_for_label }}">{{ form.doc_type.label }}</label>
+          {{ form.doc_type }}
+        </p>
+        <p class="form-field">
+          <label for="{{ form.doc_number.id_for_label }}">{{ form.doc_number.label }}</label>
+          {{ form.doc_number }}
+          {% if form.doc_number.errors %}<span class="field-error">{{ form.doc_number.errors }}</span>{% endif %}
+        </p>
+        <p class="form-field field-span-2">
+          <label for="{{ form.issued_country.id_for_label }}">{{ form.issued_country.label }}</label>
+          {{ form.issued_country }}
+        </p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  <p class="muted occupant-empty-hint" data-occupant-empty hidden>
+    {% trans "Faqat asosiy mehmon. Kattalar/bolalar sonini oshirsangiz — shu yerda qatorlar ochiladi." %}
+  </p>
+</section>

@@ -66,11 +66,13 @@
     </label>
     <label class="expense-field">
       <span>{% trans "Dan" %}</span>
-      <input type="date" name="date_from" value="{{ date_from }}">
+      <input type="text" name="date_from" value="{{ date_from }}" data-date-dmy
+             inputmode="numeric" maxlength="10" autocomplete="off" placeholder="dd.mm.yyyy">
     </label>
     <label class="expense-field">
       <span>{% trans "Gacha" %}</span>
-      <input type="date" name="date_to" value="{{ date_to }}">
+      <input type="text" name="date_to" value="{{ date_to }}" data-date-dmy
+             inputmode="numeric" maxlength="10" autocomplete="off" placeholder="dd.mm.yyyy">
     </label>
   </div>
 </form>

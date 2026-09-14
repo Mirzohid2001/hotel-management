@@ -11,6 +11,12 @@ from properties.models import RatePlan, Room
 from properties.services import quote_stay
 
 from .models import Reservation, ReservationChangeLog, ReservationGroup, Stay
+from .occupants import (
+    MissingOccupantsError,
+    assert_occupants_ready_for_checkin,
+    ensure_primary_occupant,
+    sync_reservation_occupants,
+)
 
 
 class AvailabilityError(ValidationError):
@@ -160,6 +166,7 @@ def create_reservation(
     referrer=None,
     commission_percent=None,
     emehmon_required=True,
+    occupants=None,
 ) -> Reservation:
     assert_room_available(room, check_in, check_out)
     if guest is not None and getattr(guest, "is_blacklisted", False):
@@ -207,6 +214,10 @@ def create_reservation(
     reservation.total_amount = recompute_total(reservation)
     reservation.full_clean()
     reservation.save()
+    if occupants:
+        sync_reservation_occupants(reservation, occupants, primary_guest=guest)
+    else:
+        ensure_primary_occupant(reservation)
     return reservation
 
 
@@ -332,16 +343,12 @@ def check_in_reservation(
         reason_txt = reservation.guest.blacklist_reason or "blacklisted"
         raise ValidationError(_("Mehmon qora ro‘yxatda: %(r)s") % {"r": reason_txt})
     settings = _property_settings(reservation)
-    if (
-        settings
-        and settings.require_id_on_checkin
-        and reservation.guest_id
-        and not guest_has_id_document(reservation.guest)
-        and not allow_no_docs
-    ):
-        raise MissingGuestDocsError(
-            _("Mehmonda pasport/ID yo‘q; hujjat qo‘shing yoki hujjat ruxsatini bering.")
+    if settings and settings.require_id_on_checkin:
+        assert_occupants_ready_for_checkin(
+            reservation, allow_no_docs=allow_no_docs
         )
+    else:
+        assert_occupants_ready_for_checkin(reservation, allow_no_docs=True)
     if reservation.room is None:
         raise ValidationError(_("Joylashdan oldin xona biriktiring."))
     assert_room_available(
@@ -637,6 +644,14 @@ def apply_amendment(reservation: Reservation, user, data: dict) -> Reservation:
     reservation.total_amount = recompute_total(reservation)
     reservation.full_clean()
     reservation.save()
+    if "occupants" in data:
+        sync_reservation_occupants(
+            reservation,
+            data.get("occupants") or [],
+            primary_guest=reservation.guest,
+        )
+    else:
+        ensure_primary_occupant(reservation)
     return reservation
 
 

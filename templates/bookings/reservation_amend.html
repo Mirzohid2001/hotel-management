@@ -33,20 +33,6 @@
         {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
       </div>
       {% endwith %}
-      {% with field=form.company %}
-      <div class="form-field field-with-add">
-        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-        <div class="field-row">
-          {{ field }}
-          <button type="button" class="btn-ghost"
-                  hx-get="{% url 'guests:quick_company' %}"
-                  hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
-                  hx-target="#modal-root" hx-select="unset"
-                  hx-swap="innerHTML">{% trans "+ Yangi" %}</button>
-        </div>
-        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
-      </div>
-      {% endwith %}
       {% with field=form.referrer %}
       <div class="form-field field-with-add">
         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -54,6 +40,20 @@
           {{ field }}
           <button type="button" class="btn-ghost"
                   hx-get="{% url 'bookings:referrer_quick' %}"
+                  hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
+                  hx-target="#modal-root" hx-select="unset"
+                  hx-swap="innerHTML">{% trans "+ Yangi" %}</button>
+        </div>
+        {% if field.errors %}<span class="field-error">{{ field.errors }}</span>{% endif %}
+      </div>
+      {% endwith %}
+      {% with field=form.company %}
+      <div class="form-field field-with-add">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        <div class="field-row">
+          {{ field }}
+          <button type="button" class="btn-ghost"
+                  hx-get="{% url 'guests:quick_company' %}"
                   hx-vals='{"select_id":"{{ field.id_for_label }}","field_name":"{{ field.html_name }}"}'
                   hx-target="#modal-root" hx-select="unset"
                   hx-swap="innerHTML">{% trans "+ Yangi" %}</button>
@@ -93,6 +93,12 @@
     </div>
     <div id="availability-box" class="availability muted panel reservation-avail-box">{% trans "Xona va sanalarni tanlang" %}</div>
   </section>
+
+  {% if occupant_formset %}
+  <section class="section-panel">
+    {% include "bookings/partials/occupant_formset.html" %}
+  </section>
+  {% endif %}
 
   <section class="section-panel">
     <div class="dash-section-head">

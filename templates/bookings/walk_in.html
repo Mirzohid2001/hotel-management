@@ -86,6 +86,12 @@
       </div>
     </section>
 
+    {% if occupant_formset %}
+    <section class="walkin-section panel walkin-panel occupant-walkin-panel">
+      {% include "bookings/partials/occupant_formset.html" %}
+    </section>
+    {% endif %}
+
     <section class="walkin-section panel walkin-panel">
       <div class="walkin-panel-head">
         <span class="walkin-panel-icon is-extra" aria-hidden="true"></span>
@@ -286,11 +292,16 @@
       if (!unit || (collect && !collect.checked)) return;
       var nightsEl = form.querySelector('[name="nights"]');
       var adultsEl = form.querySelector('[name="adults"]');
+      var childrenEl = form.querySelector('[name="children"]');
       var nights = Math.max(1, parseInt(nightsEl && nightsEl.value, 10) || 1);
-      var guests = Math.max(1, parseInt(adultsEl && adultsEl.value, 10) || 1);
+      var guests = Math.max(
+        1,
+        (parseInt(adultsEl && adultsEl.value, 10) || 1) +
+          (parseInt(childrenEl && childrenEl.value, 10) || 0)
+      );
       amount.value = (unit * nights * guests).toFixed(2);
     }
-    ["nights", "adults"].forEach(function (name) {
+    ["nights", "adults", "children"].forEach(function (name) {
       var el = form.querySelector('[name="' + name + '"]');
       if (el) el.addEventListener("change", recalcEmehmon);
     });

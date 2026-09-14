@@ -39,9 +39,52 @@
     <li><span>{% trans "Xona" %}</span><span>{% if reservation.room %}{{ reservation.room.number }}{% if reservation.room_type %} · {{ reservation.room_type.name }}{% endif %} · {{ reservation.room.get_status_display }}{% else %}{% trans "Biriktirilmagan" %}{% endif %}</span></li>
     <li><span>{% trans "1 kecha" %}</span><span class="money">{% if reservation.nightly_rate %}{{ reservation.nightly_rate|money }}{% elif reservation.rate_plan %}{{ reservation.rate_plan.price|money }}{% else %}—{% endif %} {{ reservation.currency|default:current_tenant.currency }}</span></li>
     <li><span>{% trans "Summa" %}</span><span class="money">{{ reservation.total_amount|money }} {{ reservation.currency|default:current_tenant.currency }}</span></li>
+    <li><span>{% trans "Mehmonlar" %}</span><span>{{ reservation.adults }} {% trans "katta" %}{% if reservation.children %} · {{ reservation.children }} {% trans "bola" %}{% endif %}</span></li>
     {% if reservation.referrer %}
     <li><span>{% trans "Kim orqali" %}</span><span>{{ reservation.referrer.name }}{% if reservation.commission_percent %} · {{ reservation.commission_percent }}%{% endif %}</span></li>
     {% endif %}
+  </ul>
+</section>
+
+<section class="section-panel occupant-detail">
+  <div class="dash-section-head">
+    <div>
+      <p class="eyebrow">{% trans "Xona" %}</p>
+      <h2>{% trans "Xonadagi mehmonlar" %}</h2>
+    </div>
+    <span class="muted">{{ occupants|length }}/{{ occupants_expected }}</span>
+  </div>
+  {% if occupants_missing %}
+  <p class="alert-banner occupant-missing-note">
+    {% blocktrans count counter=occupants_missing %}
+      Yana {{ counter }} kishining ma’lumoti yo‘q — joylashdan oldin kiriting.
+    {% plural %}
+      Yana {{ counter }} kishining ma’lumoti yo‘q — joylashdan oldin kiriting.
+    {% endblocktrans %}
+  </p>
+  {% endif %}
+  <ul class="occupant-saved-list">
+    {% for occ in occupants %}
+    <li class="occupant-saved">
+      <div>
+        <strong>
+          <a href="{% url 'guests:detail' occ.guest_id %}">{{ occ.guest.full_name }}</a>
+        </strong>
+        {% if occ.is_primary %}<span class="badge">{% trans "Asosiy" %}</span>{% endif %}
+        <span class="muted">{{ occ.get_kind_display }}</span>
+        {% if occ.guest.is_blacklisted %}<span class="badge badge-blacklist">{% trans "Qora ro‘yxat" %}</span>{% endif %}
+      </div>
+      <span class="entity-meta">
+        {% with doc=occ.guest.documents.all.0 %}
+          {% if doc %}{{ doc.get_doc_type_display }} {{ doc.number }}{% else %}{% trans "Hujjat yo‘q" %}{% endif %}
+        {% endwith %}
+        {% if occ.guest.phone %} · {{ occ.guest.phone }}{% endif %}
+        {% if occ.guest.nationality %} · {{ occ.guest.nationality }}{% endif %}
+      </span>
+    </li>
+    {% empty %}
+    <li class="muted">{% trans "Hali kiritilmagan" %}</li>
+    {% endfor %}
   </ul>
 </section>
 
@@ -118,17 +161,25 @@
         </p>
       </div>
     </fieldset>
+    {% if occupant_formset %}
+    {% include "bookings/partials/occupant_formset.html" %}
+    {% endif %}
     <div class="form-actions" style="display:flex;flex-wrap:wrap;gap:0.5rem">
       <button type="submit" class="btn">{% trans "Kirish" %}</button>
       {% if reservation.room and reservation.room.status == 'dirty' or reservation.room and reservation.room.status == 'cleaning' %}
       <button type="submit" class="btn-warn" name="allow_dirty" value="1">{% trans "Kir xonaga kirish*" %}</button>
       {% endif %}
-      {% if require_id and not guest_has_id %}
+      {% if require_id and missing_id_guests %}
       <button type="submit" class="btn-warn" name="allow_no_docs" value="1">{% trans "Hujjatsiz kirish*" %}</button>
       {% endif %}
     </div>
-    {% if require_id and not guest_has_id %}
-    <p class="muted">{% trans "Pasport/ID yo‘q" %} — <a href="{% url 'guests:detail' reservation.guest_id %}">{% trans "hujjat qo‘shish" %}</a></p>
+    {% if require_id and missing_id_guests %}
+    <p class="muted">
+      {% trans "Pasport/ID yo‘q" %}:
+      {% for g in missing_id_guests %}
+        <a href="{% url 'guests:detail' g.pk %}">{{ g.full_name }}</a>{% if not forloop.last %}, {% endif %}
+      {% endfor %}
+    </p>
     {% endif %}
   </form>
 </section>

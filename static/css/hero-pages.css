@@ -839,8 +839,9 @@
 }
 
 .calendar-range-input {
-  flex: 1 1 6.5rem;
-  min-width: 0;
+  flex: 1 1 7.5rem;
+  min-width: 11.5ch;
+  width: 12ch;
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 10px;
   background: rgba(12, 16, 22, 0.28);
@@ -848,8 +849,15 @@
   font: inherit;
   font-size: 0.82rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
   padding: 0.28rem 0.4rem;
   color-scheme: dark;
+}
+
+.calendar-range-input.is-invalid {
+  outline: 2px solid #f87171;
+  outline-offset: 1px;
 }
 
 .calendar-range-input:focus {

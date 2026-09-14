@@ -302,3 +302,39 @@ class ReservationChangeLog(TenantOwnedModel):
 
     def __str__(self) -> str:
         return f"{self.reservation.code}: {self.field}"
+
+
+class ReservationOccupant(TenantOwnedModel):
+    """Named person staying on a reservation (primary guest + companions)."""
+
+    class Kind(models.TextChoices):
+        ADULT = "adult", _("Katta")
+        CHILD = "child", _("Bola")
+
+    reservation = models.ForeignKey(
+        Reservation, on_delete=models.CASCADE, related_name="occupants"
+    )
+    guest = models.ForeignKey(
+        "guests.Guest", on_delete=models.PROTECT, related_name="occupancies"
+    )
+    kind = models.CharField(max_length=16, choices=Kind.choices, default=Kind.ADULT)
+    is_primary = models.BooleanField(default=False)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-is_primary", "sort_order", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("reservation", "guest"),
+                name="bookings_occupant_reservation_guest_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=("reservation",),
+                condition=models.Q(is_primary=True),
+                name="bookings_occupant_one_primary",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        role = "primary" if self.is_primary else self.kind
+        return f"{self.reservation_id}:{self.guest_id}:{role}"

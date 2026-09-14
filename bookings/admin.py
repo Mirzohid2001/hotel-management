@@ -6,8 +6,16 @@ from .models import (
     Reservation,
     ReservationChangeLog,
     ReservationGroup,
+    ReservationOccupant,
     Stay,
 )
+
+
+class OccupantInline(admin.TabularInline):
+    model = ReservationOccupant
+    extra = 0
+    autocomplete_fields = ("guest",)
+    fields = ("guest", "kind", "is_primary", "sort_order")
 
 
 class ChangeLogInline(admin.TabularInline):
@@ -60,7 +68,7 @@ class ReservationAdmin(admin.ModelAdmin):
     search_fields = ("code", "guest__first_name", "guest__last_name", "referrer__name", "room__number")
     autocomplete_fields = ("tenant", "hotel", "guest", "room", "referrer", "group")
     date_hierarchy = "check_in"
-    inlines = [ChangeLogInline]
+    inlines = [OccupantInline, ChangeLogInline]
     list_select_related = ("tenant", "hotel", "guest", "room", "referrer")
 
 

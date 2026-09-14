@@ -5,6 +5,7 @@ from datetime import date
 from decimal import Decimal
 
 from core.currency import to_base_amount
+from core.dates import parse_user_date
 
 from .models import Reservation
 
@@ -16,13 +17,8 @@ VALUE_STATUSES = (
 
 
 def parse_iso_date(value: str | None) -> date | None:
-    value = (value or "").strip()
-    if not value:
-        return None
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
+    """ISO yoki 13.09.2026 — yil 0/0002 qabul qilinmaydi."""
+    return parse_user_date(value)
 
 
 def default_month_bounds(day: date) -> tuple[date, date]:

@@ -131,3 +131,37 @@ class PeriodBookingTotalsTests(TestCase):
         self.assertContains(resp, "Davrdagi bronlar jami")
         self.assertEqual(resp.context["booking_total"], Decimal("360000"))
         self.assertContains(resp, "360 000")
+
+    def test_calendar_custom_period_accepts_dotted_dates(self):
+        resp = self.client.get(
+            reverse("bookings:calendar"),
+            {"view": "custom", "start": "13.09.2026", "end": "26.09.2026"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context["start"].isoformat(), "2026-09-13")
+        self.assertEqual(resp.context["period_end"].isoformat(), "2026-09-26")
+        self.assertContains(resp, 'data-date-dmy')
+        self.assertContains(resp, "13.09.2026")
+        self.assertContains(resp, "26.09.2026")
+        self.assertNotContains(resp, 'type="date"')
+
+    def test_list_accepts_dotted_period(self):
+        later = min(self.month_start + timedelta(days=10), self.month_end - timedelta(days=1))
+        self._book(self.room, later, 1, Decimal("300000"))
+        resp = self.client.get(
+            reverse("bookings:list"),
+            {
+                "date_from": later.strftime("%d.%m.%Y"),
+                "date_to": self.month_end.strftime("%d.%m.%Y"),
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context["booking_total"], Decimal("300000"))
+
+    def test_parse_rejects_year_zero(self):
+        from bookings.totals import parse_iso_date
+
+        self.assertEqual(parse_iso_date("13.09.2026").isoformat(), "2026-09-13")
+        self.assertIsNone(parse_iso_date("13.09.0002"))
+        self.assertIsNone(parse_iso_date("0002-09-13"))
+        self.assertIsNone(parse_iso_date("13.09.20"))

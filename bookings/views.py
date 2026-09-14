@@ -31,6 +31,10 @@ from .forms import (
     TransferForm,
     WalkInForm,
     group_room_formset,
+    occupant_formset,
+    occupant_formset_for_reservation,
+    occupant_post_bound,
+    occupants_complete,
 )
 from .models import BookingReferrer, Reservation, ReservationGroup
 from .timeline import build_room_timeline, mark_covers_today
@@ -56,6 +60,13 @@ from .services import (
     mark_no_show,
     transfer_room,
 )
+from .occupants import (
+    MissingOccupantsError,
+    occupant_expected_count,
+    occupant_missing_slots,
+    occupants_qs,
+    sync_reservation_occupants,
+)
 
 
 def _active_hotel(request):
@@ -73,7 +84,7 @@ def _get_reservation(request, pk):
     return get_object_or_404(
         Reservation.objects.select_related(
             "guest", "room", "room_type", "hotel", "group", "referrer"
-        ),
+        ).prefetch_related("occupants__guest__documents"),
         pk=pk,
         tenant=request.tenant,
     )
@@ -107,8 +118,11 @@ def reservation_list(request):
             | Q(guest__first_name__icontains=q)
             | Q(guest__last_name__icontains=q)
             | Q(guest__phone__icontains=q)
+            | Q(occupants__guest__first_name__icontains=q)
+            | Q(occupants__guest__last_name__icontains=q)
+            | Q(occupants__guest__phone__icontains=q)
             | Q(room__number__icontains=q)
-        )
+        ).distinct()
     qs = qs.order_by("-check_in", "-pk")
     filter_count = qs.count()
     period_sum = period_booking_summary(request.tenant, qs, status=status)
@@ -201,7 +215,19 @@ def reservation_create(request):
     form = ReservationForm(
         request.POST or None, tenant=request.tenant, hotel=hotel, initial=initial
     )
-    if request.method == "POST" and form.is_valid():
+    occ_data = request.POST if occupant_post_bound(request.POST) else None
+    occupants = occupant_formset(request.tenant, occ_data)
+    form_ok = form.is_valid()
+    if occupants.is_bound:
+        primary = form.cleaned_data.get("guest") if form_ok else None
+        if primary is not None:
+            occupants.exclude_guest_ids = {primary.pk}
+        else:
+            raw_guest = (request.POST.get("guest") or "").strip()
+            if raw_guest.isdigit():
+                occupants.exclude_guest_ids = {int(raw_guest)}
+    occupants_ok = (not occupants.is_bound) or occupants.is_valid()
+    if request.method == "POST" and form_ok and occupants_ok:
         try:
             reservation = create_reservation(
                 tenant=request.tenant,
@@ -223,6 +249,7 @@ def reservation_create(request):
                 referrer=form.cleaned_data.get("referrer"),
                 commission_percent=form.cleaned_data.get("commission_percent"),
                 emehmon_required=False,
+                occupants=occupants.cleaned_occupants() if occupants.is_bound else None,
             )
         except (AvailabilityError, ValidationError) as exc:
             messages.error(request, "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc))
@@ -232,7 +259,12 @@ def reservation_create(request):
     return render(
         request,
         "bookings/reservation_form.html",
-        {"form": form, "title": _("Yangi bron"), "hotel": hotel},
+        {
+            "form": form,
+            "occupant_formset": occupants,
+            "title": _("Yangi bron"),
+            "hotel": hotel,
+        },
     )
 
 
@@ -259,6 +291,21 @@ def reservation_detail(request, pk):
         from folio.services import emehmon_already_posted
 
         emehmon_paid = emehmon_already_posted(folio)
+    named_occupants = list(occupants_qs(reservation))
+    expected_people = occupant_expected_count(reservation)
+    missing_adults, missing_children = occupant_missing_slots(reservation)
+    occupants_missing = missing_adults + missing_children
+    occupant_fs = None
+    if (
+        reservation.status in {Reservation.Status.CONFIRMED, Reservation.Status.INQUIRY}
+        and occupants_missing
+    ):
+        occupant_fs = occupant_formset(request.tenant, extra=max(occupants_missing, 1))
+    missing_id_guests = [
+        occ.guest
+        for occ in named_occupants
+        if not guest_has_id_document(occ.guest)
+    ]
     return render(
         request,
         "bookings/reservation_detail.html",
@@ -271,6 +318,13 @@ def reservation_detail(request, pk):
             "emehmon_default": emehmon_default,
             "emehmon_paid": emehmon_paid,
             "emehmon_required": reservation.emehmon_required,
+            "occupants": named_occupants,
+            "occupants_expected": expected_people,
+            "occupants_missing": occupants_missing,
+            "missing_adults": missing_adults,
+            "missing_children": missing_children,
+            "occupant_formset": occupant_fs,
+            "missing_id_guests": missing_id_guests,
         },
     )
 
@@ -280,9 +334,19 @@ def reservation_detail(request, pk):
 def reservation_amend(request, pk):
     reservation = _get_reservation(request, pk)
     form = ReservationAmendForm(request.POST or None, reservation=reservation)
-    if request.method == "POST" and form.is_valid():
+    occ_data = request.POST if occupant_post_bound(request.POST) else None
+    occupants = occupant_formset_for_reservation(reservation, occ_data)
+    form_ok = form.is_valid()
+    if occupants.is_bound:
+        primary = form.cleaned_data.get("guest") if form_ok else reservation.guest
+        occupants.exclude_guest_ids = {primary.pk} if primary is not None else {reservation.guest_id}
+    occupants_ok = (not occupants.is_bound) or occupants.is_valid()
+    if request.method == "POST" and form_ok and occupants_ok:
+        data = dict(form.cleaned_data)
+        if occupants.is_bound:
+            data["occupants"] = occupants.cleaned_occupants()
         try:
-            apply_amendment(reservation, request.user, form.cleaned_data)
+            apply_amendment(reservation, request.user, data)
         except (AvailabilityError, ValidationError) as exc:
             messages.error(request, "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc))
         else:
@@ -291,7 +355,7 @@ def reservation_amend(request, pk):
     return render(
         request,
         "bookings/reservation_amend.html",
-        {"form": form, "reservation": reservation},
+        {"form": form, "reservation": reservation, "occupant_formset": occupants},
     )
 
 
@@ -305,6 +369,28 @@ def reservation_check_in(request, pk):
     emehmon_amount = request.POST.get("emehmon_amount")
     emehmon_method = (request.POST.get("emehmon_method") or "cash").strip()
     try:
+        if occupant_post_bound(request.POST):
+            occupant_fs = occupant_formset(request.tenant, request.POST)
+            occupant_fs.exclude_guest_ids = set(
+                occupants_qs(reservation).values_list("guest_id", flat=True)
+            )
+            if not occupant_fs.is_valid():
+                messages.error(
+                    request,
+                    _("Hamrohlar ma’lumotini tekshiring — ism yoki mavjud mehmonni tanlang."),
+                )
+                return _redirect_next(request, "bookings:detail", pk=pk)
+            existing = [
+                {"guest": occ.guest, "kind": occ.kind}
+                for occ in occupants_qs(reservation)
+                if not occ.is_primary
+            ]
+            sync_reservation_occupants(
+                reservation,
+                existing + occupant_fs.cleaned_occupants(),
+                primary_guest=reservation.guest,
+            )
+            reservation.refresh_from_db()
         check_in_reservation(
             reservation,
             request.user,
@@ -366,6 +452,12 @@ def reservation_check_in(request, pk):
         messages.info(
             request,
             _("Xona kir yoki tozalanmoqda. Tozalang yoki “Kir xona ruxsati” bilan joylashtiring."),
+        )
+    except MissingOccupantsError as exc:
+        messages.error(request, "; ".join(exc.messages))
+        messages.info(
+            request,
+            _("Pastdagi «Xonadagi mehmonlar» ga qolgan odamlarni kiriting, keyin qayta joylashtiring."),
         )
     except MissingGuestDocsError as exc:
         messages.error(request, "; ".join(exc.messages))
@@ -578,87 +670,105 @@ def walk_in(request):
     form = WalkInForm(
         request.POST or None, tenant=request.tenant, hotel=hotel, initial=initial
     )
-    if request.method == "POST" and form.is_valid():
+    occ_data = request.POST if occupant_post_bound(request.POST) else None
+    occupants = occupant_formset(request.tenant, occ_data)
+    occupants_ok = (not occupants.is_bound) or occupants.is_valid()
+    if request.method == "POST" and form.is_valid() and occupants_ok:
         data = form.cleaned_data
-        today = timezone.localdate()
-        guest = Guest.objects.create(
-            tenant=request.tenant,
-            first_name=data["first_name"],
-            last_name=data.get("last_name") or "",
-            phone=data.get("phone") or "",
-        )
-        room = data["room"]
-        allow_dirty = request.POST.get("allow_dirty") == "1"
-        allow_no_docs = request.POST.get("allow_no_docs") == "1"
-        doc_number = (data.get("doc_number") or "").strip()
-        try:
-            reservation = create_reservation(
-                tenant=request.tenant,
-                user=request.user,
-                property_obj=hotel,
-                guest=guest,
-                room_type=data.get("room_type") or room.room_type,
-                room=room,
-                nightly_rate=data.get("nightly_rate"),
-                currency=data.get("currency"),
-                check_in=today,
-                check_out=today + timedelta(days=data["nights"]),
-                adults=data["adults"],
-                source=Reservation.Source.WALKIN,
-                notes=data.get("notes") or "",
-                referrer=data.get("referrer"),
-                commission_percent=data.get("commission_percent"),
-                emehmon_required=bool(data.get("collect_emehmon")),
-            )
-            if doc_number:
-                from guests.models import GuestDocument
-
-                GuestDocument.objects.create(
-                    tenant=request.tenant,
-                    guest=guest,
-                    doc_type=data.get("doc_type") or GuestDocument.DocType.PASSPORT,
-                    number=doc_number,
-                )
-            check_in_reservation(
-                reservation,
-                request.user,
-                allow_dirty=allow_dirty,
-                allow_no_docs=allow_no_docs or not doc_number,
-            )
-            messages.success(request, _("Darhol joylash: %(code)s") % {"code": reservation.code})
-            from django.urls import reverse
-
-            url = reverse("bookings:detail", kwargs={"pk": reservation.pk})
-            if data.get("collect_emehmon"):
-                from folio.services import collect_emehmon_fee
-
-                try:
-                    collect_emehmon_fee(
-                        reservation,
-                        request.user,
-                        amount=data["emehmon_amount"],
-                        method=data.get("emehmon_method") or "cash",
-                    )
-                    messages.success(request, _("E-mehmon to‘lovi qabul qilindi."))
-                    return redirect(f"{url}?prompt_deposit=1")
-                except ValidationError as exc:
-                    messages.warning(
-                        request,
-                        "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
-                    )
-                    return redirect(f"{url}?prompt_emehmon=1&prompt_deposit=1")
-            return redirect(f"{url}?prompt_deposit=1")
-        except DirtyRoomError as exc:
-            messages.error(request, "; ".join(exc.messages))
-            messages.info(request, _("Kir xona ruxsati bilan qayta urinib ko‘ring."))
-        except MissingGuestDocsError as exc:
-            messages.error(request, "; ".join(exc.messages))
-            messages.info(request, _("Hujjat ruxsati yoki pasport raqamini kiriting."))
-        except (AvailabilityError, ValidationError) as exc:
+        companions = occupants.cleaned_occupants() if occupants.is_bound else []
+        if not occupants_complete(data["adults"], data.get("children") or 0, companions):
             messages.error(
-                request, "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc)
+                request,
+                _("Xonadagi barcha kishilarning ismi (va imkon bo‘lsa pasporti) kerak."),
             )
-    return render(request, "bookings/walk_in.html", {"form": form, "hotel": hotel})
+        else:
+            today = timezone.localdate()
+            guest = Guest.objects.create(
+                tenant=request.tenant,
+                first_name=data["first_name"],
+                last_name=data.get("last_name") or "",
+                phone=data.get("phone") or "",
+            )
+            room = data["room"]
+            allow_dirty = request.POST.get("allow_dirty") == "1"
+            allow_no_docs = request.POST.get("allow_no_docs") == "1"
+            doc_number = (data.get("doc_number") or "").strip()
+            try:
+                reservation = create_reservation(
+                    tenant=request.tenant,
+                    user=request.user,
+                    property_obj=hotel,
+                    guest=guest,
+                    room_type=data.get("room_type") or room.room_type,
+                    room=room,
+                    nightly_rate=data.get("nightly_rate"),
+                    currency=data.get("currency"),
+                    check_in=today,
+                    check_out=today + timedelta(days=data["nights"]),
+                    adults=data["adults"],
+                    children=data.get("children") or 0,
+                    source=Reservation.Source.WALKIN,
+                    notes=data.get("notes") or "",
+                    referrer=data.get("referrer"),
+                    commission_percent=data.get("commission_percent"),
+                    emehmon_required=bool(data.get("collect_emehmon")),
+                    occupants=companions,
+                )
+                if doc_number:
+                    from guests.models import GuestDocument
+
+                    GuestDocument.objects.create(
+                        tenant=request.tenant,
+                        guest=guest,
+                        doc_type=data.get("doc_type") or GuestDocument.DocType.PASSPORT,
+                        number=doc_number,
+                    )
+                check_in_reservation(
+                    reservation,
+                    request.user,
+                    allow_dirty=allow_dirty,
+                    allow_no_docs=allow_no_docs or not doc_number,
+                )
+                messages.success(request, _("Darhol joylash: %(code)s") % {"code": reservation.code})
+                from django.urls import reverse
+
+                url = reverse("bookings:detail", kwargs={"pk": reservation.pk})
+                if data.get("collect_emehmon"):
+                    from folio.services import collect_emehmon_fee
+
+                    try:
+                        collect_emehmon_fee(
+                            reservation,
+                            request.user,
+                            amount=data["emehmon_amount"],
+                            method=data.get("emehmon_method") or "cash",
+                        )
+                        messages.success(request, _("E-mehmon to‘lovi qabul qilindi."))
+                        return redirect(f"{url}?prompt_deposit=1")
+                    except ValidationError as exc:
+                        messages.warning(
+                            request,
+                            "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
+                        )
+                        return redirect(f"{url}?prompt_emehmon=1&prompt_deposit=1")
+                return redirect(f"{url}?prompt_deposit=1")
+            except DirtyRoomError as exc:
+                messages.error(request, "; ".join(exc.messages))
+                messages.info(request, _("Kir xona ruxsati bilan qayta urinib ko‘ring."))
+            except MissingOccupantsError as exc:
+                messages.error(request, "; ".join(exc.messages))
+            except MissingGuestDocsError as exc:
+                messages.error(request, "; ".join(exc.messages))
+                messages.info(request, _("Hujjat ruxsati yoki pasport raqamini kiriting."))
+            except (AvailabilityError, ValidationError) as exc:
+                messages.error(
+                    request, "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc)
+                )
+    return render(
+        request,
+        "bookings/walk_in.html",
+        {"form": form, "hotel": hotel, "occupant_formset": occupants},
+    )
 
 
 @role_required(*FRONT_OFFICE)
@@ -746,18 +856,8 @@ def calendar(request):
     today = timezone.localdate()
     start_s = request.GET.get("start")
     end_s = request.GET.get("end")
-    start = today
-    if start_s:
-        try:
-            start = date.fromisoformat(start_s)
-        except ValueError:
-            pass
-    custom_end = None
-    if end_s:
-        try:
-            custom_end = date.fromisoformat(end_s)
-        except ValueError:
-            pass
+    start = parse_iso_date(start_s) or today
+    custom_end = parse_iso_date(end_s)
     view = _calendar_view_mode(request)
     if view == "custom" and custom_end is None:
         custom_end = start + timedelta(days=13)
