@@ -6,7 +6,42 @@ from django.utils.translation import gettext_lazy as _
 from .models import Company, Guest, GuestDocument, GuestNote
 
 
+def primary_id_document(guest):
+    """Latest passport or ID card for a guest profile."""
+    if guest is None or not guest.pk:
+        return None
+    return (
+        guest.documents.filter(
+            doc_type__in=[GuestDocument.DocType.PASSPORT, GuestDocument.DocType.ID_CARD]
+        )
+        .order_by("-id")
+        .first()
+    )
+
+
 class GuestForm(forms.ModelForm):
+    doc_type = forms.ChoiceField(
+        required=False,
+        label=_("Hujjat turi"),
+        choices=[
+            (GuestDocument.DocType.PASSPORT, _("Pasport")),
+            (GuestDocument.DocType.ID_CARD, _("ID karta")),
+        ],
+        initial=GuestDocument.DocType.PASSPORT,
+    )
+    doc_number = forms.CharField(
+        required=False,
+        max_length=64,
+        label=_("Pasport / ID raqami"),
+        widget=forms.TextInput(attrs={"placeholder": "AA 1234567", "autocomplete": "off"}),
+    )
+    issued_country = forms.CharField(
+        required=False,
+        max_length=80,
+        label=_("Berilgan mamlakat"),
+        widget=forms.TextInput(attrs={"placeholder": "UZ"}),
+    )
+
     class Meta:
         model = Guest
         fields = (
@@ -36,8 +71,67 @@ class GuestForm(forms.ModelForm):
 
     def __init__(self, *args, tenant=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.tenant = tenant
         if tenant is not None:
             self.fields["company"].queryset = Company.objects.filter(tenant=tenant, is_active=True)
+        # Fuqarolikdan keyin pasport — tahrirda ham ko‘rinsin.
+        ordered = [
+            "first_name",
+            "last_name",
+            "phone",
+            "email",
+            "nationality",
+            "doc_type",
+            "doc_number",
+            "issued_country",
+            "company",
+            "is_vip",
+            "is_blacklisted",
+            "blacklist_reason",
+            "notes",
+        ]
+        self.order_fields(ordered)
+
+        doc = primary_id_document(self.instance) if self.instance and self.instance.pk else None
+        if doc is not None and not self.is_bound:
+            self.fields["doc_type"].initial = doc.doc_type
+            self.fields["doc_number"].initial = doc.number
+            self.fields["issued_country"].initial = doc.issued_country or "UZ"
+        elif not self.is_bound:
+            self.fields["issued_country"].initial = "UZ"
+
+    def clean_doc_number(self):
+        return (self.cleaned_data.get("doc_number") or "").strip()
+
+    def save(self, commit=True):
+        guest = super().save(commit=commit)
+        if commit:
+            self.save_identity_document(guest)
+        return guest
+
+    def save_identity_document(self, guest):
+        number = (self.cleaned_data.get("doc_number") or "").strip()
+        if not number:
+            return None
+        doc_type = (
+            self.cleaned_data.get("doc_type") or GuestDocument.DocType.PASSPORT
+        )
+        issued = (self.cleaned_data.get("issued_country") or "").strip()
+        tenant = self.tenant or guest.tenant
+        doc = primary_id_document(guest)
+        if doc is None:
+            return GuestDocument.objects.create(
+                tenant=tenant,
+                guest=guest,
+                doc_type=doc_type,
+                number=number,
+                issued_country=issued,
+            )
+        doc.doc_type = doc_type
+        doc.number = number
+        doc.issued_country = issued
+        doc.save(update_fields=["doc_type", "number", "issued_country", "updated_at"])
+        return doc
 
 
 class GuestQuickForm(forms.Form):

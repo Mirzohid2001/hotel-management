@@ -96,6 +96,7 @@ def guest_create(request):
         guest = form.save(commit=False)
         guest.tenant = request.tenant
         guest.save()
+        form.save_identity_document(guest)
         messages.success(request, _("Mehmon qo‘shildi."))
         return redirect("guests:detail", pk=guest.pk)
     return render(
@@ -189,7 +190,13 @@ def guest_edit(request, pk):
         messages.success(request, _("Mehmon yangilandi."))
         return redirect("guests:detail", pk=guest.pk)
     return render(
-        request, "guests/guest_form.html", {"form": form, "title": _("Mehmonni tahrirlash")}
+        request,
+        "guests/guest_form.html",
+        {
+            "form": form,
+            "title": _("Mehmonni tahrirlash"),
+            "cancel_url": reverse("guests:detail", args=[guest.pk]),
+        },
     )
 
 
