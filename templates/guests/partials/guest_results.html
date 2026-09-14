@@ -48,6 +48,8 @@
       <span class="expense-actions row-actions">
         {% if g.in_house_reservation_id %}
         <a class="btn btn-sm" href="{% url 'folio:detail' g.in_house_reservation_id %}">{% trans "Folio" %}</a>
+        {% elif g.active_reservation_id %}
+        <a class="btn btn-sm" href="{% url 'bookings:detail' g.active_reservation_id %}">{% trans "Bron" %}</a>
         {% elif not g.is_blacklisted %}
         <a class="btn btn-sm" href="{% url 'bookings:create' %}?guest={{ g.pk }}">{% trans "Bron" %}</a>
         {% endif %}

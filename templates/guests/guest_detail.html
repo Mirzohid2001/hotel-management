@@ -27,6 +27,8 @@
 <div class="guest-detail-cta">
   {% if in_house_reservation_id %}
   <a class="btn" href="{% url 'folio:detail' in_house_reservation_id %}">{% trans "Folio" %}</a>
+  {% elif active_reservation_id %}
+  <a class="btn" href="{% url 'bookings:detail' active_reservation_id %}">{% trans "Bron" %}</a>
   {% elif not guest.is_blacklisted %}
   <a class="btn" href="{{ new_booking_url }}">{% trans "Bron" %}</a>
   {% endif %}

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
@@ -414,6 +415,44 @@ class OccupantStayTests(TestCase):
         self.assertTrue(Guest.objects.filter(pk=self.companion.pk).exists())
         self.assertEqual(
             response.url, reverse("guests:detail", args=[self.companion.pk])
+        )
+
+    def test_sync_does_not_inflate_adults_or_keep_autofill_extras(self):
+        """Hidden autofilled companion rows must not change room price headcount."""
+        reservation = self._res(adults=1, children=0, nightly_rate=Decimal("100000"))
+        total_before = reservation.total_amount
+        extras = [
+            {
+                "first_name": "Junko",
+                "last_name": "Kato",
+                "kind": ReservationOccupant.Kind.ADULT,
+                "nationality": "UZ",
+            }
+            for _ in range(5)
+        ]
+        sync_reservation_occupants(reservation, extras)
+        reservation.refresh_from_db()
+        self.assertEqual(reservation.adults, 1)
+        self.assertEqual(reservation.children, 0)
+        self.assertEqual(reservation.occupants.count(), 1)
+        self.assertEqual(reservation.total_amount, total_before)
+        self.assertEqual(
+            Guest.objects.filter(first_name="Junko", last_name="Kato").count(), 0
+        )
+
+    def test_companion_list_opens_existing_booking_not_new(self):
+        reservation = self._res(
+            adults=2,
+            occupants=[{"guest": self.companion, "kind": ReservationOccupant.Kind.ADULT}],
+        )
+        response = self.client.get(reverse("guests:list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response, reverse("bookings:detail", args=[reservation.pk])
+        )
+        self.assertNotContains(
+            response,
+            reverse("bookings:create") + f"?guest={self.companion.pk}",
         )
 
     def test_reservation_search_matches_companion_name(self):

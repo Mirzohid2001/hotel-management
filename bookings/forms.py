@@ -1051,19 +1051,30 @@ class OccupantForm(forms.Form):
         required=False,
         max_length=120,
         label=_("Ism"),
-        widget=forms.TextInput(attrs={"autocomplete": "off"}),
+        widget=forms.TextInput(
+            attrs={"autocomplete": "off", "data-lpignore": "true", "data-1p-ignore": "true"}
+        ),
     )
     last_name = forms.CharField(
         required=False,
         max_length=120,
         label=_("Familiya"),
-        widget=forms.TextInput(attrs={"autocomplete": "off"}),
+        widget=forms.TextInput(
+            attrs={"autocomplete": "off", "data-lpignore": "true", "data-1p-ignore": "true"}
+        ),
     )
     phone = forms.CharField(
         required=False,
         max_length=32,
         label=_("Telefon"),
-        widget=forms.TextInput(attrs={"autocomplete": "off", "inputmode": "tel"}),
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "off",
+                "inputmode": "tel",
+                "data-lpignore": "true",
+                "data-1p-ignore": "true",
+            }
+        ),
     )
     nationality = forms.CharField(
         required=False,

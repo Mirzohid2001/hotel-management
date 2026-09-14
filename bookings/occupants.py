@@ -186,11 +186,14 @@ def sync_reservation_occupants(reservation, companions=None, *, primary_guest=No
         )
 
     companions = list(companions or [])
+    max_extra = max(
+        0, int(reservation.adults or 1) + int(reservation.children or 0) - 1
+    )
     resolved = []
     seen = {reservation.guest_id}
-    extra_adults = 0
-    extra_children = 0
     for row in companions:
+        if len(resolved) >= max_extra:
+            break
         # Bo‘sh formset qatorlari (faqat UZ default) — e’tiborsiz.
         if not row:
             continue
@@ -211,10 +214,6 @@ def sync_reservation_occupants(reservation, companions=None, *, primary_guest=No
         seen.add(guest.pk)
         kind = _kind_of(row)
         resolved.append((guest, kind))
-        if kind == ReservationOccupant.Kind.CHILD:
-            extra_children += 1
-        else:
-            extra_adults += 1
 
     reservation.occupants.all().delete()
     ReservationOccupant.objects.create(
@@ -235,9 +234,7 @@ def sync_reservation_occupants(reservation, companions=None, *, primary_guest=No
             sort_order=index,
         )
 
-    reservation.adults = max(int(reservation.adults or 1), 1 + extra_adults)
-    reservation.children = max(int(reservation.children or 0), extra_children)
-    reservation.save(update_fields=["guest", "adults", "children", "updated_at"])
+    reservation.save(update_fields=["guest", "updated_at"])
     return reservation
 
 

@@ -44,6 +44,15 @@ def guest_list(request):
         tenant_id=request.tenant.id,
         status=Reservation.Status.CHECKED_IN,
     )
+    active_qs = Reservation.objects.filter(
+        Q(guest_id=OuterRef("pk")) | Q(occupants__guest_id=OuterRef("pk")),
+        tenant_id=request.tenant.id,
+        status__in=[
+            Reservation.Status.INQUIRY,
+            Reservation.Status.CONFIRMED,
+            Reservation.Status.CHECKED_IN,
+        ],
+    )
     any_res_qs = Reservation.objects.filter(
         Q(guest_id=OuterRef("pk")) | Q(occupants__guest_id=OuterRef("pk")),
         tenant_id=request.tenant.id,
@@ -51,6 +60,7 @@ def guest_list(request):
     guests = guests.annotate(
         is_in_house=Exists(in_house_qs),
         in_house_reservation_id=Subquery(in_house_qs.order_by("-check_in").values("pk")[:1]),
+        active_reservation_id=Subquery(active_qs.order_by("-check_in").values("pk")[:1]),
         has_reservation=Exists(any_res_qs),
     )
 
@@ -164,6 +174,20 @@ def guest_detail(request, pk):
         .values_list("pk", flat=True)
         .first()
     )
+    active_reservation_id = (
+        Reservation.objects.filter(
+            tenant=request.tenant,
+            status__in=[
+                Reservation.Status.INQUIRY,
+                Reservation.Status.CONFIRMED,
+                Reservation.Status.CHECKED_IN,
+            ],
+        )
+        .filter(Q(guest=guest) | Q(occupants__guest=guest))
+        .order_by("-check_in")
+        .values_list("pk", flat=True)
+        .first()
+    )
     return render(
         request,
         "guests/guest_detail.html",
@@ -174,6 +198,7 @@ def guest_detail(request, pk):
             "reservations": reservations,
             "can_delete": not reservations,
             "in_house_reservation_id": in_house_reservation_id,
+            "active_reservation_id": active_reservation_id,
             "new_booking_url": f"{reverse('bookings:create')}?guest={guest.pk}",
         },
     )

@@ -35,27 +35,58 @@
     );
   }
 
+  function clearRow(row) {
+    row.querySelectorAll("input, select, textarea").forEach(function (el) {
+      if (!el.name) return;
+      if (el.name.indexOf("-DELETE") !== -1) {
+        if (el.type === "checkbox") el.checked = false;
+        return;
+      }
+      if (el.name.indexOf("-kind") !== -1) {
+        el.value = "adult";
+        return;
+      }
+      if (el.type === "checkbox" || el.type === "radio") {
+        el.checked = false;
+        return;
+      }
+      el.value = "";
+    });
+  }
+
   function sync(root) {
     var slots = extraSlots(root);
     var rows = root.querySelectorAll("[data-occupant-row]");
     var visible = 0;
+    var needed = slots.extraAdults + slots.extraChildren;
     rows.forEach(function (row, i) {
       var kind = row.querySelector('[name$="-kind"]');
-      var show = false;
-      if (i < slots.extraAdults) {
-        show = true;
-        if (kind && !rowFilled(row)) kind.value = "adult";
-      } else if (i < slots.extraAdults + slots.extraChildren) {
-        show = true;
-        if (kind && !rowFilled(row)) kind.value = "child";
+      var show = i < needed;
+      if (show) {
+        if (kind && !rowFilled(row)) {
+          kind.value = i < slots.extraAdults ? "adult" : "child";
+        }
+      } else {
+        // Yashirin qator — brauzer autofill qoldiqlarini tozalash
+        clearRow(row);
       }
-      if (rowFilled(row)) show = true;
       row.hidden = !show;
       row.classList.toggle("is-visible", show);
       if (show) visible += 1;
     });
     var empty = root.querySelector("[data-occupant-empty]");
     if (empty) empty.hidden = visible > 0;
+  }
+
+  function clearHiddenBeforeSubmit(form) {
+    form.querySelectorAll("[data-occupant-root]").forEach(function (root) {
+      sync(root);
+      root.querySelectorAll("[data-occupant-row]").forEach(function (row) {
+        if (row.hidden || !row.classList.contains("is-visible")) {
+          clearRow(row);
+        }
+      });
+    });
   }
 
   function bind(root) {
@@ -73,6 +104,12 @@
           el.addEventListener("input", run);
         }
       });
+      if (!form._occupantSubmitBound) {
+        form._occupantSubmitBound = true;
+        form.addEventListener("submit", function () {
+          clearHiddenBeforeSubmit(form);
+        });
+      }
     }
     run();
   }
