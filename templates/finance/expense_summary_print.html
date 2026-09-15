@@ -1,0 +1,171 @@
+{% load money_fmt i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "Rasxodlar — umumiy chek" %}</title>
+  <style>
+    :root {
+      --brand: #c04a00;
+      --ink: #1a1410;
+      --muted: #7a7168;
+      --line: #ddd4c8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      max-width: 720px;
+      margin: 1.5rem auto;
+      padding: 0 1rem 2.5rem;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    h1 { font-size: 1.3rem; color: var(--brand); margin: 0 0 0.2rem; }
+    .muted { color: var(--muted); }
+    .head {
+      border-bottom: 2px solid var(--brand);
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .meta { margin: 0.15rem 0; font-size: 0.95rem; }
+    .actions { margin: 0 0 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button, .actions a {
+      background: var(--brand);
+      color: #fff;
+      border: 0;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: none;
+    }
+    .actions a.ghost {
+      background: transparent;
+      color: var(--brand);
+      border: 1px solid var(--brand);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      font-variant-numeric: tabular-nums;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.45rem 0.35rem;
+      border-bottom: 1px dashed var(--line);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+    td.amt, th.amt { text-align: right; white-space: nowrap; }
+    tfoot td {
+      border-bottom: 0;
+      border-top: 2px solid var(--ink);
+      font-weight: 700;
+      padding-top: 0.65rem;
+    }
+    tfoot .amt { color: var(--brand); font-size: 1.05rem; }
+    .empty { margin: 1.5rem 0; color: var(--muted); }
+    .signs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 2.25rem;
+    }
+    .sign {
+      border-top: 1px solid var(--line);
+      padding-top: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .sign .role { font-weight: 700; margin-bottom: 1.5rem; }
+    @media print {
+      .actions { display: none !important; }
+      body { margin: 0; max-width: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button type="button" onclick="window.print()">{% trans "Chop etish" %}</button>
+    <a class="ghost" href="{% url 'finance:list' %}?{{ request.GET.urlencode }}">{% trans "Orqaga" %}</a>
+  </div>
+
+  <header class="head">
+    <h1>{% trans "Rasxodlar — umumiy chek" %}</h1>
+    <p class="meta"><strong>{{ tenant.name }}</strong>{% if hotel %} · {{ hotel.display_label|default:hotel.name }}{% endif %}</p>
+    <p class="meta">
+      {% if date_from or date_to %}
+      {% trans "Davr" %}:
+      {% if date_from %}{{ date_from|date:"d.m.Y" }}{% else %}…{% endif %}
+      →
+      {% if date_to %}{{ date_to|date:"d.m.Y" }}{% else %}…{% endif %}
+      {% else %}
+      {% trans "Davr" %}: {% trans "Barcha sanalar" %}
+      {% endif %}
+      · {{ count }} {% trans "ta yozuv" %}
+    </p>
+    {% if status or q %}
+    <p class="meta muted">
+      {% if status %}{% trans "Holat" %}: {{ status_label }} · {% endif %}
+      {% if q %}{% trans "Qidiruv" %}: «{{ q }}»{% endif %}
+    </p>
+    {% endif %}
+    <p class="meta muted">
+      {% trans "Chop etilgan" %}: {{ printed_at|date:"d.m.Y H:i" }}
+      {% if printed_by %}· {{ printed_by }}{% endif %}
+    </p>
+  </header>
+
+  {% if expenses %}
+  <table>
+    <thead>
+      <tr>
+        <th>{% trans "Sana" %}</th>
+        <th>{% trans "Nima" %}</th>
+        <th>{% trans "Yetkazib beruvchi" %}</th>
+        <th>{% trans "Usul" %}</th>
+        <th>{% trans "Holat" %}</th>
+        <th class="amt">{% trans "Summa" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in expenses %}
+      <tr>
+        <td>{{ e.expense_date|date:"d.m.Y" }}</td>
+        <td>
+          {{ e.title }}
+          <span class="muted" style="display:block;font-size:0.78rem">{{ e.category.name }}</span>
+        </td>
+        <td>{% if e.vendor %}{{ e.vendor.name }}{% else %}—{% endif %}</td>
+        <td>{{ e.get_payment_method_display }}</td>
+        <td>{{ e.get_status_display }}</td>
+        <td class="amt">{{ e.amount|money }} {{ e.currency }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5">{% trans "Jami" %} ({{ currency }})</td>
+        <td class="amt">{{ total|money }} {{ currency }}</td>
+      </tr>
+    </tfoot>
+  </table>
+  {% if truncated %}
+  <p class="muted">{% trans "Faqat birinchi 500 ta yozuv — filtrni toraytiring." %}</p>
+  {% endif %}
+  {% else %}
+  <p class="empty">{% trans "Filtr bo‘yicha rasxod yo‘q." %}</p>
+  {% endif %}
+
+  <div class="signs">
+    <div class="sign">
+      <div class="role">{% trans "Hisobchi" %}</div>
+      <div>________________</div>
+    </div>
+    <div class="sign">
+      <div class="role">{% trans "Rahbar" %}</div>
+      <div>________________</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -86,6 +86,12 @@
     <span class="expense-summary-lbl">{% trans "Jami summa" %}</span>
     <strong class="expense-summary-val money">{{ filter_total|money }}</strong>
   </div>
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "Hisobot" %}</span>
+    <a class="btn btn-sm" href="{% url 'finance:summary_print' %}{% if chek_query %}?{{ chek_query }}{% endif %}" target="_blank" rel="noopener">
+      {% trans "Umumiy chek" %}
+    </a>
+  </div>
 </div>
 
 <section class="section-panel expense-list-panel">

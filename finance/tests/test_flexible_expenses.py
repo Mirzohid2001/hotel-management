@@ -59,6 +59,25 @@ class FlexibleExpenseTests(TestCase):
         listing = self.client.get(reverse("finance:list"))
         self.assertContains(listing, url)
 
+    def test_expense_summary_print(self):
+        self._expense(title="Produkta", amount=Decimal("250000"), status=Expense.Status.PAID)
+        self._expense(
+            title="Gusht",
+            amount=Decimal("200000"),
+            status=Expense.Status.PAID,
+            vendor=self.vendor,
+        )
+        url = reverse("finance:summary_print")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "umumiy chek")
+        self.assertContains(resp, "Produkta")
+        self.assertContains(resp, "Gusht")
+        self.assertContains(resp, "450 000")
+        listing = self.client.get(reverse("finance:list"))
+        self.assertContains(listing, "Umumiy chek")
+        self.assertContains(listing, url)
+
     def test_edit_draft_expense(self):
         expense = self._expense()
         url = reverse("finance:edit", args=[expense.pk])

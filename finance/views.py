@@ -68,9 +68,8 @@ def _parse_date(value: str):
     return parse_user_date(value)
 
 
-@feature_required("expenses")
-@role_required(*FINANCE)
-def expense_list(request):
+def _filtered_expenses(request):
+    """List / umumiy chek uchun bir xil filtr."""
     status = request.GET.get("status", "")
     q = (request.GET.get("q") or "").strip()
     category_id = request.GET.get("category", "")
@@ -80,7 +79,7 @@ def expense_list(request):
     date_to = _parse_date(request.GET.get("date_to", ""))
 
     expenses = Expense.objects.filter(tenant=request.tenant).select_related(
-        "category", "vendor", "approved_by", "rejected_by", "paid_by", "hotel"
+        "category", "vendor", "approved_by", "rejected_by", "paid_by", "hotel", "created_by"
     )
     hotel = getattr(request, "active_property", None)
     if hotel is not None:
@@ -105,27 +104,81 @@ def expense_list(request):
     if date_to:
         expenses = expenses.filter(expense_date__lte=date_to)
 
+    return expenses.order_by("-expense_date", "-id"), {
+        "status": status,
+        "q": q,
+        "category_id": category_id,
+        "vendor_id": vendor_id,
+        "method": method,
+        "date_from": date_from,
+        "date_to": date_to,
+        "hotel": hotel,
+    }
+
+
+@feature_required("expenses")
+@role_required(*FINANCE)
+def expense_list(request):
+    expenses, meta = _filtered_expenses(request)
     total = expenses.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
     count = expenses.count()
+    date_from = meta["date_from"]
+    date_to = meta["date_to"]
 
     return render(
         request,
         "finance/expense_list.html",
         {
             "expenses": expenses[:200],
-            "status": status,
+            "status": meta["status"],
             "statuses": Expense.Status.choices,
-            "q": q,
-            "category_id": category_id,
-            "vendor_id": vendor_id,
-            "method": method,
+            "q": meta["q"],
+            "category_id": meta["category_id"],
+            "vendor_id": meta["vendor_id"],
+            "method": meta["method"],
             "methods": Expense.PaymentMethod.choices,
-            "date_from": date_from.isoformat() if date_from else "",
-            "date_to": date_to.isoformat() if date_to else "",
+            "date_from": date_from.strftime("%d.%m.%Y") if date_from else "",
+            "date_to": date_to.strftime("%d.%m.%Y") if date_to else "",
             "categories": ExpenseCategory.objects.filter(tenant=request.tenant).order_by("name"),
             "vendors": Vendor.objects.filter(tenant=request.tenant).order_by("name"),
             "filter_total": total,
             "filter_count": count,
+            "chek_query": request.GET.urlencode(),
+        },
+    )
+
+
+@feature_required("expenses")
+@role_required(*FINANCE)
+def expense_summary_print(request):
+    """Filtrlangan rasxodlar — umumiy chek."""
+    expenses, meta = _filtered_expenses(request)
+    rows = list(expenses[:500])
+    total = sum((e.amount_base or e.amount or Decimal("0")) for e in rows)
+    date_from = meta["date_from"]
+    date_to = meta["date_to"]
+    if date_from is None and rows:
+        date_from = min(e.expense_date for e in rows)
+    if date_to is None and rows:
+        date_to = max(e.expense_date for e in rows)
+    return render(
+        request,
+        "finance/expense_summary_print.html",
+        {
+            "expenses": rows,
+            "total": total,
+            "count": len(rows),
+            "truncated": request.tenant,
+            "hotel": meta["hotel"],
+            "currency": request.tenant.currency or "UZS",
+            "date_from": date_from,
+            "date_to": date_to,
+            "status": meta["status"],
+            "status_label": dict(Expense.Status.choices).get(meta["status"], meta["status"]),
+            "q": meta["q"],
+            "printed_at": timezone.now(),
+            "printed_by": request.user.get_full_name() or request.user.get_username(),
+            "truncated": len(rows) >= 500,
         },
     )
 
