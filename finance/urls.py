@@ -7,6 +7,7 @@ app_name = "finance"
 urlpatterns = [
     path("", views.expense_list, name="list"),
     path("new/", views.expense_create, name="create"),
+    path("<int:pk>/chek/", views.expense_print, name="print"),
     path("<int:pk>/edit/", views.expense_edit, name="edit"),
     path("<int:pk>/approve/", views.expense_approve, name="approve"),
     path("<int:pk>/reject/", views.expense_reject, name="reject"),

@@ -38,6 +38,27 @@ class FlexibleExpenseTests(TestCase):
         data.update(kwargs)
         return Expense.objects.create(**data)
 
+    def test_expense_print_receipt(self):
+        expense = self._expense(
+            title="Produkta",
+            amount=Decimal("250000"),
+            vendor=self.vendor,
+            status=Expense.Status.PAID,
+            payment_method=Expense.PaymentMethod.CASH,
+            paid_by=self.user,
+            paid_at=timezone.now(),
+        )
+        url = reverse("finance:print", args=[expense.pk])
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Rasxod cheki")
+        self.assertContains(resp, "Produkta")
+        self.assertContains(resp, "UzGas")
+        self.assertContains(resp, "RX-")
+        self.assertContains(resp, "Chop etish")
+        listing = self.client.get(reverse("finance:list"))
+        self.assertContains(listing, url)
+
     def test_edit_draft_expense(self):
         expense = self._expense()
         url = reverse("finance:edit", args=[expense.pk])

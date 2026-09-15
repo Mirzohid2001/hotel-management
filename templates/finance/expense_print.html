@@ -1,0 +1,179 @@
+{% load money_fmt i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "Rasxod cheki" %} · {{ expense.title }}</title>
+  <style>
+    :root {
+      --brand: #c04a00;
+      --ink: #1a1410;
+      --muted: #7a7168;
+      --line: #ddd4c8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      max-width: 520px;
+      margin: 1.5rem auto;
+      padding: 0 1rem 2rem;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    h1 { font-size: 1.25rem; color: var(--brand); margin: 0 0 0.25rem; }
+    .muted { color: var(--muted); }
+    .head {
+      border-bottom: 2px solid var(--brand);
+      padding-bottom: 0.65rem;
+      margin-bottom: 1rem;
+    }
+    .meta { margin: 0.15rem 0; font-size: 0.92rem; }
+    .amount {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      margin: 0.75rem 0 0.15rem;
+    }
+    .amount-note { font-size: 0.85rem; margin: 0 0 0.75rem; }
+    dl {
+      display: grid;
+      grid-template-columns: 8.5rem 1fr;
+      gap: 0.35rem 0.75rem;
+      margin: 1rem 0;
+      font-size: 0.95rem;
+    }
+    dt { color: var(--muted); }
+    dd { margin: 0; }
+    .status {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border: 1px solid var(--brand);
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--brand);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .actions { margin: 0 0 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button, .actions a {
+      background: var(--brand);
+      color: #fff;
+      border: 0;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: none;
+    }
+    .actions a.ghost {
+      background: transparent;
+      color: var(--brand);
+      border: 1px solid var(--brand);
+    }
+    .signs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+    .sign {
+      border-top: 1px solid var(--line);
+      padding-top: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .sign .role { font-weight: 700; margin-bottom: 1.4rem; }
+    @media print {
+      .actions { display: none !important; }
+      body { margin: 0; max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button type="button" onclick="window.print()">{% trans "Chop etish" %}</button>
+    <a class="ghost" href="{% url 'finance:list' %}">{% trans "Orqaga" %}</a>
+  </div>
+
+  <header class="head">
+    <h1>{% trans "Rasxod cheki" %}</h1>
+    <p class="meta"><strong>{{ tenant.name }}</strong>{% if hotel %} · {{ hotel.display_label|default:hotel.name }}{% endif %}</p>
+    <p class="meta muted">
+      {% trans "Chop etilgan" %}: {{ printed_at|date:"d.m.Y H:i" }}
+      {% if printed_by %}· {{ printed_by }}{% endif %}
+    </p>
+  </header>
+
+  <p class="amount">{{ expense.amount|money }} {{ currency }}</p>
+  {% if expense.currency != tenant.currency and expense.amount_base %}
+  <p class="amount-note muted">≈ {{ expense.amount_base|money }} {{ tenant.currency }}</p>
+  {% endif %}
+
+  <dl>
+    <dt>{% trans "Nima" %}</dt>
+    <dd>{{ expense.title }}</dd>
+    <dt>{% trans "Sana" %}</dt>
+    <dd>{{ expense.expense_date|date:"d.m.Y" }}</dd>
+    <dt>{% trans "Holat" %}</dt>
+    <dd><span class="status">{{ expense.get_status_display }}</span></dd>
+    <dt>{% trans "Kategoriya" %}</dt>
+    <dd>{{ expense.category.name }}</dd>
+    {% if expense.vendor %}
+    <dt>{% trans "Yetkazib beruvchi" %}</dt>
+    <dd>{{ expense.vendor.name }}</dd>
+    {% endif %}
+    <dt>{% trans "To‘lov usuli" %}</dt>
+    <dd>{{ expense.get_payment_method_display }}</dd>
+    <dt>{% trans "Moliyalashtirish" %}</dt>
+    <dd>
+      {% if expense.funding == 'reinvestment' %}
+      {% trans "Reinvestitsiya (ulushdan)" %}
+      {% else %}
+      {% trans "Joriy (sof foydadan)" %}
+      {% endif %}
+    </dd>
+    {% if expense.paid_by %}
+    <dt>{% trans "To‘lovchi" %}</dt>
+    <dd>{{ expense.paid_by.get_full_name|default:expense.paid_by.get_username }}</dd>
+    {% endif %}
+    {% if expense.paid_at %}
+    <dt>{% trans "To‘langan" %}</dt>
+    <dd>{{ expense.paid_at|date:"d.m.Y H:i" }}</dd>
+    {% endif %}
+    {% if expense.approved_by %}
+    <dt>{% trans "Tasdiqlagan" %}</dt>
+    <dd>{{ expense.approved_by.get_full_name|default:expense.approved_by.get_username }}</dd>
+    {% endif %}
+    {% if expense.created_by %}
+    <dt>{% trans "Yaratgan" %}</dt>
+    <dd>{{ expense.created_by.get_full_name|default:expense.created_by.get_username }}</dd>
+    {% endif %}
+    {% if expense.maintenance_ticket %}
+    <dt>{% trans "Ta’mir arizasi" %}</dt>
+    <dd>
+      {{ expense.maintenance_ticket.title }}
+      {% if expense.maintenance_ticket.room %}
+      · {% trans "Xona" %} {{ expense.maintenance_ticket.room.number }}
+      {% endif %}
+    </dd>
+    {% endif %}
+    {% if expense.notes %}
+    <dt>{% trans "Izoh" %}</dt>
+    <dd>{{ expense.notes }}</dd>
+    {% endif %}
+    <dt>{% trans "№" %}</dt>
+    <dd>RX-{{ expense.pk }}</dd>
+  </dl>
+
+  <div class="signs">
+    <div class="sign">
+      <div class="role">{% trans "Berdi" %}</div>
+      <div>________________</div>
+    </div>
+    <div class="sign">
+      <div class="role">{% trans "Qabul qildi" %}</div>
+      <div>________________</div>
+    </div>
+  </div>
+</body>
+</html>

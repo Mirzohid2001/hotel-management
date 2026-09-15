@@ -156,6 +156,41 @@ def expense_create(request):
 
 @feature_required("expenses")
 @role_required(*FINANCE)
+def expense_print(request, pk):
+    """Bitta rasxod cheki — chop etish / PDF."""
+    expense = get_object_or_404(
+        Expense.objects.select_related(
+            "category",
+            "vendor",
+            "hotel",
+            "created_by",
+            "approved_by",
+            "paid_by",
+            "maintenance_ticket",
+            "maintenance_ticket__room",
+        ),
+        pk=pk,
+        tenant=request.tenant,
+    )
+    if _expense_branch_blocked(request, expense):
+        return redirect("finance:list")
+    hotel = getattr(request, "active_property", None)
+    return render(
+        request,
+        "finance/expense_print.html",
+        {
+            "expense": expense,
+            "tenant": request.tenant,
+            "hotel": expense.hotel or hotel,
+            "currency": expense.currency or request.tenant.currency or "UZS",
+            "printed_at": timezone.now(),
+            "printed_by": request.user.get_full_name() or request.user.get_username(),
+        },
+    )
+
+
+@feature_required("expenses")
+@role_required(*FINANCE)
 @require_http_methods(["GET", "POST"])
 def expense_edit(request, pk):
     expense = get_object_or_404(Expense, pk=pk, tenant=request.tenant)
