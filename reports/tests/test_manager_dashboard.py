@@ -27,23 +27,7 @@ class ManagerDashboardTests(TestCase):
         self.assertContains(resp, "Kun yopish rejasi")
         self.assertContains(resp, reverse("reports:pnl"))
 
-    def test_manager_sees_finance_analytics(self):
-        """Menejer P&L / analitika ko‘radi; xodimlar bo‘limi yo‘q."""
+    def test_manager_cannot_open_dashboard(self):
         resp = self._dashboard(self.manager)
-        self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "7 kunlik tushum")
-        self.assertContains(resp, "Kun yopish rejasi")
-        self.assertContains(resp, reverse("reports:pnl"))
-        self.assertContains(resp, "Foyda/zarar")
-
-    def test_manager_sees_ops_panel(self):
-        resp = self._dashboard(self.manager)
-        self.assertContains(resp, "Bugungi holat")
-        self.assertContains(resp, reverse("bookings:board"))
-        self.assertContains(resp, "Tez kirish")
-
-    def test_manager_sees_arrivals_departures(self):
-        resp = self._dashboard(self.manager)
-        self.assertContains(resp, "Bugungi kelishlar")
-        self.assertContains(resp, "Bugungi ketishlar")
-        self.assertContains(resp, "Mehmonxonada")
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, reverse("bookings:board"))

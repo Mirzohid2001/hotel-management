@@ -62,7 +62,9 @@
     </div>
     <div class="board-toolbar-actions">
       <a class="btn-ghost btn-sm" href="{% url 'bookings:calendar' %}?start={{ day|date:'Y-m-d' }}">{% trans "Shaxmatka (Taqvim)" %}</a>
+      {% if can_manage_bookings %}
       <a class="btn btn-sm" href="{% url 'bookings:walk_in' %}">{% trans "Darhol joylash" %}</a>
+      {% endif %}
     </div>
   </div>
 
@@ -87,11 +89,16 @@
             </div>
           </div>
           <div class="guest">
+            {% if can_manage_bookings %}
             <a href="{% url 'bookings:detail' r.pk %}">{{ r.guest.full_name }}</a>
+            {% else %}
+            <span>{{ r.guest.full_name }}</span>
+            {% endif %}
             {% if r.room_type %}<span class="muted">· {{ r.room_type.name }}</span>{% endif %}
             {% if r.guest.is_blacklisted %}<span class="badge badge-blacklist">QR</span>{% endif %}
             {% if r.guest.is_vip %}<span class="badge badge-vip">VIP</span>{% endif %}
             <div class="meta room-code">{{ r.code }}</div>
+            {% if can_manage_bookings %}
             <div class="tile-actions">
               {% if r.status == 'confirmed' or r.status == 'inquiry' %}
               <form method="post" action="{% url 'bookings:check_in' r.pk %}">
@@ -119,6 +126,7 @@
               <a class="btn btn-sm btn-ghost-tile" href="{% url 'folio:detail' r.pk %}">{% trans "Hisob" %}</a>
               {% endif %}
             </div>
+            {% endif %}
           </div>
         </article>
         {% endwith %}
@@ -130,7 +138,9 @@
             <div class="meta">{{ row.room.config_label }} · {{ row.room.get_status_display }}</div>
           </div>
           <div class="guest">
+            {% if can_manage_bookings %}
             <a class="btn btn-sm btn-ghost-tile" href="{% url 'housekeeping:board' %}">{% trans "Tozalash" %}</a>
+            {% endif %}
           </div>
         </article>
       {% else %}
@@ -141,7 +151,9 @@
             <div class="meta">{{ row.room.config_label }}</div>
           </div>
           <div class="guest">
+            {% if can_manage_bookings %}
             <a class="btn btn-sm" href="{% url 'bookings:walk_in' %}?room={{ row.room.pk }}">{% trans "Joylash" %}</a>
+            {% endif %}
           </div>
         </article>
       {% endif %}

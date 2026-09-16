@@ -8,6 +8,7 @@ from core.roles import (
     CASH,
     DASHBOARD,
     FINANCE,
+    FLOOR_VIEW,
     FRONT_OFFICE,
     HOUSEKEEPING,
     HR,
@@ -37,7 +38,7 @@ class RoleMatrixTests(TestCase):
     # url_name → roles that must get HTTP 200 (others expect 302 to dashboard)
     ALLOW = {
         "reports:dashboard": set(DASHBOARD),
-        "bookings:board": set(FRONT_OFFICE),
+        "bookings:board": set(FLOOR_VIEW),
         "guests:list": set(FRONT_OFFICE),
         "properties:list": set(PROPERTY_ADMIN),
         "housekeeping:board": set(HOUSEKEEPING),
@@ -75,6 +76,10 @@ class RoleMatrixTests(TestCase):
     def test_nav_and_home_helpers(self):
         self.assertTrue(nav_permissions("admin")["staff"])
         self.assertFalse(nav_permissions("manager")["staff"])
+        self.assertTrue(nav_permissions("manager")["floor_view"])
+        self.assertFalse(nav_permissions("manager")["front_office"])
+        self.assertFalse(nav_permissions("manager")["expenses"])
+        self.assertFalse(nav_permissions("manager")["pnl"])
         self.assertTrue(nav_permissions("receptionist")["front_office"])
         self.assertFalse(nav_permissions("receptionist")["pnl"])
         self.assertTrue(nav_permissions("housekeeper")["housekeeping"])

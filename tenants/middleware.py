@@ -1,5 +1,6 @@
+from core.roles import FRONT_OFFICE, nav_permissions
+
 from .models import Tenant, TenantMembership
-from core.roles import nav_permissions
 
 SESSION_TENANT_KEY = "current_tenant_id"
 
@@ -75,6 +76,10 @@ def tenant_context(request):
             getattr(request, "membership", None).role
             if getattr(request, "membership", None)
             else None
+        ),
+        "can_manage_bookings": (
+            getattr(request, "membership", None) is not None
+            and request.membership.role in FRONT_OFFICE
         ),
         "current_property": active_property,
         "property_scope_all": property_scope_is_all(request) if tenant else False,

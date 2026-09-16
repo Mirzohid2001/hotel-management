@@ -55,10 +55,14 @@
       <nav>
         <div class="nav-group">
           <div class="nav-label">{% trans "Qabulxona" %}</div>
+          {% if nav_perms.dashboard %}
           <a href="{% url 'reports:dashboard' %}" data-nav="dashboard" class="{% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}">{% trans "Bosh sahifa" %}</a>
-          {% if nav_perms.front_office %}
+          {% endif %}
+          {% if nav_perms.floor_view %}
           <a href="{% url 'bookings:board' %}" data-nav="board" class="{% if request.resolver_match.url_name == 'board' %}is-active{% endif %}">{% trans "Doska" %}</a>
           <a href="{% url 'bookings:calendar' %}" data-nav="calendar" class="{% if request.resolver_match.url_name == 'calendar' %}is-active{% endif %}">{% trans "Taqvim" %}</a>
+          {% endif %}
+          {% if nav_perms.front_office %}
           <a href="{% url 'bookings:list' %}" data-nav="list" class="{% if request.resolver_match.namespace == 'bookings' and request.resolver_match.url_name == 'list' %}is-active{% endif %}">{% trans "Bronlar" %}</a>
           <a href="{% url 'bookings:walk_in' %}" data-nav="walk_in" class="{% if request.resolver_match.url_name == 'walk_in' %}is-active{% endif %}">{% trans "Darhol joylash" %}</a>
           {% if "company_group" in plan_features %}
@@ -68,6 +72,7 @@
           <a href="{% url 'guests:list' %}" data-nav="guests" class="{% if request.resolver_match.namespace == 'guests' %}is-active{% endif %}">{% trans "Mehmonlar" %}</a>
           {% endif %}
         </div>
+        {% if nav_perms.properties or nav_perms.housekeeping or nav_perms.services or nav_perms.inventory or nav_perms.maintenance %}
         <div class="nav-group">
           <div class="nav-label">{% trans "Mehmonxona" %}</div>
           {% if nav_perms.properties %}
@@ -87,6 +92,8 @@
           <a href="{% url 'maintenance:list' %}" data-nav="maintenance" class="{% if request.resolver_match.namespace == 'maintenance' %}is-active{% endif %}">{% trans "Ta’mir" %}</a>
           {% endif %}
         </div>
+        {% endif %}
+        {% if nav_perms.cash or nav_perms.city_ledger or nav_perms.expenses or nav_perms.hr or nav_perms.pnl or nav_perms.audit or nav_perms.staff %}
         <div class="nav-group">
           <div class="nav-label">{% trans "Moliya" %}</div>
           {% if "cash_shift" in plan_features and nav_perms.cash %}
@@ -115,8 +122,13 @@
           {% if nav_perms.staff %}
           <a href="{% url 'tenants:staff_list' %}" data-nav="staff" class="{% if request.resolver_match.url_name == 'staff_list' or request.resolver_match.url_name == 'staff_invite' or request.resolver_match.url_name == 'staff_edit' %}is-active{% endif %}">{% trans "Xodimlar" %}</a>
           {% endif %}
+        </div>
+        {% endif %}
+        {% if not nav_perms.floor_view or nav_perms.front_office or nav_perms.dashboard or nav_perms.housekeeping or nav_perms.pnl %}
+        <div class="nav-group">
           <a href="{% url 'accounts:profile' %}" data-nav="profile" class="{% if request.resolver_match.url_name == 'profile' %}is-active{% endif %}">{% trans "Profil" %}</a>
         </div>
+        {% endif %}
       </nav>
       <div class="sidebar-footer">
         {% if tenant_properties|length > 1 %}

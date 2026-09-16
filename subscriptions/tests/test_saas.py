@@ -31,7 +31,7 @@ class TenantMiddlewareTests(TestCase):
         )
         self.client.login(username="owner1", password="pass12345")
         self.client.post(reverse("tenants:switch", args=[other["tenant"].pk]))
-        response = self.client.get(reverse("reports:dashboard"))
+        response = self.client.get(reverse("bookings:board"))
         self.assertContains(response, other["tenant"].name)
 
 

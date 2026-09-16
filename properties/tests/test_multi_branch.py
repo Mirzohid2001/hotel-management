@@ -123,7 +123,7 @@ class StaffPropertyAccessTests(TestCase):
     def test_restricted_manager_sidebar_shows_only_assigned(self):
         client = Client()
         client.force_login(self.manager)
-        resp = client.get(reverse("reports:dashboard"))
+        resp = client.get(reverse("bookings:board"))
         self.assertContains(resp, self.prop_a.display_label)
         self.assertNotContains(resp, self.prop_b.display_label)
 
@@ -138,7 +138,8 @@ class StaffPropertyAccessTests(TestCase):
         client = Client()
         client.force_login(self.manager)
         resp = client.get(reverse("properties:detail", args=[self.prop_b.pk]))
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, reverse("bookings:board"))
 
 
 class PropertyLimitTests(TestCase):

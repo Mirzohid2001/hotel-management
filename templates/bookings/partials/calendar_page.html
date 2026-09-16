@@ -122,7 +122,9 @@
     </div>
     <div class="board-toolbar-actions">
       <a class="btn-ghost btn-sm" href="{% url 'bookings:board' %}">{% trans "Bugungi doska" %}</a>
+      {% if can_manage_bookings %}
       <a class="btn btn-sm" href="{% url 'bookings:create' %}">{% trans "Yangi bron" %}</a>
+      {% endif %}
     </div>
   </div>
 
@@ -151,22 +153,24 @@
           {% for seg in row.segments %}
             {% if seg.kind == 'stay' %}
             <td colspan="{{ seg.colspan }}" class="cal-bar status-{{ seg.status }}{% if seg.is_vip %} is-vip{% endif %}{% if seg.covers_today %} is-today-stay{% endif %}">
-              <a href="{% url 'bookings:detail' seg.reservation.pk %}" class="cal-stay-chip">
+              {% if can_manage_bookings %}<a href="{% url 'bookings:detail' seg.reservation.pk %}" class="cal-stay-chip">{% else %}<span class="cal-stay-chip">{% endif %}
                 <span class="cal-name">{{ seg.reservation.guest.first_name }}{% if seg.is_vip %} ★{% endif %}</span>
                 {% if seg.reservation.room_type_id %}
                 <span class="cal-config">{{ seg.reservation.room_type.name }}</span>
                 {% endif %}
                 <span class="cal-code">{{ seg.reservation.code }}</span>
-              </a>
+              {% if can_manage_bookings %}</a>{% else %}</span>{% endif %}
             </td>
             {% else %}
             <td class="cal-empty{% if seg.date == today %} is-today{% endif %}">
+              {% if can_manage_bookings %}
               <button type="button" class="cal-new"
                       hx-get="{% url 'bookings:calendar_quick' %}?room={{ row.room.pk }}&amp;check_in={{ seg.date|date:'Y-m-d' }}&amp;check_out={{ seg.check_out|date:'Y-m-d' }}"
                       hx-target="#modal-root" hx-select="unset"
                       hx-swap="innerHTML"
                       title="{% trans 'Tez bron' %}"
                       aria-label="{% trans 'Tez bron' %}">+</button>
+              {% endif %}
             </td>
             {% endif %}
           {% endfor %}

@@ -12,7 +12,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from core.mixins import feature_required, role_required, tenant_login_required
 from core.htmx import modal_close_response, oob_select_response, wants_htmx_partial
-from core.roles import ACCOUNTING, FRONT_OFFICE
+from core.roles import ACCOUNTING, FLOOR_VIEW, FRONT_OFFICE
 from folio.models import Folio
 from guests.models import Guest
 from properties.models import Room, RoomType
@@ -570,7 +570,7 @@ def reservation_no_show(request, pk):
     return redirect("bookings:detail", pk=pk)
 
 
-@role_required(*FRONT_OFFICE)
+@role_required(*FLOOR_VIEW)
 def board(request):
     """Bugungi operatsion doska — xona kartochkalari (kirish/chiqish/to‘lov)."""
     day_s = request.GET.get("date")
@@ -851,7 +851,7 @@ def _calendar_period(start: date, view: str, end: date | None = None) -> tuple[d
     return start, 14, start - timedelta(days=7), start + timedelta(days=7), period_end
 
 
-@role_required(*FRONT_OFFICE)
+@role_required(*FLOOR_VIEW)
 def calendar(request):
     today = timezone.localdate()
     start_s = request.GET.get("start")

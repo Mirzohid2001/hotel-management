@@ -40,13 +40,21 @@ class RoleNavTests(TestCase):
         self.assertContains(resp, reverse("reports:flash"))
         self.assertContains(resp, reverse("reports:audit_log"))
 
-    def test_manager_sees_ops_and_finance_but_not_staff(self):
-        resp = self._dashboard(self.manager)
+    def test_manager_sees_only_board_and_calendar(self):
+        self.client.force_login(self.manager)
+        resp = self.client.get(reverse("bookings:board"))
         self.assertEqual(resp.status_code, 200)
-        self.assertNotContains(resp, reverse("tenants:staff_list"))
-        self.assertContains(resp, reverse("reports:pnl"))
-        self.assertContains(resp, reverse("hr:employees"))
-        self.assertContains(resp, reverse("bookings:board"))
+        html = resp.content.decode()
+        nav_end = html.find('class="sidebar-footer"')
+        nav = html[:nav_end] if nav_end > 0 else html
+        self.assertIn(reverse("bookings:board"), nav)
+        self.assertIn(reverse("bookings:calendar"), nav)
+        self.assertNotIn(reverse("bookings:create"), nav)
+        self.assertNotIn(reverse("bookings:walk_in"), nav)
+        self.assertNotIn(reverse("reports:pnl"), nav)
+        self.assertNotIn(reverse("finance:list"), nav)
+        self.assertNotIn(reverse("tenants:staff_list"), nav)
+        self.assertNotIn(reverse("guests:list"), nav)
 
     def test_receptionist_front_office_only(self):
         resp = self._dashboard(self.receptionist)
@@ -60,7 +68,8 @@ class RoleNavTests(TestCase):
         self.assertNotIn(reverse("tenants:staff_list"), nav)
 
     def test_housekeeper_sees_hk_not_front_desk(self):
-        resp = self._dashboard(self.housekeeper)
+        self.client.force_login(self.housekeeper)
+        resp = self.client.get(reverse("housekeeping:board"))
         self.assertContains(resp, reverse("housekeeping:board"))
         html = resp.content.decode()
         nav_end = html.find('class="sidebar-footer"')
@@ -74,11 +83,20 @@ class RoleNavTests(TestCase):
         self.assertContains(resp, reverse("finance:list"))
         self.assertNotContains(resp, reverse("tenants:staff_list"))
 
+    def test_manager_cannot_create_booking(self):
+        self.client.force_login(self.manager)
+        resp = self.client.get(reverse("bookings:create"))
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, reverse("bookings:board"))
+        cal = self.client.get(reverse("bookings:calendar"))
+        self.assertEqual(cal.status_code, 200)
+        self.assertNotContains(cal, reverse("bookings:create"))
+
     def test_manager_cannot_open_staff_list(self):
         self.client.force_login(self.manager)
         resp = self.client.get(reverse("tenants:staff_list"))
         self.assertEqual(resp.status_code, 302)
-        self.assertEqual(resp.url, reverse("reports:dashboard"))
+        self.assertEqual(resp.url, reverse("bookings:board"))
 
     def test_admin_can_open_staff_list(self):
         self.client.force_login(self.admin)
