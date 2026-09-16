@@ -216,6 +216,12 @@ h2 { margin: 0 0 0.85rem; font-size: 1.28rem; font-weight: 600; }
   box-shadow: 0 8px 18px rgba(232, 106, 12, 0.4);
   object-fit: cover;
 }
+.brand-logo.is-custom {
+  object-fit: contain;
+  background: #fff;
+  padding: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
 .brand-text {
   min-width: 0;
   line-height: 1.2;

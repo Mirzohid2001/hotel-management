@@ -11,11 +11,15 @@ class TenantMembershipInline(admin.TabularInline):
 
 @admin.register(Tenant)
 class TenantAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "currency", "is_active", "created_at")
+    list_display = ("name", "slug", "currency", "has_logo", "is_active", "created_at")
     list_filter = ("is_active", "currency")
     search_fields = ("name", "slug")
     prepopulated_fields = {"slug": ("name",)}
     inlines = [TenantMembershipInline]
+
+    @admin.display(boolean=True, description="Logo")
+    def has_logo(self, obj):
+        return bool(obj.logo)
 
 
 @admin.register(ExchangeRate)

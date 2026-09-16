@@ -17,6 +17,12 @@ class Tenant(models.Model):
         default="UZS",
         help_text=_("Bazaviy valyuta — hisobotlar, P&L, balans shu valyutada."),
     )
+    logo = models.ImageField(
+        _("Logotip"),
+        upload_to="tenant-logos/",
+        blank=True,
+        help_text=_("Bo‘sh qolsa yon panelda Rivoj logosi chiqadi."),
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
