@@ -413,6 +413,57 @@ def check_in_reservation(
     return stay
 
 
+def _void_unused_night_charges(folio, user, departure: date) -> None:
+    """Drop room nights on or after the day the guest actually left."""
+    from folio.models import FolioCharge
+    from folio.services import night_stay_date_key, void_charge
+
+    charges = folio.charges.filter(
+        charge_type=FolioCharge.ChargeType.ROOM,
+        is_void=False,
+        description__startswith="Night ",
+    )
+    for charge in charges:
+        key = night_stay_date_key(charge.description)
+        if not key:
+            continue
+        try:
+            night = date.fromisoformat(key)
+        except ValueError:
+            continue
+        if night < departure:
+            continue
+        try:
+            void_charge(
+                charge,
+                user,
+                reason=_("Erta chiqish — foydalanilmagan kecha"),
+            )
+        except ValidationError:
+            continue
+
+
+def release_early_departure(reservation: Reservation, user, folio, *, departure: date | None = None) -> bool:
+    """14→17 band, 16-kuni ketgan: chiqish 16 bo‘ladi, 16-kecha yangi bron uchun ochiladi."""
+    departure = departure or timezone.localdate()
+    if not (reservation.check_in < departure < reservation.check_out):
+        return False
+    original = reservation.check_out
+    reservation.check_out = departure
+    reservation.total_amount = recompute_total(reservation)
+    reservation.save(update_fields=["check_out", "total_amount", "updated_at"])
+    log_change(
+        reservation,
+        user,
+        "check_out",
+        original,
+        departure,
+        reason=_("Erta chiqish — qolgan kechalar bo‘shatildi"),
+    )
+    _void_unused_night_charges(folio, user, departure)
+    return True
+
+
 def check_out_reservation(reservation: Reservation, user) -> Stay:
     if reservation.status != Reservation.Status.CHECKED_IN:
         raise ValidationError(_("Faqat joylashgan bronlar chiqishi mumkin."))
@@ -425,6 +476,9 @@ def check_out_reservation(reservation: Reservation, user) -> Stay:
     from housekeeping.models import HousekeepingTask
 
     now = timezone.now()
+    departure = timezone.localdate()
+    scheduled_out = reservation.check_out
+    leaving_early = reservation.check_in < departure < scheduled_out
 
     # Post room nights + late fee first and commit so unpaid checkout still
     # leaves charges on the folio for the guest to settle.
@@ -432,9 +486,12 @@ def check_out_reservation(reservation: Reservation, user) -> Stay:
         folio = ensure_folio_for_reservation(reservation)
         if not folio.is_open:
             reopen_folio(folio)
+        # Erta ketgan mehmonning qolgan kechasini band qoldirmaymiz va yozmaymiz.
+        if leaving_early:
+            release_early_departure(reservation, user, folio, departure=departure)
         settings = _property_settings(reservation)
-        if settings and settings.late_checkout_fee > 0:
-            standard = _aware_local(reservation.check_out, settings.checkout_time)
+        if settings and settings.late_checkout_fee > 0 and not leaving_early:
+            standard = _aware_local(scheduled_out, settings.checkout_time)
             if now > standard:
                 _post_timing_fee(
                     folio,
