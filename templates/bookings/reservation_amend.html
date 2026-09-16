@@ -9,6 +9,7 @@
 
 <form method="post" class="reservation-create-layout" id="reservation-amend-form" hx-boost="false">
   {% csrf_token %}
+  <input type="hidden" name="exclude" value="{{ reservation.pk }}">
   {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
 
   <section class="section-panel">

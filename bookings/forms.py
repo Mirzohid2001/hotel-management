@@ -491,7 +491,7 @@ class ReservationAmendForm(forms.Form):
             self.fields["children"].initial = reservation.children
             self.fields["source"].initial = reservation.source
             self.fields["notes"].initial = reservation.notes
-            avail_url = reverse("bookings:availability")
+            avail_url = f"{reverse('bookings:availability')}?exclude={reservation.pk}"
             for name in ("check_in", "check_out", "room", "room_type"):
                 self.fields[name].widget.attrs.update(
                     {

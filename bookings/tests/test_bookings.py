@@ -49,6 +49,38 @@ class BookingFlowTests(TestCase):
         )
         self.today = timezone.localdate()
 
+    def test_amend_availability_ignores_own_stay(self):
+        self.client.force_login(self.user)
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=4),
+        )
+        shortened = self.today + timedelta(days=3)
+        url = reverse("bookings:availability")
+        blocked = self.client.get(
+            url,
+            {"room": self.room.pk, "check_in": self.today.isoformat(), "check_out": shortened.isoformat()},
+        )
+        self.assertContains(blocked, "band")
+        free = self.client.get(
+            url,
+            {
+                "room": self.room.pk,
+                "check_in": self.today.isoformat(),
+                "check_out": shortened.isoformat(),
+                "exclude": reservation.pk,
+            },
+        )
+        self.assertContains(free, "bo‘sh")
+        self.assertNotContains(free, "band")
+
     def test_overlap_blocked(self):
         create_reservation(
             tenant=self.tenant,
