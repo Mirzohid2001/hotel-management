@@ -1,4 +1,4 @@
-from core.roles import FRONT_OFFICE, nav_permissions
+from core.roles import FRONT_OFFICE, STAY_DESK, nav_permissions
 
 from .models import Tenant, TenantMembership
 
@@ -80,6 +80,10 @@ def tenant_context(request):
         "can_manage_bookings": (
             getattr(request, "membership", None) is not None
             and request.membership.role in FRONT_OFFICE
+        ),
+        "can_stay_desk": (
+            getattr(request, "membership", None) is not None
+            and request.membership.role in STAY_DESK
         ),
         "current_property": active_property,
         "property_scope_all": property_scope_is_all(request) if tenant else False,

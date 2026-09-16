@@ -12,7 +12,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from core.mixins import feature_required, role_required, tenant_login_required
 from core.htmx import modal_close_response, oob_select_response, wants_htmx_partial
-from core.roles import ACCOUNTING, FLOOR_VIEW, FRONT_OFFICE
+from core.roles import ACCOUNTING, FLOOR_VIEW, FRONT_OFFICE, STAY_DESK
 from folio.models import Folio
 from guests.models import Guest
 from properties.models import Room, RoomType
@@ -359,7 +359,7 @@ def reservation_amend(request, pk):
     )
 
 
-@role_required(*FRONT_OFFICE)
+@role_required(*STAY_DESK)
 @require_POST
 def reservation_check_in(request, pk):
     reservation = _get_reservation(request, pk)
@@ -470,7 +470,7 @@ def reservation_check_in(request, pk):
     return _redirect_next(request, "bookings:detail", pk=pk)
 
 
-@role_required(*FRONT_OFFICE)
+@role_required(*STAY_DESK)
 @require_http_methods(["GET"])
 def checkout_modal(request, pk):
     reservation = _get_reservation(request, pk)
@@ -495,7 +495,7 @@ def checkout_modal(request, pk):
     )
 
 
-@role_required(*FRONT_OFFICE)
+@role_required(*STAY_DESK)
 @require_POST
 def reservation_check_out(request, pk):
     reservation = _get_reservation(request, pk)

@@ -27,6 +27,9 @@ FRONT_OFFICE = (R.ADMIN, R.RECEPTIONIST)
 # Doska va taqvim (bron yaratmasdan)
 FLOOR_VIEW = (R.ADMIN, R.MANAGER, R.RECEPTIONIST)
 
+# Kirish / chiqish — yangi bron emas
+STAY_DESK = (R.ADMIN, R.MANAGER, R.RECEPTIONIST)
+
 # Folio to‘lov / charge
 FRONT_DESK_MONEY = (R.ADMIN, R.RECEPTIONIST, R.ACCOUNTANT)
 

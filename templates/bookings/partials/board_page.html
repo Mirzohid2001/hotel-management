@@ -106,7 +106,7 @@
             {% else %}
             <span class="tile-balance warn">{% trans "To‘lanmagan" %}</span>
             {% endif %}
-            {% if can_manage_bookings %}
+            {% if can_stay_desk %}
             <div class="tile-actions">
               {% if r.status == 'confirmed' or r.status == 'inquiry' %}
               <form method="post" action="{% url 'bookings:check_in' r.pk %}">
@@ -120,9 +120,6 @@
                 {% endif %}
               </form>
               {% elif r.status == 'checked_in' %}
-              {% if folio %}
-              <span class="tile-balance {% if folio.balance > 0 %}warn{% endif %} money">{{ folio.balance|money }}</span>
-              {% endif %}
               <button type="button" class="btn btn-sm btn-ghost-tile"
                       hx-get="{% url 'bookings:checkout_modal' r.pk %}?from=board"
                       hx-target="#modal-root" hx-select="unset"
@@ -131,7 +128,9 @@
                       hx-get="{% url 'folio:payment_modal' r.pk %}?from=board"
                       hx-target="#modal-root" hx-select="unset"
                       hx-swap="innerHTML">{% trans "To‘lov" %}</button>
+              {% if can_manage_bookings %}
               <a class="btn btn-sm btn-ghost-tile" href="{% url 'folio:detail' r.pk %}">{% trans "Hisob" %}</a>
+              {% endif %}
               {% endif %}
             </div>
             {% endif %}

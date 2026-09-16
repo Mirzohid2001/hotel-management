@@ -13,7 +13,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from bookings.models import Reservation
 from core.htmx import modal_close_response
 from core.mixins import feature_required, role_required, tenant_login_required
-from core.roles import CASH, FINANCE, FRONT_DESK_MONEY, MONEY_VOID
+from core.roles import CASH, FINANCE, FRONT_DESK_MONEY, MONEY_VOID, STAY_DESK
 
 from .city_ledger import (
     add_company_payment,
@@ -128,7 +128,7 @@ def _modal_close_response(*, refresh_board: bool = False) -> HttpResponse:
     return modal_close_response(refresh_board=refresh_board)
 
 
-@role_required(*FRONT_DESK_MONEY)
+@role_required(*STAY_DESK, *FRONT_DESK_MONEY)
 @require_http_methods(["GET"])
 def folio_payment_modal(request, reservation_id):
     reservation = get_object_or_404(Reservation, pk=reservation_id, tenant=request.tenant)
@@ -165,7 +165,7 @@ def folio_payment_modal(request, reservation_id):
     )
 
 
-@role_required(*FRONT_DESK_MONEY)
+@role_required(*STAY_DESK, *FRONT_DESK_MONEY)
 @require_http_methods(["POST"])
 def folio_add_payment(request, pk):
     folio = get_object_or_404(Folio, pk=pk, tenant=request.tenant)

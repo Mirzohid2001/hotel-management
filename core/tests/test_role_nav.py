@@ -87,6 +87,7 @@ class RoleNavTests(TestCase):
         self.assertContains(resp, today.strftime("%d.%m.%Y"))
         self.assertContains(resp, (today + timedelta(days=2)).strftime("%d.%m.%Y"))
         self.assertContains(resp, "To‘lanmagan")
+        self.assertContains(resp, "Kirish")
         self.assertNotContains(resp, reverse("bookings:walk_in"))
 
     def test_receptionist_front_office_only(self):
