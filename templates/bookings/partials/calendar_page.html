@@ -158,7 +158,12 @@
                 {% if seg.reservation.room_type_id %}
                 <span class="cal-config">{{ seg.reservation.room_type.name }}</span>
                 {% endif %}
-                <span class="cal-code">{{ seg.reservation.code }}</span>
+                <span class="cal-code">{{ seg.reservation.check_in|date:"d.m" }}–{{ seg.reservation.check_out|date:"d.m" }}</span>
+                {% if seg.folio and seg.folio.balance <= 0 %}
+                <span class="cal-code">{% trans "To‘langan" %}</span>
+                {% else %}
+                <span class="cal-code">{% trans "To‘lanmagan" %}</span>
+                {% endif %}
               {% if can_manage_bookings %}</a>{% else %}</span>{% endif %}
             </td>
             {% else %}

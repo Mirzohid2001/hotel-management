@@ -3,7 +3,12 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from core.tests.helpers import make_membership, make_user, setup_tenant_user
+from datetime import timedelta
+from decimal import Decimal
+
+from bookings.services import create_reservation
+from core.tests.helpers import make_membership, make_property_stack, make_user, setup_tenant_user
+from guests.models import Guest
 from subscriptions.models import Plan
 from tenants.models import TenantMembership
 
@@ -55,6 +60,34 @@ class RoleNavTests(TestCase):
         self.assertNotIn(reverse("finance:list"), nav)
         self.assertNotIn(reverse("tenants:staff_list"), nav)
         self.assertNotIn(reverse("guests:list"), nav)
+
+    def test_manager_board_shows_dates_and_payment(self):
+        from django.utils import timezone
+
+        stack = make_property_stack(self.tenant, room_number="501")
+        guest = Guest.objects.create(tenant=self.tenant, first_name="Pay", last_name="Guest")
+        today = timezone.localdate()
+        create_reservation(
+            tenant=self.tenant,
+            user=self.admin,
+            property_obj=stack["property"],
+            guest=guest,
+            room_type=stack["room_type"],
+            room=stack["room"],
+            rate_plan=stack["rate_plan"],
+            check_in=today,
+            check_out=today + timedelta(days=2),
+            nightly_rate=Decimal("100000"),
+        )
+        self.client.force_login(self.manager)
+        session = self.client.session
+        session["active_property_id"] = stack["property"].pk
+        session.save()
+        resp = self.client.get(reverse("bookings:board"))
+        self.assertContains(resp, today.strftime("%d.%m.%Y"))
+        self.assertContains(resp, (today + timedelta(days=2)).strftime("%d.%m.%Y"))
+        self.assertContains(resp, "To‘lanmagan")
+        self.assertNotContains(resp, reverse("bookings:walk_in"))
 
     def test_receptionist_front_office_only(self):
         resp = self._dashboard(self.receptionist)
