@@ -10,8 +10,8 @@
   <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=m13">
-  <link rel="stylesheet" href="{% static 'css/premium.css' %}?v=m13">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=m14">
+  <link rel="stylesheet" href="{% static 'css/premium.css' %}?v=m14">
   <link rel="stylesheet" href="{% static 'css/hero-pages.css' %}?v=m11">
   <link rel="stylesheet" href="{% static 'css/components.css' %}?v=m9">
   <link rel="stylesheet" href="{% static 'css/ux-polish.css' %}?v=m9">
@@ -40,7 +40,7 @@
       <div class="brand">
         <div class="brand-row">
           {% if current_tenant.logo %}
-          <img class="brand-logo is-custom" src="{{ current_tenant.logo.url }}" width="40" height="40" alt="{{ current_tenant.name }}">
+          <img class="brand-logo is-custom" src="{{ current_tenant.logo.url }}" width="72" height="80" alt="{{ current_tenant.name }}">
           {% else %}
           <img class="brand-logo" src="{% static 'img/rivoj-logo.png' %}" width="40" height="40" alt="Rivoj">
           {% endif %}
