@@ -692,6 +692,129 @@ def collect_emehmon_fee(
     return charge, payment
 
 
+def find_undercharged_emehmon(*, tenant=None) -> list[dict]:
+    """Eski «1×9000» yozuvlar: mehmon×kecha×tarifdan kam olinganlar."""
+    from django.db.models import Sum
+
+    qs = FolioCharge.objects.filter(
+        charge_type=FolioCharge.ChargeType.EMEHMON, is_void=False
+    ).select_related(
+        "folio",
+        "folio__reservation",
+        "folio__reservation__guest",
+        "folio__reservation__hotel",
+    )
+    if tenant is not None:
+        qs = qs.filter(tenant=tenant)
+
+    seen: set[int] = set()
+    rows: list[dict] = []
+    for charge in qs.order_by("pk"):
+        reservation = getattr(charge.folio, "reservation", None)
+        if reservation is None or reservation.pk in seen:
+            continue
+        seen.add(reservation.pk)
+        unit = emehmon_unit_rate(reservation.hotel_id)
+        nights = emehmon_nights_count(getattr(reservation, "nights", None))
+        guests = emehmon_guest_count(reservation.adults, reservation.children)
+        expected = calc_emehmon_fee(unit, nights=nights, guests=guests)
+        collected = (
+            FolioCharge.objects.filter(
+                folio_id=charge.folio_id,
+                charge_type=FolioCharge.ChargeType.EMEHMON,
+                is_void=False,
+            ).aggregate(s=Sum("amount_base"))["s"]
+            or Decimal("0")
+        )
+        if expected <= collected:
+            continue
+        charge_count = FolioCharge.objects.filter(
+            folio_id=charge.folio_id,
+            charge_type=FolioCharge.ChargeType.EMEHMON,
+            is_void=False,
+        ).count()
+        rows.append(
+            {
+                "reservation": reservation,
+                "folio": charge.folio,
+                "charge": charge,
+                "charge_count": charge_count,
+                "unit": unit,
+                "nights": nights,
+                "guests": guests,
+                "expected": expected,
+                "collected": collected,
+                "gap": expected - collected,
+            }
+        )
+    return rows
+
+
+@transaction.atomic
+def correct_undercharged_emehmon(*, tenant=None, dry_run: bool = True) -> dict:
+    """
+    Kam olingan E-mehmon charge/paymentni mehmon×kecha×tarifga ko‘taradi.
+
+    Eski «registratsiya 9000» yozuvlar uchun — miqdor = mehmon×kecha, narx = tarif.
+    Faqat bitta E-mehmon charge bo‘lgan folio tuzatiladi.
+    """
+    rows = find_undercharged_emehmon(tenant=tenant)
+    corrected = []
+    skipped = []
+    if dry_run:
+        return {"dry_run": True, "rows": rows, "corrected": corrected, "skipped": skipped}
+
+    for row in rows:
+        if row.get("charge_count", 1) != 1:
+            skipped.append(row["reservation"].pk)
+            continue
+        reservation = row["reservation"]
+        charge = row["charge"]
+        unit = row["unit"]
+        nights = row["nights"]
+        guests = row["guests"]
+        expected = row["expected"]
+        qty = Decimal(nights * guests)
+        charge.quantity = qty
+        charge.unit_price = unit
+        charge.description = _(
+            "E-mehmon: %(g)s mehmon × %(n)s kecha × %(u)s"
+        ) % {"g": guests, "n": nights, "u": unit}
+        charge.save()
+
+        payment = (
+            GuestPayment.objects.filter(
+                folio_id=charge.folio_id, is_void=False
+            )
+            .filter(emehmon_payment_q())
+            .order_by("created_at")
+            .first()
+        )
+        if payment is not None:
+            payment.amount = expected
+            if payment.note and not any(
+                m.lower() in payment.note.lower() for m in EMEHMON_LEGACY_MARKERS
+            ):
+                payment.note = f"{EMEHMON_MARKER}: {payment.note}"
+            payment.save()
+
+        if not reservation.emehmon_required:
+            reservation.emehmon_required = True
+            reservation.save(update_fields=["emehmon_required", "updated_at"])
+
+        corrected.append(
+            {
+                "reservation_id": reservation.pk,
+                "code": reservation.code,
+                "from": row["collected"],
+                "to": expected,
+                "charge_id": charge.pk,
+                "payment_id": payment.pk if payment else None,
+            }
+        )
+    return {"dry_run": False, "rows": rows, "corrected": corrected, "skipped": skipped}
+
+
 @transaction.atomic
 def close_folio(folio: Folio) -> Folio:
     from bookings.models import Reservation

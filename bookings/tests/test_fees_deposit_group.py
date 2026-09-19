@@ -229,6 +229,36 @@ class EmehmonFeeTests(TestCase):
         with self.assertRaises(ValidationError):
             collect_emehmon_fee(reservation, self.user, method=GuestPayment.Method.CARD)
 
+    def test_correct_undercharged_emehmon_upgrades_flat_fee(self):
+        from folio.services import correct_undercharged_emehmon
+
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=2),
+            adults=2,
+        )
+        # Eski xato: 1×9000
+        charge, payment = collect_emehmon_fee(
+            reservation,
+            self.user,
+            amount=Decimal("9000"),
+            method=GuestPayment.Method.CARD,
+        )
+        self.assertEqual(charge.amount, Decimal("9000.00"))
+        result = correct_undercharged_emehmon(tenant=self.tenant, dry_run=False)
+        self.assertEqual(len(result["corrected"]), 1)
+        charge.refresh_from_db()
+        payment.refresh_from_db()
+        self.assertEqual(charge.amount, Decimal("36000.00"))
+        self.assertEqual(charge.quantity, Decimal("4"))
+        self.assertEqual(payment.amount, Decimal("36000.00"))
+
     def test_monthly_emehmon_report(self):
         from bookings.emehmon import build_emehmon_report
 

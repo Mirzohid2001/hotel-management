@@ -78,6 +78,7 @@
             <th>{% trans "Mehmon" %}</th>
             <th>{% trans "Oy kechalari" %}</th>
             <th>{% trans "Mehmon-kecha" %}</th>
+            <th>{% trans "Kerak" %}</th>
             <th>{% trans "Olingan" %}</th>
             <th>{% trans "Holat" %}</th>
           </tr>
@@ -93,10 +94,13 @@
             <td>{{ row.guests }}</td>
             <td>{{ row.nights_in_month }}</td>
             <td>{{ row.guest_nights }}</td>
+            <td class="money">{{ row.expected|money }}</td>
             <td class="money">{{ row.collected|money }}</td>
             <td>
-              {% if row.posted %}
+              {% if row.posted and row.gap <= 0 %}
               <span class="badge">{% trans "Olingan" %}</span>
+              {% elif row.posted and row.gap > 0 %}
+              <span class="badge badge-warn">{% trans "Kam" %}</span>
               {% else %}
               <span class="badge badge-warn">{% trans "Yo‘q" %}</span>
               {% endif %}
@@ -104,7 +108,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="7" class="muted empty-row">{% trans "Bu oyda yashash yo‘q." %}</td>
+            <td colspan="8" class="muted empty-row">{% trans "Bu oyda yashash yo‘q." %}</td>
           </tr>
           {% endfor %}
         </tbody>
