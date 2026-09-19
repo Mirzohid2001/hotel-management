@@ -24,12 +24,21 @@
     </p>
   </div>
   <div class="detail-actions">
+    {% if can_manage_bookings %}
     <a class="btn" href="{% url 'folio:detail' reservation.pk %}">{% trans "Mehmon hisobi" %}</a>
+    {% elif can_stay_desk %}
+    <button type="button" class="btn"
+            hx-get="{% url 'folio:payment_modal' reservation.pk %}"
+            hx-target="#modal-root" hx-select="unset"
+            hx-swap="innerHTML">{% trans "To‘lov" %}</button>
+    {% endif %}
   </div>
 </div>
 
-{% if reservation.group %}
+{% if reservation.group and can_manage_bookings %}
 <p class="entity-meta"><a href="{% url 'bookings:group_detail' reservation.group_id %}">{% trans "Guruh" %}: {{ reservation.group.code }}</a></p>
+{% elif reservation.group %}
+<p class="entity-meta">{% trans "Guruh" %}: {{ reservation.group.code }}</p>
 {% endif %}
 
 <section class="section-panel detail-grid">
@@ -68,7 +77,11 @@
     <li class="occupant-saved">
       <div>
         <strong>
+          {% if can_manage_bookings %}
           <a href="{% url 'guests:detail' occ.guest_id %}">{{ occ.guest.full_name }}</a>
+          {% else %}
+          {{ occ.guest.full_name }}
+          {% endif %}
         </strong>
         {% if occ.is_primary %}<span class="badge">{% trans "Asosiy" %}</span>{% endif %}
         <span class="muted">{{ occ.get_kind_display }}</span>
@@ -92,11 +105,12 @@
 <div class="alert-banner blacklist">
   <strong>{% trans "Qora ro‘yxatdagi mehmon" %}</strong>
   — {{ reservation.guest.blacklist_reason|default:"bron/kirish bloklangan" }}
-  · <a href="{% url 'guests:detail' reservation.guest_id %}">{% trans "Mehmon" %}</a>
+  · {% if can_manage_bookings %}<a href="{% url 'guests:detail' reservation.guest_id %}">{% trans "Mehmon" %}</a>{% else %}{{ reservation.guest.full_name }}{% endif %}
 </div>
 {% endif %}
 
 {% if reservation.status == 'confirmed' or reservation.status == 'inquiry' %}
+{% if can_manage_bookings %}
 <section class="section-panel">
   <h2>{% trans "Depozit" %}</h2>
   <form method="post" action="{% url 'folio:deposit' reservation.pk %}" class="app-form panel is-embedded">
@@ -131,7 +145,9 @@
     <div class="form-actions"><button type="submit" class="btn">{% trans "Depozit olish" %}</button></div>
   </form>
 </section>
+{% endif %}
 
+{% if can_stay_desk %}
 <section class="section-panel" id="checkin-emehmon">
   <h2>{% trans "Zayezd (kirish)" %}</h2>
   <p class="muted">{% trans "E-mehmon komissiyasini shu yerda tanlaysiz — xohlagan mehmondan olasiz, xohlaganidan olmayapsiz." %}</p>
@@ -177,20 +193,21 @@
     <p class="muted">
       {% trans "Pasport/ID yo‘q" %}:
       {% for g in missing_id_guests %}
-        <a href="{% url 'guests:detail' g.pk %}">{{ g.full_name }}</a>{% if not forloop.last %}, {% endif %}
+        {% if can_manage_bookings %}<a href="{% url 'guests:detail' g.pk %}">{{ g.full_name }}</a>{% else %}{{ g.full_name }}{% endif %}{% if not forloop.last %}, {% endif %}
       {% endfor %}
     </p>
     {% endif %}
   </form>
 </section>
 {% endif %}
+{% endif %}
 
 {% if reservation.status == 'checked_in' %}
 {% if emehmon_paid %}
 <section class="section-panel">
-  <p class="muted">{% trans "E-mehmon to‘lovi allaqachon qabul qilingan." %} · <a href="{% url 'folio:detail' reservation.pk %}">{% trans "Mehmon hisobi" %}</a></p>
+  <p class="muted">{% trans "E-mehmon to‘lovi allaqachon qabul qilingan." %}{% if can_manage_bookings %} · <a href="{% url 'folio:detail' reservation.pk %}">{% trans "Mehmon hisobi" %}</a>{% endif %}</p>
 </section>
-{% else %}
+{% elif can_manage_bookings %}
 <section class="section-panel">
   <h2>{% trans "E-mehmon to‘lovi" %}</h2>
   <p class="muted">{% trans "Zayezdda olinmagan. Kerak bo‘lsa hozir oling, kerak bo‘lmasa o‘tkazib yuboring." %}</p>
@@ -231,6 +248,7 @@
 {% endif %}
 
 <div class="detail-actions actions">
+  {% if can_manage_bookings %}
   {% if reservation.status == 'inquiry' %}
   <form method="post" action="{% url 'bookings:confirm' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn">{% trans "So‘rovni tasdiqlash" %}</button></form>
   {% endif %}
@@ -245,11 +263,14 @@
     <button type="submit" class="btn">{% trans "Kelmagan" %}</button>
   </form>
   {% endif %}
-  {% if reservation.status == 'checked_in' %}
+  {% endif %}
+  {% if can_stay_desk and reservation.status == 'checked_in' %}
   <form method="post" action="{% url 'bookings:check_out' reservation.pk %}">{% csrf_token %}<button type="submit" class="btn">{% trans "Chiqish" %}</button></form>
+  {% endif %}
+  {% if can_manage_bookings and reservation.status == 'checked_in' %}
   <a class="btn" href="{% url 'bookings:transfer' reservation.pk %}">{% trans "Xona / tur almashtirish" %}</a>
   {% endif %}
-  {% if reservation.status != 'cancelled' and reservation.status != 'checked_out' and reservation.status != 'no_show' %}
+  {% if can_manage_bookings and reservation.status != 'cancelled' and reservation.status != 'checked_out' and reservation.status != 'no_show' %}
   <a class="btn-ghost" href="{% url 'bookings:amend' reservation.pk %}">{% trans "O‘zgartirish" %}</a>
   {% endif %}
 </div>

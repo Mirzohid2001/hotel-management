@@ -89,7 +89,7 @@
             </div>
           </div>
           <div class="guest">
-            {% if can_manage_bookings %}
+            {% if can_stay_desk %}
             <a href="{% url 'bookings:detail' r.pk %}">{{ r.guest.full_name }}</a>
             {% else %}
             <span>{{ r.guest.full_name }}</span>

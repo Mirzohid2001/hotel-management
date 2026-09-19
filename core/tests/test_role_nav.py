@@ -6,6 +6,7 @@ from django.urls import reverse
 from datetime import timedelta
 from decimal import Decimal
 
+from bookings.models import Reservation
 from bookings.services import create_reservation
 from core.tests.helpers import make_membership, make_property_stack, make_user, setup_tenant_user
 from guests.models import Guest
@@ -88,7 +89,33 @@ class RoleNavTests(TestCase):
         self.assertContains(resp, (today + timedelta(days=2)).strftime("%d.%m.%Y"))
         self.assertContains(resp, "To‘lanmagan")
         self.assertContains(resp, "Kirish")
+        self.assertContains(resp, reverse("bookings:detail", args=[Reservation.objects.get(room=stack["room"]).pk]))
         self.assertNotContains(resp, reverse("bookings:walk_in"))
+
+    def test_manager_opens_reservation_detail(self):
+        from django.utils import timezone
+
+        stack = make_property_stack(self.tenant, room_number="502")
+        guest = Guest.objects.create(tenant=self.tenant, first_name="Det", last_name="Guest")
+        today = timezone.localdate()
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.admin,
+            property_obj=stack["property"],
+            guest=guest,
+            room_type=stack["room_type"],
+            room=stack["room"],
+            rate_plan=stack["rate_plan"],
+            check_in=today,
+            check_out=today + timedelta(days=1),
+            nightly_rate=Decimal("100000"),
+        )
+        self.client.force_login(self.manager)
+        resp = self.client.get(reverse("bookings:detail", args=[reservation.pk]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, reservation.code)
+        self.assertNotContains(resp, reverse("bookings:amend", args=[reservation.pk]))
+        self.assertNotContains(resp, reverse("bookings:create"))
 
     def test_receptionist_front_office_only(self):
         resp = self._dashboard(self.receptionist)

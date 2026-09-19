@@ -268,7 +268,7 @@ def reservation_create(request):
     )
 
 
-@role_required(*FRONT_OFFICE)
+@role_required(*STAY_DESK)
 def reservation_detail(request, pk):
     reservation = _get_reservation(request, pk)
     amend_form = ReservationAmendForm(reservation=reservation)
