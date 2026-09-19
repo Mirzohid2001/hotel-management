@@ -153,6 +153,7 @@
   <p class="muted">{% trans "E-mehmon komissiyasini shu yerda tanlaysiz — xohlagan mehmondan olasiz, xohlaganidan olmayapsiz." %}</p>
   <form method="post" action="{% url 'bookings:check_in' reservation.pk %}" class="app-form panel is-embedded" id="checkin-form">
     {% csrf_token %}
+    <input type="hidden" name="emehmon_form" value="1">
     <fieldset class="emehmon-box" id="emehmon-box" style="border:0;padding:0;margin:0 0 0.85rem">
       <p class="form-field">
         <label class="checkbox-row">
@@ -166,6 +167,7 @@
           <label for="id_emehmon_amount">{% trans "E-mehmon summasi" %}</label>
           <input type="number" name="emehmon_amount" id="id_emehmon_amount" step="0.01" min="0"
                  value="{% if emehmon_default %}{{ emehmon_default }}{% endif %}">
+          <span class="field-help muted">{% trans "Hisob: mehmon soni × kechalar × tarif (odatda 9000)." %}</span>
         </p>
         <p class="form-field">
           <label for="id_emehmon_method">{% trans "To‘lov usuli" %}</label>

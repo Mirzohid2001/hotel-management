@@ -159,6 +159,39 @@ class EmehmonFeeTests(TestCase):
         # 9000 × 3 kecha × 3 mehmon
         self.assertEqual(default_emehmon_fee(reservation), Decimal("81000.00"))
 
+    def test_collect_upgrades_unit_amount_to_full_guest_nights(self):
+        """Zayezd formasi 9000 yuborsa ham to‘liq mehmon×kecha hisoblanadi."""
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=4),
+            adults=1,
+            emehmon_required=False,
+        )
+        self.client.force_login(self.user)
+        resp = self.client.post(
+            reverse("bookings:check_in", args=[reservation.pk]),
+            {
+                "emehmon_form": "1",
+                "collect_emehmon": "1",
+                "emehmon_amount": "9000",
+                "emehmon_method": "card",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        reservation.refresh_from_db()
+        charge = reservation.folio.charges.get(
+            charge_type=FolioCharge.ChargeType.EMEHMON, is_void=False
+        )
+        # 9000 × 4 kecha × 1 mehmon
+        self.assertEqual(charge.amount, Decimal("36000.00"))
+        self.assertEqual(charge.quantity, Decimal("4"))
+
     def test_collect_emehmon_at_booking(self):
         reservation = create_reservation(
             tenant=self.tenant,
@@ -349,6 +382,40 @@ class EmehmonFeeTests(TestCase):
         self.assertNotIn("collect_emehmon", rf.fields)
         self.assertIs(wf.fields["collect_emehmon"].initial, True)
 
+    def test_check_in_collects_full_guest_nights_even_if_unit_posted(self):
+        from folio.models import FolioCharge
+
+        reservation = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=3),
+            adults=1,
+            emehmon_required=False,
+        )
+        self.client.force_login(self.user)
+        resp = self.client.post(
+            reverse("bookings:check_in", args=[reservation.pk]),
+            {
+                "emehmon_form": "1",
+                "collect_emehmon": "1",
+                "emehmon_amount": "9000",
+                "emehmon_method": "card",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        reservation.refresh_from_db()
+        charge = reservation.folio.charges.get(
+            charge_type=FolioCharge.ChargeType.EMEHMON, is_void=False
+        )
+        # 9000 × 3 kecha × 1 mehmon
+        self.assertEqual(charge.amount, Decimal("27000.00"))
+        self.assertEqual(charge.quantity, Decimal("3"))
+
     def test_check_in_collects_emehmon_when_checked(self):
         from folio.models import FolioCharge
         from folio.services import emehmon_already_posted
@@ -369,6 +436,7 @@ class EmehmonFeeTests(TestCase):
         resp = self.client.post(
             reverse("bookings:check_in", args=[reservation.pk]),
             {
+                "emehmon_form": "1",
                 "collect_emehmon": "1",
                 "emehmon_amount": "9000",
                 "emehmon_method": "card",
@@ -403,7 +471,7 @@ class EmehmonFeeTests(TestCase):
         self.client.force_login(self.user)
         resp = self.client.post(
             reverse("bookings:check_in", args=[reservation.pk]),
-            {},
+            {"emehmon_form": "1"},
         )
         self.assertEqual(resp.status_code, 302)
         reservation.refresh_from_db()
@@ -414,6 +482,7 @@ class EmehmonFeeTests(TestCase):
     def test_emehmon_required_unpaid_counts_shortfall(self):
         from bookings.emehmon import build_emehmon_report
 
+        # O‘tgan sanalar — realized_only bugungi kechalarni qisqartirmasin
         create_reservation(
             tenant=self.tenant,
             user=self.user,
@@ -421,8 +490,8 @@ class EmehmonFeeTests(TestCase):
             guest=self.guest,
             room_type=self.rt,
             room=self.room,
-            check_in=self.today,
-            check_out=self.today + timedelta(days=2),
+            check_in=self.today - timedelta(days=2),
+            check_out=self.today,
             adults=1,
             emehmon_required=True,
         )

@@ -73,15 +73,15 @@ def _add_emehmon_payment_fields(form, *, hotel=None, nights=1, guests=1):
 
 
 def _fill_emehmon_amount(form, cleaned, *, nights, guests):
-    """Bo‘sh summani avtomatik hisoblash; ixtiyoriy qo‘lda override."""
+    """Bo‘sh yoki birlik tarif yuborilsa — kecha × mehmon × tarif."""
     from folio.services import calc_emehmon_fee
 
     if not cleaned.get("collect_emehmon"):
         return cleaned
     amount = cleaned.get("emehmon_amount")
     unit = getattr(form, "emehmon_unit", Decimal("0"))
+    computed = calc_emehmon_fee(unit, nights=nights, guests=guests)
     if amount is None or amount <= 0:
-        computed = calc_emehmon_fee(unit, nights=nights, guests=guests)
         if computed <= 0:
             form.add_error(
                 "emehmon_amount",
@@ -89,6 +89,9 @@ def _fill_emehmon_amount(form, cleaned, *, nights, guests):
             )
         else:
             cleaned["emehmon_amount"] = computed
+    elif unit > 0 and amount == unit and computed > unit:
+        # Forma hali 1×9000 qoldirgan — to‘liq hisob.
+        cleaned["emehmon_amount"] = computed
     return cleaned
 
 

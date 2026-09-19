@@ -365,7 +365,12 @@ def reservation_check_in(request, pk):
     reservation = _get_reservation(request, pk)
     allow_dirty = request.POST.get("allow_dirty") == "1"
     allow_no_docs = request.POST.get("allow_no_docs") == "1"
-    collect_emehmon = request.POST.get("collect_emehmon") == "1"
+    # Doska «Kirish» — forma yo‘q, E-mehmon avtomatik.
+    # Batafsil sahifa — checkbox (emehmon_form=1).
+    if request.POST.get("emehmon_form") == "1":
+        collect_emehmon = request.POST.get("collect_emehmon") == "1"
+    else:
+        collect_emehmon = True
     emehmon_amount = request.POST.get("emehmon_amount")
     emehmon_method = (request.POST.get("emehmon_method") or "cash").strip()
     try:
@@ -412,20 +417,23 @@ def reservation_check_in(request, pk):
         if collect_emehmon:
             from decimal import Decimal, InvalidOperation
 
-            from folio.services import collect_emehmon_fee, default_emehmon_fee
+            from folio.services import collect_emehmon_fee, default_emehmon_fee, emehmon_unit_rate
 
             if not reservation.emehmon_required:
                 reservation.emehmon_required = True
                 reservation.save(update_fields=["emehmon_required", "updated_at"])
 
-            amount = None
+            # Asos: kecha × mehmon × tarif. Forma 9000 qoldirsa ham to‘liq olinadi.
+            amount = default_emehmon_fee(reservation)
             if emehmon_amount not in (None, ""):
                 try:
-                    amount = Decimal(str(emehmon_amount).replace(",", "."))
+                    posted = Decimal(str(emehmon_amount).replace(",", "."))
                 except (InvalidOperation, ValueError):
-                    amount = None
-            if amount is None or amount <= 0:
-                amount = default_emehmon_fee(reservation)
+                    posted = None
+                else:
+                    unit = emehmon_unit_rate(reservation.hotel_id)
+                    if posted and posted > 0 and posted != unit and posted != amount:
+                        amount = posted
             try:
                 collect_emehmon_fee(
                     reservation,
