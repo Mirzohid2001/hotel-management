@@ -45,7 +45,7 @@
   text-align: center;
   background: linear-gradient(180deg, #2a211c 0%, #1c1612 100%) !important;
   color: rgba(255, 246, 238, 0.92);
-  border-bottom: 2px solid rgba(232, 106, 12, 0.55);
+  border-bottom: 2px solid rgba(196, 92, 38, 0.55);
   border-right-color: rgba(255, 255, 255, 0.08);
 }
 
@@ -95,7 +95,7 @@
 }
 
 .calendar-shax-table .cal-day-col.is-today {
-  background: linear-gradient(180deg, #e86a0c 0%, #c45308 100%) !important;
+  background: linear-gradient(180deg, #c45c26 0%, #c45308 100%) !important;
   box-shadow: inset 0 -3px 0 #ffd7b0;
 }
 
@@ -171,8 +171,8 @@
 }
 
 .calendar-shax-table td.cal-empty.is-today {
-  background-color: rgba(232, 106, 12, 0.09) !important;
-  box-shadow: inset 0 0 0 1px rgba(232, 106, 12, 0.3);
+  background-color: rgba(196, 92, 38, 0.09) !important;
+  box-shadow: inset 0 0 0 1px rgba(196, 92, 38, 0.3);
 }
 
 .calendar-shax-table td.cal-empty .cal-new {
@@ -204,7 +204,7 @@
 .calendar-shax-table td.cal-empty .cal-new:hover,
 .calendar-shax-table td.cal-empty .cal-new:focus-visible {
   border-style: solid;
-  border-color: rgba(232, 106, 12, 0.55);
+  border-color: rgba(196, 92, 38, 0.55);
   background: #fff;
   color: var(--accent-deep, #c45308);
   outline: none;
@@ -290,10 +290,10 @@
 }
 
 .calendar-shax-table td.cal-bar.status-checked_in .cal-stay-chip {
-  background: linear-gradient(135deg, #ff9a2e, #e86a0c);
+  background: linear-gradient(135deg, #d4783a, #c45c26);
   color: #fff;
   border-color: rgba(180, 70, 10, 0.25);
-  box-shadow: 0 4px 12px rgba(232, 106, 12, 0.28);
+  box-shadow: 0 4px 12px rgba(196, 92, 38, 0.28);
 }
 
 .calendar-shax-table td.cal-bar.status-checked_out .cal-stay-chip {
@@ -308,7 +308,7 @@
 }
 
 .calendar-shax-table td.cal-bar.is-today-stay .cal-stay-chip {
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45), 0 4px 12px rgba(232, 106, 12, 0.2);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45), 0 4px 12px rgba(196, 92, 38, 0.2);
 }
 
 .calendar-shax-table .cal-room-row:hover .cal-room-cell {

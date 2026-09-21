@@ -9,37 +9,37 @@
 
 /* —— Fon va atmosfera —— */
 body:not(.auth) {
-  background-color: #ebe4dc;
+  background-color: var(--bg);
   background-image:
     var(--noise),
-    radial-gradient(ellipse 120% 80% at 0% -20%, rgba(232, 106, 12, 0.18), transparent 50%),
-    radial-gradient(ellipse 80% 60% at 100% 0%, rgba(255, 178, 92, 0.12), transparent 45%),
-    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(192, 74, 0, 0.06), transparent 50%),
-    linear-gradient(168deg, #faf6f1 0%, #f0ebe5 38%, #e5dcd2 100%);
+    radial-gradient(ellipse 110% 70% at 0% -15%, rgba(196, 92, 38, 0.1), transparent 52%),
+    radial-gradient(ellipse 70% 50% at 100% 0%, rgba(232, 168, 106, 0.08), transparent 48%),
+    radial-gradient(ellipse 50% 35% at 50% 100%, rgba(154, 63, 20, 0.04), transparent 55%),
+    linear-gradient(168deg, #f3efe9 0%, var(--bg) 40%, var(--bg-deep) 100%);
 }
 
-/* —— Sidebar — premium glass —— */
+/* —— Sidebar — bronze charcoal —— */
 .sidebar {
   background:
-    linear-gradient(180deg, rgba(255, 143, 31, 0.12) 0%, transparent 28%),
-    linear-gradient(165deg, #221810 0%, #140e0a 55%, #0f0a08 100%);
-  border-right: 1px solid rgba(255, 200, 140, 0.08);
-  box-shadow: 4px 0 40px rgba(0, 0, 0, 0.18);
-  padding: 1.5rem 1rem 1.25rem;
+    linear-gradient(180deg, rgba(184, 106, 46, 0.1) 0%, transparent 26%),
+    linear-gradient(165deg, #1c1814 0%, #12100e 55%, #0e0c0a 100%);
+  border-right: 1px solid rgba(232, 168, 106, 0.07);
+  box-shadow: 3px 0 28px rgba(0, 0, 0, 0.14);
+  padding: 1.4rem 0.95rem 1.2rem;
 }
 
 .brand {
-  border-bottom: 1px solid rgba(255, 246, 236, 0.08);
-  padding-bottom: 1.1rem;
+  border-bottom: 1px solid rgba(245, 239, 230, 0.08);
+  padding-bottom: 1rem;
 }
 
 .brand-logo {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow:
-    0 0 0 1px rgba(255, 178, 92, 0.3),
-    0 12px 28px rgba(232, 106, 12, 0.45);
+    0 0 0 1px rgba(232, 168, 106, 0.22),
+    0 8px 20px rgba(196, 92, 38, 0.28);
 }
 .brand-logo.is-custom {
   width: 72px;
@@ -196,10 +196,10 @@ body:not(.auth) {
 }
 
 .sidebar nav a.is-active {
-  background: linear-gradient(135deg, rgba(232, 106, 12, 0.55), rgba(192, 74, 0, 0.35));
+  background: linear-gradient(90deg, rgba(196, 92, 38, 0.38), rgba(196, 92, 38, 0.1));
   box-shadow:
-    inset 0 1px 0 rgba(255, 200, 140, 0.25),
-    0 4px 16px rgba(232, 106, 12, 0.25);
+    inset 3px 0 0 var(--brass-soft),
+    inset 0 0 0 1px rgba(232, 168, 106, 0.12);
 }
 
 .sidebar nav a.is-active::before {
@@ -222,8 +222,8 @@ body:not(.auth) {
 }
 
 .topbar-meta .plan-pill {
-  background: linear-gradient(135deg, rgba(232, 106, 12, 0.15), rgba(255, 143, 31, 0.2));
-  border: 1px solid rgba(232, 106, 12, 0.2);
+  background: linear-gradient(135deg, rgba(196, 92, 38, 0.15), rgba(212, 120, 58, 0.2));
+  border: 1px solid rgba(196, 92, 38, 0.2);
   padding: 0.22rem 0.55rem;
   font-weight: 700;
 }
@@ -235,7 +235,7 @@ body:not(.auth) {
 
 .notify-panel[open] .notify-bell,
 .notify-bell:hover {
-  background: rgba(232, 106, 12, 0.08);
+  background: rgba(196, 92, 38, 0.08);
 }
 
 .notify-dropdown {
@@ -257,8 +257,8 @@ body:not(.auth) {
   width: 2.35rem;
   height: 2.35rem;
   border-radius: 12px;
-  background: rgba(232, 106, 12, 0.1);
-  border: 1px solid rgba(232, 106, 12, 0.2);
+  background: rgba(196, 92, 38, 0.1);
+  border: 1px solid rgba(196, 92, 38, 0.2);
   color: var(--accent-deep);
   font-size: 1.15rem;
   font-weight: 700;
@@ -267,7 +267,7 @@ body:not(.auth) {
 }
 
 .topbar-home:hover {
-  background: rgba(232, 106, 12, 0.18);
+  background: rgba(196, 92, 38, 0.18);
   color: var(--accent-deep);
   transform: scale(1.05);
 }
@@ -276,12 +276,12 @@ body:not(.auth) {
 .btn,
 a.btn,
 button[type="submit"]:not(.logout-form button) {
-  border-radius: 12px;
-  padding: 0.65rem 1.15rem;
-  background: linear-gradient(165deg, #ff9a2e 0%, #e86a0c 45%, #c04a00 100%);
+  border-radius: 11px;
+  padding: 0.62rem 1.1rem;
+  background: linear-gradient(165deg, var(--accent-mid) 0%, var(--accent) 50%, var(--accent-deep) 100%);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.2) inset,
-    0 8px 20px rgba(232, 106, 12, 0.32);
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 6px 16px rgba(196, 92, 38, 0.22);
   position: relative;
   overflow: hidden;
 }
@@ -291,7 +291,7 @@ a.btn::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.22) 50%, transparent 60%);
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.16) 50%, transparent 60%);
   transform: translateX(-120%);
   transition: transform 0.55s ease;
 }
@@ -303,15 +303,16 @@ a.btn:hover::after {
 
 .btn-ghost,
 a.btn-ghost {
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.6);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(8px);
+  border-color: var(--line);
 }
 
 .btn-ghost:hover,
 a.btn-ghost:hover {
   background: #fff;
-  box-shadow: 0 4px 12px rgba(26, 20, 16, 0.06);
+  box-shadow: 0 3px 10px rgba(28, 24, 20, 0.05);
 }
 
 .btn-sm {
@@ -362,7 +363,7 @@ a.btn-ghost:hover {
 .occ-ring-card {
   border-radius: var(--radius-lg);
   border: 1px solid rgba(255, 255, 255, 0.9);
-  background: linear-gradient(165deg, #ffffff 0%, #faf7f3 100%);
+  background: linear-gradient(165deg, #ffffff 0%, #f7f4ef 100%);
   box-shadow: var(--shadow-card);
 }
 
@@ -425,7 +426,7 @@ a.btn-ghost:hover {
 .entity-list .entity-row:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 28px rgba(26, 20, 16, 0.08);
-  border-color: rgba(232, 106, 12, 0.2);
+  border-color: rgba(196, 92, 38, 0.2);
 }
 
 .entity-title {
@@ -459,8 +460,8 @@ a.btn-ghost:hover {
 }
 
 .status-pill.status-inquiry {
-  background: rgba(232, 106, 12, 0.12);
-  border-color: rgba(232, 106, 12, 0.25);
+  background: rgba(196, 92, 38, 0.12);
+  border-color: rgba(196, 92, 38, 0.25);
 }
 
 .status-pill.status-draft {
@@ -470,8 +471,8 @@ a.btn-ghost:hover {
 }
 
 .status-pill.status-approved {
-  background: rgba(232, 106, 12, 0.12);
-  border-color: rgba(232, 106, 12, 0.28);
+  background: rgba(196, 92, 38, 0.12);
+  border-color: rgba(196, 92, 38, 0.28);
   color: var(--accent-deep);
 }
 
@@ -501,8 +502,8 @@ a.btn-ghost:hover {
 .dash-hero-main {
   border-radius: var(--radius-xl);
   background:
-    linear-gradient(135deg, rgba(15, 10, 8, 0.95) 0%, rgba(40, 24, 14, 0.88) 40%, rgba(192, 74, 0, 0.75) 100%),
-    radial-gradient(ellipse 80% 60% at 100% 0%, rgba(255, 143, 31, 0.45), transparent 50%);
+    linear-gradient(135deg, rgba(15, 10, 8, 0.95) 0%, rgba(40, 24, 14, 0.88) 40%, rgba(154, 63, 20, 0.75) 100%),
+    radial-gradient(ellipse 80% 60% at 100% 0%, rgba(212, 120, 58, 0.45), transparent 50%);
   box-shadow: var(--shadow-soft);
   min-height: 180px;
 }
@@ -512,7 +513,7 @@ a.btn-ghost:hover {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 20% 80%, rgba(255, 178, 92, 0.15), transparent 40%),
+    radial-gradient(circle at 20% 80%, rgba(232, 168, 106, 0.15), transparent 40%),
     url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 60L60 0' stroke='rgba(255,255,255,0.03)'/%3E%3C/svg%3E");
   pointer-events: none;
 }
@@ -537,7 +538,7 @@ a.btn-ghost:hover {
 .occ-ring {
   width: 128px;
   height: 128px;
-  box-shadow: 0 0 0 6px rgba(232, 106, 12, 0.08);
+  box-shadow: 0 0 0 6px rgba(196, 92, 38, 0.08);
 }
 
 /* —— Ops chips —— */
@@ -572,8 +573,8 @@ a.btn-ghost:hover {
 }
 
 .room-tile.occupied {
-  background: linear-gradient(155deg, #ff8f1f 0%, #e86a0c 40%, #b84200 100%);
-  box-shadow: 0 12px 28px rgba(232, 106, 12, 0.35);
+  background: linear-gradient(155deg, #d4783a 0%, #c45c26 40%, #b84200 100%);
+  box-shadow: 0 12px 28px rgba(196, 92, 38, 0.35);
 }
 
 .room-tile:hover {
@@ -600,7 +601,7 @@ a.btn-ghost:hover {
 
 .walkin-submit-bar {
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, #fff 0%, #faf6f1 100%);
+  background: linear-gradient(180deg, #fff 0%, #f3efe9 100%);
 }
 
 /* —— Formalar —— */
@@ -622,7 +623,7 @@ a.btn-ghost:hover {
 .search-form input:focus,
 .search-form select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(232, 106, 12, 0.12);
+  box-shadow: 0 0 0 4px rgba(196, 92, 38, 0.12);
   transform: translateY(-1px);
 }
 
@@ -672,11 +673,11 @@ a.btn-ghost:hover {
 /* —— Trend chart —— */
 .trend-bar {
   border-radius: 8px 8px 4px 4px;
-  background: linear-gradient(180deg, #ffb25c, #e86a0c 60%, #c04a00);
+  background: linear-gradient(180deg, #e8a86a, #c45c26 60%, #9a3f14);
 }
 
 .trend-col.is-today .trend-bar {
-  box-shadow: 0 0 0 3px rgba(232, 106, 12, 0.25);
+  box-shadow: 0 0 0 3px rgba(196, 92, 38, 0.25);
 }
 
 /* —— Xabarlar —— */
@@ -686,14 +687,14 @@ a.btn-ghost:hover {
 }
 
 .messages .success {
-  background: linear-gradient(90deg, rgba(232, 106, 12, 0.08), #fff);
+  background: linear-gradient(90deg, rgba(196, 92, 38, 0.08), #fff);
 }
 
 /* —— SPA progress —— */
 .spa-progress {
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--accent-mid), var(--accent-deep), transparent);
-  box-shadow: 0 0 20px rgba(232, 106, 12, 0.6);
+  box-shadow: 0 0 20px rgba(196, 92, 38, 0.6);
 }
 
 /* —— Auth —— */
@@ -750,7 +751,7 @@ a.btn-ghost:hover {
 .section-panel > ul.list > li:hover {
   transform: none;
   box-shadow: none;
-  border-color: rgba(232, 106, 12, 0.22);
+  border-color: rgba(196, 92, 38, 0.22);
   background: #fff;
 }
 
