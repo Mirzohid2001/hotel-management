@@ -233,16 +233,57 @@
   padding: 1rem 1.05rem 0.95rem;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background: var(--panel-strong);
   box-shadow: none;
   overflow: hidden;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
+.board-page .room-tile.vacant {
+  background: linear-gradient(180deg, #fffbf7, #f3ebe3);
+  color: var(--ink);
+}
+
+.board-page .room-tile.vacant .num,
+.board-page .room-tile.vacant .guest {
+  color: var(--ink);
+}
+
+.board-page .room-tile.vacant .meta {
+  color: var(--muted);
+}
+
+.board-page .room-tile.occupied {
+  background: linear-gradient(160deg, var(--accent-mid), var(--accent-deep));
+  color: #fff8f0;
+  border-color: transparent;
+}
+
+.board-page .room-tile.occupied .num,
+.board-page .room-tile.occupied .guest {
+  color: #fff;
+}
+
+.board-page .room-tile.occupied .meta {
+  color: rgba(255, 248, 240, 0.82);
+}
+
+.board-page .room-tile.dirty {
+  background: linear-gradient(180deg, #fff8f0, #f5e6d8);
+  color: var(--ink);
+}
+
+.board-page .room-tile.ooo {
+  background: #ece8e3;
+  color: var(--muted);
+}
+
 .board-page .room-tile:hover {
-  border-color: rgba(196, 92, 38, 0.25);
   box-shadow: var(--shadow-card);
   transform: translateY(-1px);
+}
+
+.board-page .room-tile.vacant:hover {
+  border-color: rgba(196, 92, 38, 0.25);
 }
 
 .board-page .room-tile::after {
