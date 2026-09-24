@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "hr",
     "reports",
     "widget",
+    "api.apps.ApiConfig",
 ]
 
 MIDDLEWARE = [

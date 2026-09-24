@@ -10,6 +10,9 @@ class SubscriptionGateMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Mobile JSON API — never redirect to HTML expired page
+        if request.path.startswith("/api/"):
+            return self.get_response(request)
         if self._should_lock(request):
             try:
                 match = resolve(request.path_info)

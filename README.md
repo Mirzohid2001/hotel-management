@@ -46,6 +46,33 @@ python manage.py compilemessages
 3. HTTPS orqali ishga tushiring (nginx/caddy + gunicorn/uwsgi).
 4. `DEBUG=False` da SSL redirect, secure cookie va HSTS avtomatik yoqiladi.
 
+## Backup va deploy (serverga zarar bermasdan)
+
+Skriptlar: `scripts/backup.sh`, `scripts/deploy.sh`, `scripts/restore.sh` — batafsil `scripts/README.md`.
+
+Serverda bir marta:
+
+```bash
+cp scripts/ops.env.example scripts/ops.env   # DB / BACKUP_DIR / RESTART_CMD
+chmod +x scripts/*.sh
+```
+
+Har kuni backup:
+
+```bash
+./scripts/backup.sh --dry-run
+./scripts/backup.sh
+```
+
+Deploy (avval backup, keyin `git pull --ff-only`):
+
+```bash
+./scripts/deploy.sh --dry-run
+./scripts/deploy.sh --confirm
+```
+
+Restore faqat `--confirm` bilan; avval `--dry-run` / `--list`.
+
 ## Onlayn bron (veb-sayt widget)
 
 Har bir tenant uchun Django Admin → **Tenants → Tenant → Veb-bron widget**:

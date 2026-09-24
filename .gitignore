@@ -14,6 +14,10 @@ __pycache__/
 .deploy-secrets-local.txt
 config/settings_dev.py
 config/settings_prod.py
+scripts/ops.env
+
+# Local / server backup dumps (never commit)
+backups/
 
 # Databases / local data
 *.sqlite3
@@ -34,3 +38,8 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 *.log
+
+# Mobile (Expo) — keep source, ignore deps/build
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/

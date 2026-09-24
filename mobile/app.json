@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Rivoj PMS",
+    "slug": "rivoj-pms-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "uz.rivoj.hotel.pms"
+    },
+    "android": {
+      "package": "uz.rivoj.hotel.pms",
+      "adaptiveIcon": {
+        "backgroundColor": "#ebe6df",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
