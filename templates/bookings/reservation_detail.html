@@ -275,6 +275,13 @@
   {% if can_manage_bookings and reservation.status != 'cancelled' and reservation.status != 'checked_out' and reservation.status != 'no_show' %}
   <a class="btn-ghost" href="{% url 'bookings:amend' reservation.pk %}">{% trans "O‘zgartirish" %}</a>
   {% endif %}
+  {% if is_tenant_admin %}
+  <form method="post" action="{% url 'bookings:purge' reservation.pk %}"
+        onsubmit="return confirm('{% trans "Bu bron butunlay o‘chiriladi. Hisobi va to‘lovlari ham ketadi. Mehmon kartochkasi va xona qoladi." %}');">
+    {% csrf_token %}
+    <button type="submit" class="btn-ghost">{% trans "O‘chirish" %}</button>
+  </form>
+  {% endif %}
 </div>
 
 <section class="section-panel">

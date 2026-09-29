@@ -8,6 +8,12 @@ from django.db.models import Q
 from django.views.decorators.http import require_GET, require_POST
 
 from bookings.models import Reservation
+from bookings.occupants import (
+    occupant_expected_count,
+    occupant_missing_slots,
+    occupants_qs,
+    sync_reservation_occupants,
+)
 from bookings.services import apply_amendment, confirm_inquiry
 from core.roles import (
     CASH,
@@ -26,7 +32,7 @@ from properties.models import Room
 from tenants.models import TenantMembership
 
 from .auth import api_login_required, api_role_required, json_error, json_ok, parse_json
-from .views import ROOM_STATUS_ROLES, _get_reservation, _reservation_summary
+from .views import ROOM_STATUS_ROLES, _get_reservation, _occupant_row, _reservation_summary
 
 
 @api_login_required
@@ -268,10 +274,105 @@ def reservation_amend(request, pk):
             )
         except (InvalidOperation, TypeError, ValueError):
             return json_error("Invalid nightly_rate.")
+    if "company_id" in data:
+        from guests.models import Company
+
+        cid = data.get("company_id")
+        if cid in (None, "", 0, "0"):
+            payload["company"] = None
+        else:
+            company = Company.objects.filter(pk=cid, tenant=request.tenant).first()
+            if company is None or (
+                not company.is_active and company.pk != reservation.company_id
+            ):
+                return json_error("Company not found.", status=404)
+            payload["company"] = company
+    if "referrer_id" in data:
+        from bookings.models import BookingReferrer
+
+        rid = data.get("referrer_id")
+        if rid in (None, "", 0, "0"):
+            payload["referrer"] = None
+            payload["commission_percent"] = None
+        else:
+            referrer = BookingReferrer.objects.filter(
+                pk=rid, tenant=request.tenant
+            ).first()
+            if referrer is None or (
+                not referrer.is_active and referrer.pk != reservation.referrer_id
+            ):
+                return json_error("Referrer not found.", status=404)
+            payload["referrer"] = referrer
+    if "commission_percent" in data:
+        raw_pct = data.get("commission_percent")
+        if raw_pct in (None, ""):
+            payload["commission_percent"] = None
+        else:
+            try:
+                payload["commission_percent"] = Decimal(
+                    str(raw_pct).replace(",", ".")
+                )
+            except (InvalidOperation, TypeError, ValueError):
+                return json_error("Invalid commission_percent.")
     try:
         apply_amendment(reservation, request.user, payload)
         reservation.refresh_from_db()
         return json_ok(_reservation_summary(reservation))
+    except ValidationError as exc:
+        return json_error(
+            "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
+            status=400,
+        )
+
+
+@api_login_required
+@api_role_required(*STAY_DESK)
+@require_POST
+def reservation_occupants(request, pk):
+    """Replace companion occupants (primary guest stays reservation.guest)."""
+    reservation = _get_reservation(request, pk)
+    if reservation is None:
+        return json_error("Reservation not found.", status=404)
+    data = parse_json(request)
+    raw = data.get("occupants")
+    if raw is None:
+        return json_error("occupants array required.")
+    if not isinstance(raw, list):
+        return json_error("occupants must be a list.")
+
+    companions = []
+    for row in raw:
+        if not isinstance(row, dict):
+            continue
+        item = dict(row)
+        guest_id = item.pop("guest_id", None) or item.get("guest")
+        if guest_id and not hasattr(guest_id, "pk"):
+            try:
+                gid = int(guest_id)
+            except (TypeError, ValueError):
+                return json_error("Invalid guest_id.")
+            guest = Guest.objects.filter(pk=gid, tenant=request.tenant).first()
+            if guest is None:
+                return json_error(f"Guest {gid} not found.", status=404)
+            # Skip primary — sync always re-adds reservation.guest
+            if guest.pk == reservation.guest_id:
+                continue
+            item["guest"] = guest
+        companions.append(item)
+
+    try:
+        sync_reservation_occupants(reservation, companions)
+        reservation.refresh_from_db()
+        named = list(occupants_qs(reservation))
+        missing_a, missing_c = occupant_missing_slots(reservation)
+        return json_ok(
+            {
+                "reservation_id": reservation.pk,
+                "occupants": [_occupant_row(o) for o in named],
+                "occupants_expected": occupant_expected_count(reservation),
+                "occupants_missing": missing_a + missing_c,
+            }
+        )
     except ValidationError as exc:
         return json_error(
             "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
@@ -472,10 +573,75 @@ def housekeeping_board(request):
             "status": t.status,
             "room": {"id": t.room_id, "number": t.room.number},
             "assigned_to": t.assigned_to.get_username() if t.assigned_to_id else "",
+            "assigned_to_id": t.assigned_to_id,
         }
         for t in tasks.order_by("-created_at")[:100]
     ]
     return json_ok({"stats": stats, "rooms": room_rows, "tasks": task_rows})
+
+
+@api_login_required
+@api_role_required(*HOUSEKEEPING, TenantMembership.Role.RECEPTIONIST, TenantMembership.Role.MANAGER)
+@require_GET
+def housekeeping_staff(request):
+    """Staff list for HK assign (same pool as web)."""
+    from core.staff import tenant_staff_users
+
+    items = [
+        {
+            "id": u.pk,
+            "username": u.get_username(),
+            "name": (u.get_full_name() or u.get_username()).strip(),
+        }
+        for u in tenant_staff_users(request.tenant).order_by("username")[:200]
+    ]
+    return json_ok({"items": items})
+
+
+@api_login_required
+@api_role_required(*HOUSEKEEPING, TenantMembership.Role.RECEPTIONIST, TenantMembership.Role.MANAGER)
+@require_POST
+def housekeeping_assign(request, pk):
+    from core.staff import tenant_staff_users
+    from housekeeping.models import HousekeepingTask
+    from housekeeping.services import assign_task
+
+    hotel = getattr(request, "active_property", None)
+    qs = HousekeepingTask.objects.filter(pk=pk, tenant=request.tenant)
+    if hotel is not None:
+        qs = qs.filter(room__property=hotel)
+    task = qs.select_related("room").first()
+    if task is None:
+        return json_error("Task not found.", status=404)
+    data = parse_json(request)
+    user_id = data.get("user_id")
+    if user_id in (None, "", 0, "0"):
+        staff = request.user
+    else:
+        staff = tenant_staff_users(request.tenant).filter(pk=user_id).first()
+        if staff is None:
+            return json_error("Staff not found.", status=404)
+    try:
+        assign_task(task, staff)
+        task.refresh_from_db()
+        return json_ok(
+            {
+                "task_id": task.pk,
+                "status": task.status,
+                "assigned_to": staff.get_username(),
+                "assigned_to_id": staff.pk,
+                "room": {
+                    "id": task.room_id,
+                    "number": task.room.number,
+                    "status": task.room.status,
+                },
+            }
+        )
+    except ValidationError as exc:
+        return json_error(
+            "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
+            status=400,
+        )
 
 
 @api_login_required
@@ -828,6 +994,134 @@ def maintenance_complete(request, pk):
         complete_ticket(ticket, user=request.user)
         ticket.refresh_from_db()
         return json_ok({"id": ticket.pk, "status": ticket.status})
+    except ValidationError as exc:
+        return json_error(
+            "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
+            status=400,
+        )
+
+
+@api_login_required
+@api_role_required(*OPS_MANAGER, TenantMembership.Role.MANAGER, TenantMembership.Role.RECEPTIONIST)
+@require_POST
+def maintenance_assign(request, pk):
+    from core.staff import tenant_staff_users
+    from maintenance.models import MaintenanceTicket
+    from maintenance.services import assign_ticket
+
+    hotel = getattr(request, "active_property", None)
+    qs = MaintenanceTicket.objects.filter(pk=pk, tenant=request.tenant)
+    if hotel is not None:
+        qs = qs.filter(Q(room__property=hotel) | Q(room__isnull=True))
+    ticket = qs.select_related("room").first()
+    if ticket is None:
+        return json_error("Ticket not found.", status=404)
+    data = parse_json(request)
+    user_id = data.get("user_id")
+    if user_id in (None, "", 0, "0"):
+        staff = request.user
+    else:
+        staff = tenant_staff_users(request.tenant).filter(pk=user_id).first()
+        if staff is None:
+            return json_error("Staff not found.", status=404)
+    try:
+        assign_ticket(ticket, staff)
+        ticket.refresh_from_db()
+        return json_ok(
+            {
+                "id": ticket.pk,
+                "status": ticket.status,
+                "assignee": staff.get_username(),
+            }
+        )
+    except ValidationError as exc:
+        return json_error(
+            "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
+            status=400,
+        )
+
+
+@api_login_required
+@api_role_required(*OPS_MANAGER, TenantMembership.Role.MANAGER, TenantMembership.Role.RECEPTIONIST)
+@require_POST
+def maintenance_cancel(request, pk):
+    from maintenance.models import MaintenanceTicket
+    from maintenance.services import cancel_ticket
+
+    hotel = getattr(request, "active_property", None)
+    qs = MaintenanceTicket.objects.filter(pk=pk, tenant=request.tenant)
+    if hotel is not None:
+        qs = qs.filter(Q(room__property=hotel) | Q(room__isnull=True))
+    ticket = qs.select_related("room").first()
+    if ticket is None:
+        return json_error("Ticket not found.", status=404)
+    try:
+        cancel_ticket(ticket, user=request.user)
+        ticket.refresh_from_db()
+        return json_ok({"id": ticket.pk, "status": ticket.status})
+    except ValidationError as exc:
+        return json_error(
+            "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
+            status=400,
+        )
+
+
+@api_login_required
+@api_role_required(*OPS_MANAGER, TenantMembership.Role.MANAGER)
+@require_POST
+def maintenance_spend(request, pk):
+    from decimal import Decimal, InvalidOperation
+
+    from finance.models import Expense
+    from maintenance.models import MaintenanceTicket
+    from maintenance.services import record_maintenance_spend
+
+    hotel = getattr(request, "active_property", None)
+    if hotel is None:
+        return json_error("Select a hotel (X-Hotel-Id).", status=400)
+    qs = MaintenanceTicket.objects.filter(pk=pk, tenant=request.tenant)
+    ticket = qs.filter(Q(room__property=hotel) | Q(room__isnull=True)).first()
+    if ticket is None:
+        return json_error("Ticket not found.", status=404)
+    data = parse_json(request)
+    title = (data.get("title") or ticket.title or "Ta’mir").strip()
+    try:
+        amount = Decimal(str(data.get("amount") or "").replace(",", "."))
+    except (InvalidOperation, TypeError, ValueError):
+        return json_error("Invalid amount.")
+    from django.utils import timezone as tz
+
+    expense_date = tz.localdate()
+    if data.get("expense_date"):
+        try:
+            expense_date = date.fromisoformat(str(data["expense_date"]).strip())
+        except ValueError:
+            return json_error("Invalid expense_date.")
+    funding = (data.get("funding") or Expense.Funding.OPERATING).strip()
+    method = (data.get("payment_method") or Expense.PaymentMethod.CASH).strip()
+    try:
+        expense = record_maintenance_spend(
+            request.tenant,
+            request.user,
+            hotel=hotel,
+            title=title,
+            amount=amount,
+            expense_date=expense_date,
+            funding=funding,
+            payment_method=method,
+            ticket=ticket,
+            notes=(data.get("notes") or "").strip(),
+            currency=(data.get("currency") or None),
+        )
+        return json_ok(
+            {
+                "expense_id": expense.pk,
+                "amount": str(expense.amount),
+                "status": expense.status,
+                "funding": expense.funding,
+            },
+            status=201,
+        )
     except ValidationError as exc:
         return json_error(
             "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),

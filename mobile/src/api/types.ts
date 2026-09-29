@@ -6,7 +6,15 @@ export type TenantInfo = {
 };
 
 export type MePayload = {
-  user: { id: number; username: string; full_name: string };
+  user: {
+    id: number;
+    username: string;
+    full_name: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone?: string;
+  };
   tenant: { id: number; name: string; slug: string; currency: string };
   role: string;
   permissions: Record<string, boolean>;
@@ -76,19 +84,51 @@ export type FolioPayment = {
   created_at: string | null;
 };
 
+export type ReservationOccupant = {
+  id: number;
+  kind: string;
+  is_primary: boolean;
+  guest: {
+    id: number;
+    name: string;
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    nationality?: string;
+    documents?: {
+      id: number;
+      doc_type: string;
+      number: string;
+      issued_country?: string;
+    }[];
+  };
+};
+
 export type ReservationDetail = {
   id: number;
   code: string;
   status: string;
   check_in: string;
   check_out: string;
+  nights?: number;
   adults: number;
   children: number;
+  emehmon_required?: boolean;
+  emehmon_unit?: string;
+  emehmon_default?: string;
+  emehmon_guests?: number;
+  emehmon_paid?: boolean;
   guest: { id: number; name: string };
   room: { id: number | null; number: string; status?: string };
   hotel_id: number | null;
   notes: string;
   nightly_rate?: string;
+  company?: { id: number; name: string } | null;
+  referrer?: { id: number; name: string } | null;
+  rate_plan?: { id: number; name: string } | null;
+  occupants?: ReservationOccupant[];
+  occupants_expected?: number;
+  occupants_missing?: number;
   folio: {
     id: number;
     balance: string;
@@ -121,6 +161,13 @@ export type WalkInPayload = {
   allow_dirty?: boolean;
   allow_no_docs?: boolean;
   collect_emehmon?: boolean;
+  emehmon_amount?: string;
+  emehmon_method?: string;
+  occupants?: Record<string, unknown>[];
+  guest_id?: number;
+  company_id?: number;
+  referrer_id?: number;
+  rate_plan_id?: number;
   nightly_rate?: string;
   notes?: string;
 };
@@ -219,8 +266,18 @@ export type CreateReservationPayload = {
   check_out: string;
   adults?: number;
   children?: number;
+  guest_id?: number;
+  company_id?: number;
+  referrer_id?: number;
+  commission_percent?: string;
+  rate_plan_id?: number;
   nightly_rate?: string;
   notes?: string;
+  source?: string;
+  doc_number?: string;
+  doc_type?: string;
+  issued_country?: string;
+  occupants?: Record<string, unknown>[];
 };
 
 export type CreateReservationResult = {
@@ -283,6 +340,7 @@ export type HkBoard = {
     status: string;
     room: { id: number; number: string };
     assigned_to: string;
+    assigned_to_id?: number | null;
   }[];
 };
 

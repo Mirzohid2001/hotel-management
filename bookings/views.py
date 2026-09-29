@@ -12,7 +12,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from core.mixins import feature_required, role_required, tenant_login_required
 from core.htmx import modal_close_response, oob_select_response, wants_htmx_partial
-from core.roles import ACCOUNTING, FLOOR_VIEW, FRONT_OFFICE, STAY_DESK
+from core.roles import ACCOUNTING, FLOOR_VIEW, FRONT_OFFICE, STAY_DESK, TENANT_ADMIN
 from folio.models import Folio
 from guests.models import Guest
 from properties.models import Room, RoomType
@@ -58,6 +58,7 @@ from .services import (
     create_reservation,
     guest_has_id_document,
     mark_no_show,
+    purge_reservation,
     transfer_room,
 )
 from .occupants import (
@@ -561,6 +562,20 @@ def reservation_cancel(request, pk):
     except ValidationError as exc:
         messages.error(request, "; ".join(exc.messages))
     return redirect("bookings:detail", pk=pk)
+
+
+@role_required(*TENANT_ADMIN)
+@require_POST
+def reservation_purge(request, pk):
+    reservation = _get_reservation(request, pk)
+    code = reservation.code
+    try:
+        purge_reservation(reservation, request.user)
+        messages.success(request, _("Bron o‘chirildi: %(code)s") % {"code": code})
+    except ValidationError as exc:
+        messages.error(request, "; ".join(exc.messages))
+        return redirect("bookings:detail", pk=pk)
+    return _redirect_next(request, "bookings:board")
 
 
 @role_required(*FRONT_OFFICE)

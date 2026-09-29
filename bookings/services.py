@@ -760,6 +760,63 @@ def cancel_reservation(reservation: Reservation, user, reason="") -> Reservation
 
 
 @transaction.atomic
+def purge_reservation(reservation: Reservation, user) -> str:
+    """Remove one booking and only its own folio records.
+
+    Guests, rooms, companies, cash shifts, city-ledger invoices, minibar
+    stock and service catalog rows are left in place. Linked minibar sales,
+    service orders or company-invoice lines block the delete.
+    """
+    from folio.models import CompanyInvoice, CompanyInvoiceLine, Folio, FolioCharge, GuestPayment
+    from inventory.models import MinibarSale
+    from services.models import ServiceOrder
+
+    code = reservation.code
+    guest_name = reservation.guest.full_name if reservation.guest_id else ""
+    room_number = reservation.room.number if reservation.room_id else ""
+    if (
+        CompanyInvoiceLine.objects.filter(source_reservation=reservation).exists()
+        or CompanyInvoice.objects.filter(source_folio__reservation=reservation).exists()
+        or CompanyInvoiceLine.objects.filter(source_charge__folio__reservation=reservation).exists()
+    ):
+        raise ValidationError(
+            _("Bu bron kompaniya hisobiga ulangan. Avval o‘sha hisobdan yeching.")
+        )
+    if MinibarSale.objects.filter(reservation=reservation).exists():
+        raise ValidationError(_("Bu bronda minibar savdosi bor. Avval uni bekor qiling."))
+    if ServiceOrder.objects.filter(reservation=reservation).exists():
+        raise ValidationError(_("Bu bronda xizmat buyurtmasi bor. Avval uni bekor qiling."))
+
+    log_activity(
+        tenant=reservation.tenant,
+        user=user,
+        action="reservation.purge",
+        model="bookings.Reservation",
+        object_id=reservation.pk,
+        payload={
+            "code": code,
+            "guest": guest_name,
+            "room": room_number,
+            "status": reservation.status,
+            "check_in": reservation.check_in.isoformat(),
+            "check_out": reservation.check_out.isoformat(),
+        },
+    )
+    folio_ids = list(
+        Folio.objects.filter(reservation=reservation).values_list("id", flat=True)
+    )
+    if folio_ids:
+        FolioCharge.objects.filter(folio_id__in=folio_ids).delete()
+        GuestPayment.objects.filter(folio_id__in=folio_ids).delete()
+        Folio.objects.filter(pk__in=folio_ids).delete()
+    Stay.objects.filter(reservation=reservation).delete()
+    reservation.occupants.all().delete()
+    reservation.change_logs.all().delete()
+    reservation.delete()
+    return code
+
+
+@transaction.atomic
 def confirm_inquiry(reservation: Reservation, user, reason="") -> Reservation:
     if reservation.status != Reservation.Status.INQUIRY:
         raise ValidationError(_("Faqat so‘rov bronlar tasdiqlanadi."))

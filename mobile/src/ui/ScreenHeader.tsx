@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { colors, space, type, ui } from "./theme";
+import { colors, fontUi, radius, space, type } from "./theme";
 
 type Props = {
   eyebrow?: string;
@@ -23,9 +23,15 @@ export function ScreenHeader({
 }: Props) {
   return (
     <View style={styles.wrap}>
+      <View style={styles.glow} />
       {onBack ? (
-        <Pressable onPress={onBack} hitSlop={12}>
-          <Text style={ui.back}>← Orqaga</Text>
+        <Pressable
+          onPress={onBack}
+          hitSlop={12}
+          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
+        >
+          <Text style={styles.backChevron}>‹</Text>
+          <Text style={styles.backText}>Orqaga</Text>
         </Pressable>
       ) : null}
       <View style={styles.top}>
@@ -57,30 +63,66 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: space.lg,
     paddingHorizontal: space.xl,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(255,255,255,0.08)",
+    // leave room for Expo/devtools gear on simulator
+    paddingRight: space.xl + 8,
+  },
+  glow: {
+    position: "absolute",
+    right: -40,
+    top: -30,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: "rgba(196,92,38,0.28)",
+  },
+  backBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginBottom: space.sm,
+    paddingVertical: 4,
+    paddingRight: 10,
+    gap: 2,
+  },
+  backChevron: {
+    color: colors.accentSoft,
+    fontSize: 22,
+    fontWeight: "500",
+    lineHeight: 24,
+    marginTop: -1,
+  },
+  backText: {
+    color: colors.accentSoft,
+    fontFamily: fontUi,
+    fontSize: 14,
+    fontWeight: "600",
   },
   top: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-end",
+    alignItems: "flex-start",
     gap: space.md,
   },
-  copy: { flex: 1, minWidth: 0 },
+  copy: { flex: 1, minWidth: 0, paddingRight: 4 },
   title: {
     ...type.title,
     marginTop: 4,
+    fontSize: 24,
+    lineHeight: 30,
   },
   sub: {
-    marginTop: 4,
+    marginTop: 5,
     color: colors.nightFogDim,
     fontSize: 13,
     fontWeight: "500",
+    fontFamily: fontUi,
+    lineHeight: 18,
   },
   right: {
     flexDirection: "row",
     alignItems: "center",
     gap: space.sm,
     flexShrink: 0,
+    paddingBottom: 2,
   },
 });

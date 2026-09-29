@@ -5,6 +5,7 @@ from decimal import Decimal, InvalidOperation
 import base64
 
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Q
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
@@ -418,6 +419,12 @@ def city_ledger(request):
     hotel = getattr(request, "active_property", None)
     if hotel is not None:
         qs = qs.filter(Q(hotel=hotel) | Q(hotel__isnull=True))
+    company_id = (request.GET.get("company_id") or "").strip()
+    if company_id:
+        try:
+            qs = qs.filter(company_id=int(company_id))
+        except (TypeError, ValueError):
+            return json_error("Invalid company_id.")
     status = (request.GET.get("status") or "open").strip()
     if status == "open":
         qs = qs.filter(
@@ -561,70 +568,102 @@ def group_create(request):
         company = Company.objects.filter(
             pk=data["company_id"], tenant=request.tenant
         ).first()
+    class _BadRow(Exception):
+        def __init__(self, response):
+            self.response = response
+
     rooms_data = []
-    for row in rooms_in:
-        first = (row.get("first_name") or "").strip()
-        if not first:
-            return json_error("Each room needs first_name.")
-        guest = Guest.objects.create(
-            tenant=request.tenant,
-            first_name=first,
-            last_name=(row.get("last_name") or "").strip(),
-            phone=(row.get("phone") or "").strip(),
-        )
-        room = None
-        room_type = None
-        if row.get("room_id"):
-            room = Room.objects.filter(
-                pk=row["room_id"], tenant=request.tenant, property=hotel, is_active=True
-            ).select_related("room_type").first()
-            if room is None:
-                return json_error(f"Room {row['room_id']} not found.", status=404)
-            room_type = room.room_type
-        elif row.get("room_type_id"):
-            room_type = RoomType.objects.filter(
-                pk=row["room_type_id"], tenant=request.tenant, property=hotel
-            ).first()
-            if room_type is None:
-                return json_error("Room type not found.", status=404)
-        else:
-            return json_error("room_id or room_type_id required per room.")
-        item = {
-            "guest": guest,
-            "room_type": room_type,
-            "room": room,
-            "adults": int(row.get("adults") or 1),
-            "children": int(row.get("children") or 0),
-        }
-        if row.get("nightly_rate") not in (None, ""):
-            try:
-                item["nightly_rate"] = Decimal(str(row["nightly_rate"]).replace(",", "."))
-            except (InvalidOperation, TypeError, ValueError):
-                return json_error("Invalid nightly_rate.")
-        rooms_data.append(item)
     try:
-        group, created = create_group_booking(
-            tenant=request.tenant,
-            user=request.user,
-            property_obj=hotel,
-            name=name,
-            check_in=check_in,
-            check_out=check_out,
-            rooms_data=rooms_data,
-            company=company,
-            notes=(data.get("notes") or "").strip(),
-        )
-        return json_ok(
-            {
-                "id": group.pk,
-                "code": group.code,
-                "name": group.name,
-                "reservations": [_reservation_summary(r) for r in created],
-            },
-            status=201,
-        )
+        with transaction.atomic():
+            for row in rooms_in:
+                room = None
+                room_type = None
+                if row.get("room_id"):
+                    room = Room.objects.filter(
+                        pk=row["room_id"],
+                        tenant=request.tenant,
+                        property=hotel,
+                        is_active=True,
+                    ).select_related("room_type").first()
+                    if room is None:
+                        raise _BadRow(
+                            json_error(f"Room {row['room_id']} not found.", status=404)
+                        )
+                    room_type = room.room_type
+                elif row.get("room_type_id"):
+                    room_type = RoomType.objects.filter(
+                        pk=row["room_type_id"], tenant=request.tenant, property=hotel
+                    ).first()
+                    if room_type is None:
+                        raise _BadRow(json_error("Room type not found.", status=404))
+                else:
+                    raise _BadRow(
+                        json_error("room_id or room_type_id required per room.")
+                    )
+                try:
+                    adults = max(1, int(row.get("adults") or 1))
+                    children = max(0, int(row.get("children") or 0))
+                except (TypeError, ValueError):
+                    raise _BadRow(json_error("Invalid adults or children."))
+                guest = None
+                gid = row.get("guest_id")
+                if gid not in (None, "", 0, "0"):
+                    guest = Guest.objects.filter(
+                        pk=gid, tenant=request.tenant
+                    ).first()
+                    if guest is None:
+                        raise _BadRow(json_error("Guest not found.", status=404))
+                else:
+                    first = (row.get("first_name") or "").strip()
+                    if not first:
+                        raise _BadRow(
+                            json_error("Each room needs first_name or guest_id.")
+                        )
+                    guest = Guest.objects.create(
+                        tenant=request.tenant,
+                        first_name=first,
+                        last_name=(row.get("last_name") or "").strip(),
+                        phone=(row.get("phone") or "").strip(),
+                    )
+                item = {
+                    "guest": guest,
+                    "room_type": room_type,
+                    "room": room,
+                    "adults": adults,
+                    "children": children,
+                }
+                if row.get("nightly_rate") not in (None, ""):
+                    try:
+                        item["nightly_rate"] = Decimal(
+                            str(row["nightly_rate"]).replace(",", ".")
+                        )
+                    except (InvalidOperation, TypeError, ValueError):
+                        raise _BadRow(json_error("Invalid nightly_rate."))
+                rooms_data.append(item)
+            group, created = create_group_booking(
+                tenant=request.tenant,
+                user=request.user,
+                property_obj=hotel,
+                name=name,
+                check_in=check_in,
+                check_out=check_out,
+                rooms_data=rooms_data,
+                company=company,
+                notes=(data.get("notes") or "").strip(),
+            )
+    except _BadRow as stop:
+        return stop.response
     except ValidationError as exc:
         return _err(exc)
+    return json_ok(
+        {
+            "id": group.pk,
+            "code": group.code,
+            "name": group.name,
+            "reservations": [_reservation_summary(r) for r in created],
+        },
+        status=201,
+    )
 
 
 @api_login_required
@@ -718,6 +757,24 @@ def night_audit_run(request):
         return _err(exc)
 
 
+def _expense_row(e) -> dict:
+    return {
+        "id": e.pk,
+        "title": e.title,
+        "amount": str(e.amount),
+        "currency": e.currency,
+        "status": e.status,
+        "expense_date": e.expense_date.isoformat() if e.expense_date else None,
+        "category": e.category.name if e.category_id else "",
+        "category_id": e.category_id,
+        "vendor": e.vendor.name if e.vendor_id else "",
+        "vendor_id": e.vendor_id,
+        "funding": e.funding,
+        "payment_method": e.payment_method,
+        "notes": e.notes or "",
+    }
+
+
 @api_login_required
 @api_role_required(*FINANCE, TenantMembership.Role.MANAGER)
 @require_GET
@@ -733,20 +790,146 @@ def expenses(request):
     status = (request.GET.get("status") or "").strip()
     if status:
         qs = qs.filter(status=status)
-    items = [
-        {
-            "id": e.pk,
-            "title": e.title,
-            "amount": str(e.amount),
-            "status": e.status,
-            "expense_date": e.expense_date.isoformat() if e.expense_date else None,
-            "category": e.category.name if e.category_id else "",
-            "funding": e.funding,
-            "payment_method": e.payment_method,
-        }
-        for e in qs.order_by("-expense_date", "-id")[:100]
-    ]
+    items = [_expense_row(e) for e in qs.order_by("-expense_date", "-id")[:100]]
     return json_ok({"items": items})
+
+
+@api_login_required
+@api_role_required(*FINANCE, TenantMembership.Role.MANAGER)
+@require_GET
+def expenses_meta(request):
+    from finance.models import Expense, ExpenseCategory, Vendor
+
+    cats = [
+        {"id": c.pk, "name": c.name}
+        for c in ExpenseCategory.objects.filter(
+            tenant=request.tenant, is_active=True
+        ).order_by("name")
+    ]
+    vendors = [
+        {"id": v.pk, "name": v.name}
+        for v in Vendor.objects.filter(tenant=request.tenant, is_active=True).order_by(
+            "name"
+        )
+    ]
+    return json_ok(
+        {
+            "categories": cats,
+            "vendors": vendors,
+            "payment_methods": [
+                {"id": k, "label": str(v)} for k, v in Expense.PaymentMethod.choices
+            ],
+            "funding": [{"id": k, "label": str(v)} for k, v in Expense.Funding.choices],
+            "currency": request.tenant.currency or "UZS",
+        }
+    )
+
+
+@api_login_required
+@api_role_required(*FINANCE, TenantMembership.Role.MANAGER)
+@require_POST
+def expense_create(request):
+    from finance.models import Expense, ExpenseCategory, Vendor
+
+    hotel = getattr(request, "active_property", None)
+    if hotel is None:
+        return json_error("Select a hotel (X-Hotel-Id).", status=400)
+    data = parse_json(request)
+    title = (data.get("title") or "").strip()
+    if not title:
+        return json_error("title required.")
+    try:
+        amount = Decimal(str(data.get("amount") or "").replace(",", "."))
+    except (InvalidOperation, TypeError, ValueError):
+        return json_error("Invalid amount.")
+    if amount <= 0:
+        return json_error("amount must be > 0.")
+    cat = ExpenseCategory.objects.filter(
+        pk=data.get("category_id"), tenant=request.tenant, is_active=True
+    ).first()
+    if cat is None:
+        return json_error("category_id required / not found.")
+    expense_date = date.today()
+    if data.get("expense_date"):
+        try:
+            expense_date = date.fromisoformat(str(data["expense_date"]).strip())
+        except ValueError:
+            return json_error("Invalid expense_date.")
+    vendor = None
+    if data.get("vendor_id"):
+        vendor = Vendor.objects.filter(
+            pk=data["vendor_id"], tenant=request.tenant, is_active=True
+        ).first()
+        if vendor is None:
+            return json_error("Vendor not found.", status=404)
+    method = (data.get("payment_method") or Expense.PaymentMethod.CASH).strip()
+    if method not in dict(Expense.PaymentMethod.choices):
+        return json_error("Invalid payment_method.")
+    funding = (data.get("funding") or Expense.Funding.OPERATING).strip()
+    if funding not in dict(Expense.Funding.choices):
+        return json_error("Invalid funding.")
+    currency = (data.get("currency") or request.tenant.currency or "UZS").strip().upper()
+    expense = Expense(
+        tenant=request.tenant,
+        hotel=hotel,
+        category=cat,
+        vendor=vendor,
+        title=title,
+        amount=amount,
+        currency=currency,
+        expense_date=expense_date,
+        payment_method=method,
+        funding=funding,
+        notes=(data.get("notes") or "").strip(),
+        created_by=request.user,
+        status=Expense.Status.DRAFT,
+    )
+    expense.save()
+    return json_ok(_expense_row(expense), status=201)
+
+
+@api_login_required
+@api_role_required(*FINANCE, TenantMembership.Role.MANAGER)
+@require_POST
+def expense_approve(request, pk):
+    from finance.models import Expense
+    from finance.services import approve_expense
+
+    hotel = getattr(request, "active_property", None)
+    qs = Expense.objects.filter(pk=pk, tenant=request.tenant)
+    if hotel is not None:
+        qs = qs.filter(Q(hotel=hotel) | Q(hotel__isnull=True))
+    expense = qs.select_related("category", "vendor").first()
+    if expense is None:
+        return json_error("Expense not found.", status=404)
+    try:
+        approve_expense(expense, request.user)
+        expense.refresh_from_db()
+        return json_ok(_expense_row(expense))
+    except ValidationError as exc:
+        return _err(exc)
+
+
+@api_login_required
+@api_role_required(*FINANCE, TenantMembership.Role.MANAGER)
+@require_POST
+def expense_pay(request, pk):
+    from finance.models import Expense
+    from finance.services import mark_expense_paid
+
+    hotel = getattr(request, "active_property", None)
+    qs = Expense.objects.filter(pk=pk, tenant=request.tenant)
+    if hotel is not None:
+        qs = qs.filter(Q(hotel=hotel) | Q(hotel__isnull=True))
+    expense = qs.select_related("category", "vendor").first()
+    if expense is None:
+        return json_error("Expense not found.", status=404)
+    try:
+        mark_expense_paid(expense, request.user)
+        expense.refresh_from_db()
+        return json_ok(_expense_row(expense))
+    except ValidationError as exc:
+        return _err(exc)
 
 
 @api_login_required

@@ -132,6 +132,14 @@
               <a class="btn btn-sm btn-ghost-tile" href="{% url 'folio:detail' r.pk %}">{% trans "Hisob" %}</a>
               {% endif %}
               {% endif %}
+              {% if is_tenant_admin %}
+              <form method="post" action="{% url 'bookings:purge' r.pk %}"
+                    onsubmit="return confirm('{% trans "Bu bron butunlay o‘chiriladi. Hisobi va to‘lovlari ham ketadi. Mehmon kartochkasi va xona qoladi." %}');">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'bookings:board' %}?date={{ day|date:'Y-m-d' }}">
+                <button type="submit" class="btn btn-sm btn-ghost-tile">{% trans "O‘chirish" %}</button>
+              </form>
+              {% endif %}
             </div>
             {% endif %}
           </div>

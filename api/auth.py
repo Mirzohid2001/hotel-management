@@ -131,6 +131,10 @@ def me_payload(request) -> dict:
             "id": request.user.pk,
             "username": request.user.get_username(),
             "full_name": request.user.get_full_name() or request.user.get_username(),
+            "first_name": request.user.first_name or "",
+            "last_name": request.user.last_name or "",
+            "email": request.user.email or "",
+            "phone": getattr(request.user, "phone", "") or "",
         },
         "tenant": {
             "id": tenant.pk,

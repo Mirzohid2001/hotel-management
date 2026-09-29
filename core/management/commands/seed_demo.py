@@ -61,6 +61,11 @@ class Command(BaseCommand):
             tenant=tenant,
             defaults={"role": TenantMembership.Role.ADMIN, "is_active": True},
         )
+        # Demo login picks first active membership by tenant name — keep only
+        # the seeded Rivoj tenant active so mobile opens the rich board.
+        TenantMembership.objects.filter(user=user).exclude(tenant=tenant).update(
+            is_active=False
+        )
 
         manager, mgr_created = User.objects.get_or_create(
             username="manager",
@@ -77,6 +82,9 @@ class Command(BaseCommand):
             user=manager,
             tenant=tenant,
             defaults={"role": TenantMembership.Role.MANAGER, "is_active": True},
+        )
+        TenantMembership.objects.filter(user=manager).exclude(tenant=tenant).update(
+            is_active=False
         )
 
         for su in User.objects.filter(is_superuser=True):
@@ -387,6 +395,118 @@ class Command(BaseCommand):
             room=dirty_room,
             title="201 — tozalash",
             defaults={"status": HousekeepingTask.Status.PENDING},
+        )
+
+        # OOO + cleaning for board filters
+        ooo = rooms["303"]
+        if ooo.status != Room.Status.OUT_OF_ORDER:
+            ooo.status = Room.Status.OUT_OF_ORDER
+            ooo.save(update_fields=["status"])
+        cleaning = rooms["202"]
+        if cleaning.status != Room.Status.CLEANING:
+            cleaning.status = Room.Status.CLEANING
+            cleaning.save(update_fields=["status"])
+        HousekeepingTask.objects.get_or_create(
+            tenant=tenant,
+            room=cleaning,
+            title="202 — tozalanmoqda",
+            defaults={"status": HousekeepingTask.Status.IN_PROGRESS},
+        )
+
+        # Bugungi kelish (arrival) — Twin 101
+        guest_c = Guest.objects.filter(
+            tenant=tenant, first_name="Jasur", last_name="Rahimov"
+        ).first()
+        if guest_c and not Reservation.objects.filter(
+            tenant=tenant, room=rooms["101"]
+        ).exists():
+            arrival = create_reservation(
+                tenant=tenant,
+                user=user,
+                property_obj=prop,
+                guest=guest_c,
+                room_type=rooms["101"].room_type,
+                room=rooms["101"],
+                rate_plan=rates.get(rooms["101"].room_type_id) or rate_double,
+                check_in=today,
+                check_out=today + timedelta(days=1),
+                source=Reservation.Source.PHONE,
+                notes="Demo arrival bugun · Twin",
+                status=Reservation.Status.CONFIRMED,
+                adults=1,
+                company=company,
+            )
+            self.stdout.write(f"Demo arrival: {arrival.code}")
+
+        # Yana bir in-house — Triple 203
+        guest_d = Guest.objects.filter(
+            tenant=tenant, first_name="Nilufar", last_name="Sobirova"
+        ).first()
+        if guest_d and not Reservation.objects.filter(
+            tenant=tenant, room=rooms["203"]
+        ).exists():
+            companion = Guest.objects.get_or_create(
+                tenant=tenant,
+                first_name="Sardor",
+                last_name="Sobirov",
+                defaults={"phone": "+998901112233"},
+            )[0]
+            child = Guest.objects.get_or_create(
+                tenant=tenant,
+                first_name="Sevinch",
+                last_name="Sobirova",
+                defaults={"phone": ""},
+            )[0]
+            stay2 = create_reservation(
+                tenant=tenant,
+                user=user,
+                property_obj=prop,
+                guest=guest_d,
+                room_type=rooms["203"].room_type,
+                room=rooms["203"],
+                rate_plan=rates.get(rooms["203"].room_type_id) or rate_double,
+                check_in=today - timedelta(days=1),
+                check_out=today + timedelta(days=1),
+                source=Reservation.Source.WALKIN,
+                notes="Demo in-house · Triple · bugun chiqish",
+                adults=2,
+                children=1,
+                occupants=[
+                    {"guest": companion, "kind": "adult"},
+                    {"guest": child, "kind": "child"},
+                ],
+            )
+            check_in_reservation(stay2, user, allow_no_docs=True)
+            ensure_stay_nights_posted(stay2, user)
+            self.stdout.write(f"Demo departure today: {stay2.code}")
+
+        # Maintenance ticket
+        from maintenance.models import MaintenanceTicket
+
+        MaintenanceTicket.objects.get_or_create(
+            tenant=tenant,
+            room=ooo,
+            title="Konditsioner ishlamayapti",
+            defaults={
+                "description": "303 — OOO sababi",
+                "status": MaintenanceTicket.Status.OPEN,
+                "priority": MaintenanceTicket.Priority.MEDIUM,
+                "created_by": user,
+            },
+        )
+
+        # Profit partners (foyda ulushi)
+        from finance.models import ProfitPartner
+
+        ProfitPartner.objects.get_or_create(
+            tenant=tenant,
+            name="Asosiy sherik",
+            defaults={"share_percent": Decimal("60"), "phone": "+998901000001"},
+        )
+        ProfitPartner.objects.get_or_create(
+            tenant=tenant,
+            name="Ikkinchi sherik",
+            defaults={"share_percent": Decimal("40"), "phone": "+998901000002"},
         )
 
         Expense.objects.get_or_create(

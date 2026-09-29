@@ -43,4 +43,5 @@ urlpatterns = [
     path("<int:pk>/confirm/", views.reservation_confirm, name="confirm"),
     path("<int:pk>/cancel/", views.reservation_cancel, name="cancel"),
     path("<int:pk>/no-show/", views.reservation_no_show, name="no_show"),
+    path("<int:pk>/purge/", views.reservation_purge, name="purge"),
 ]

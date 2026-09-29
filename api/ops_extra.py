@@ -15,15 +15,18 @@ from bookings.commission import (
 )
 from bookings.models import BookingReferrer, ReferrerCommissionPayment
 from core.roles import ACCOUNTING, FRONT_OFFICE, HR, INVENTORY
-from hr.models import Employee, SalaryAdvance
 from hr.services import (
     create_advance,
+    finalize_payroll,
+    generate_payroll,
     open_advance_total,
+    pay_all_unpaid,
     pay_employee_daily,
     pay_employee_salary,
     salary_due_preview,
     settle_advance,
 )
+from hr.models import Employee, PayrollPeriod, SalaryAdvance
 from inventory.models import StockItem, StockMovement
 from inventory.services import (
     adjust_stock,
@@ -162,6 +165,81 @@ def inventory_low_stock(request):
     low = list(low_stock_items(request.tenant, hotel).order_by("name")[:100])
     low_ids = {i.pk for i in low}
     return json_ok({"items": [_stock_row(i, low_ids=low_ids) for i in low]})
+
+
+@api_login_required
+@api_role_required(*INVENTORY)
+@require_POST
+def inventory_create(request):
+    hotel = getattr(request, "active_property", None)
+    if hotel is None:
+        return json_error("Select a hotel (X-Hotel-Id).", status=400)
+    data = parse_json(request)
+    name = (data.get("name") or "").strip()
+    sku = (data.get("sku") or "").strip().lower()
+    if not name or not sku:
+        return json_error("name and sku required.")
+    unit = (data.get("unit") or StockItem.Unit.DONA).strip()
+    if unit not in dict(StockItem.Unit.choices):
+        return json_error("Invalid unit.")
+    try:
+        item = StockItem(
+            tenant=request.tenant,
+            hotel=hotel,
+            name=name,
+            sku=sku,
+            unit=unit,
+            quantity_on_hand=_dec(data.get("quantity_on_hand") or "0", "quantity"),
+            reorder_level=_dec(data.get("reorder_level") or "0", "reorder_level"),
+            unit_cost=_dec(data.get("unit_cost") or "0", "unit_cost"),
+            sell_price=_dec(data.get("sell_price") or "0", "sell_price"),
+            currency=(data.get("currency") or request.tenant.currency or "UZS").upper(),
+            is_minibar=bool(data.get("is_minibar")),
+            is_active=True,
+        )
+        if data.get("expiry_date"):
+            item.expiry_date = date.fromisoformat(str(data["expiry_date"]).strip())
+        item.save()
+        return json_ok(_stock_row(item), status=201)
+    except ValidationError as exc:
+        return _err(exc)
+    except (ValueError, TypeError) as exc:
+        return json_error(str(exc))
+
+
+@api_login_required
+@api_role_required(*INVENTORY)
+@require_POST
+def inventory_update(request, pk):
+    qs, _hotel = _hotel_stock_qs(request)
+    item = qs.filter(pk=pk).first()
+    if item is None:
+        return json_error("Stock item not found.", status=404)
+    data = parse_json(request)
+    try:
+        if "name" in data:
+            item.name = (data.get("name") or "").strip() or item.name
+        if "reorder_level" in data and data["reorder_level"] not in (None, ""):
+            item.reorder_level = _dec(data["reorder_level"], "reorder_level")
+        if "unit_cost" in data and data["unit_cost"] not in (None, ""):
+            item.unit_cost = _dec(data["unit_cost"], "unit_cost")
+        if "sell_price" in data and data["sell_price"] not in (None, ""):
+            item.sell_price = _dec(data["sell_price"], "sell_price")
+        if "is_minibar" in data:
+            item.is_minibar = bool(data["is_minibar"])
+        if "is_active" in data:
+            item.is_active = bool(data["is_active"])
+        if "expiry_date" in data:
+            raw = data.get("expiry_date")
+            item.expiry_date = (
+                date.fromisoformat(str(raw).strip()) if raw else None
+            )
+        item.save()
+        return json_ok(_stock_row(item))
+    except ValidationError as exc:
+        return _err(exc)
+    except (ValueError, TypeError) as exc:
+        return json_error(str(exc))
 
 
 def _referrer_row(r: BookingReferrer) -> dict:
@@ -432,3 +510,162 @@ def hr_advance_settle(request, pk):
         return json_ok({"advance_id": adv.pk, "is_settled": True})
     except ValidationError as exc:
         return _err(exc)
+
+
+@api_login_required
+@api_role_required(*HR)
+@require_POST
+def hr_employee_create(request):
+    data = parse_json(request)
+    name = (data.get("full_name") or "").strip()
+    if not name:
+        return json_error("full_name required.")
+    salary_type = (data.get("salary_type") or Employee.SalaryType.MONTHLY).strip()
+    if salary_type not in dict(Employee.SalaryType.choices):
+        return json_error("Invalid salary_type.")
+    try:
+        salary = _dec(data.get("base_salary") or "0", "base_salary")
+    except ValidationError as exc:
+        return _err(exc)
+    hire = timezone.localdate()
+    if data.get("hire_date"):
+        try:
+            hire = date.fromisoformat(str(data["hire_date"]).strip())
+        except ValueError:
+            return json_error("Invalid hire_date.")
+    emp = Employee.objects.create(
+        tenant=request.tenant,
+        full_name=name,
+        position=(data.get("position") or "").strip(),
+        salary_type=salary_type,
+        base_salary=salary,
+        hire_date=hire,
+        phone=(data.get("phone") or "").strip(),
+        is_active=True,
+    )
+    return json_ok(_employee_row(emp), status=201)
+
+
+@api_login_required
+@api_role_required(*HR)
+@require_POST
+def hr_employee_update(request, pk):
+    emp = Employee.objects.filter(pk=pk, tenant=request.tenant).first()
+    if emp is None:
+        return json_error("Employee not found.", status=404)
+    data = parse_json(request)
+    try:
+        if "full_name" in data:
+            emp.full_name = (data.get("full_name") or "").strip() or emp.full_name
+        if "position" in data:
+            emp.position = (data.get("position") or "").strip()
+        if "phone" in data:
+            emp.phone = (data.get("phone") or "").strip()
+        if "salary_type" in data:
+            st = (data.get("salary_type") or "").strip()
+            if st not in dict(Employee.SalaryType.choices):
+                return json_error("Invalid salary_type.")
+            emp.salary_type = st
+        if "base_salary" in data and data["base_salary"] not in (None, ""):
+            emp.base_salary = _dec(data["base_salary"], "base_salary")
+        if "is_active" in data:
+            emp.is_active = bool(data["is_active"])
+        emp.save()
+        return json_ok(_employee_row(emp))
+    except ValidationError as exc:
+        return _err(exc)
+
+
+@api_login_required
+@api_role_required(*HR)
+@require_GET
+def hr_payroll_status(request):
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get("year") or today.year)
+        month = int(request.GET.get("month") or today.month)
+    except (TypeError, ValueError):
+        return json_error("Invalid year/month.")
+    period = PayrollPeriod.objects.filter(
+        tenant=request.tenant, year=year, month=month
+    ).first()
+    return json_ok(
+        {
+            "year": year,
+            "month": month,
+            "exists": period is not None,
+            "period": (
+                {
+                    "id": period.pk,
+                    "status": period.status,
+                    "is_finalized": period.status
+                    in (
+                        PayrollPeriod.Status.FINALIZED,
+                        PayrollPeriod.Status.PAID,
+                    ),
+                }
+                if period
+                else None
+            ),
+        }
+    )
+
+
+@api_login_required
+@api_role_required(*HR)
+@require_POST
+def hr_payroll_generate(request):
+    data = parse_json(request)
+    today = timezone.localdate()
+    try:
+        year = int(data.get("year") or today.year)
+        month = int(data.get("month") or today.month)
+        period = generate_payroll(request.tenant, year, month)
+        return json_ok(
+            {
+                "id": period.pk,
+                "year": period.year,
+                "month": period.month,
+                "status": period.status,
+                "items": period.items.count() if hasattr(period, "items") else 0,
+            },
+            status=201,
+        )
+    except (ValidationError, TypeError, ValueError) as exc:
+        return _err(exc) if isinstance(exc, ValidationError) else json_error(str(exc))
+
+
+@api_login_required
+@api_role_required(*HR)
+@require_POST
+def hr_payroll_finalize(request, pk):
+    period = PayrollPeriod.objects.filter(pk=pk, tenant=request.tenant).first()
+    if period is None:
+        return json_error("Payroll period not found.", status=404)
+    try:
+        finalize_payroll(period)
+        period.refresh_from_db()
+        return json_ok({"id": period.pk, "status": period.status})
+    except ValidationError as exc:
+        return _err(exc)
+
+
+@api_login_required
+@api_role_required(*HR)
+@require_POST
+def hr_payroll_pay_all(request):
+    data = parse_json(request)
+    today = timezone.localdate()
+    try:
+        year = int(data.get("year") or today.year) if data.get("year") not in (None, "") else None
+        month = (
+            int(data.get("month") or today.month) if data.get("month") not in (None, "") else None
+        )
+        method = (data.get("method") or "cash").strip().lower()
+        count = pay_all_unpaid(
+            request.tenant, year=year, month=month, method=method
+        )
+        return json_ok({"paid_count": count})
+    except (ValidationError, TypeError, ValueError) as exc:
+        return _err(exc) if isinstance(exc, ValidationError) else json_error(str(exc))
+

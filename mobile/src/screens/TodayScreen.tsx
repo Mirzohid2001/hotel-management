@@ -7,13 +7,18 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 
 import { ApiError } from "../api/client";
 import type { ReservationSummary } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import {
+  EmptyState,
+  SearchField,
+  StatsStrip,
+  StatusBadge,
+} from "../ui/primitives";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import {
   colors,
@@ -46,6 +51,16 @@ const STATUS_LABEL: Record<string, string> = {
   no_show: "Kelmagan",
   inquiry: "So‘rov",
 };
+
+function statusTone(
+  status: string
+): "neutral" | "success" | "warn" | "danger" | "info" | "accent" {
+  if (status === "checked_in") return "success";
+  if (status === "confirmed") return "accent";
+  if (status === "cancelled" || status === "no_show") return "danger";
+  if (status === "inquiry") return "warn";
+  return "neutral";
+}
 
 export function TodayScreen({
   onOpenReservation,
@@ -170,46 +185,49 @@ export function TodayScreen({
         subtitle={day || undefined}
         onTitlePress={(me?.hotels?.length || 0) > 1 ? pickHotel : undefined}
         right={
-          <Pressable onPress={logout} style={ui.ghostBtn}>
+          <Pressable
+            onPress={logout}
+            style={({ pressed }) => [ui.ghostBtn, pressed && { opacity: 0.75 }]}
+          >
             <Text style={ui.ghostBtnText}>Chiqish</Text>
           </Pressable>
         }
       />
 
       <View style={styles.searchWrap}>
-        <TextInput
-          style={styles.search}
+        <SearchField
           value={query}
           onChangeText={setQuery}
           placeholder="Kod, mehmon, xona, telefon…"
-          placeholderTextColor={colors.faint}
-          autoCapitalize="none"
-          autoCorrect={false}
-          clearButtonMode="while-editing"
         />
       </View>
 
       {searchHits == null ? (
-        <View style={styles.segs}>
-          {SEGMENTS.map((s) => (
-            <Pressable
-              key={s.id}
-              style={[styles.seg, segment === s.id && styles.segOn]}
-              onPress={() => setSegment(s.id)}
-            >
-              <Text
-                style={[styles.segText, segment === s.id && styles.segTextOn]}
-              >
-                {s.label}
-              </Text>
-              <Text
-                style={[styles.segCount, segment === s.id && styles.segTextOn]}
-              >
-                {counts[s.id]}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <>
+          <StatsStrip
+            items={[
+              { label: "Kirish", value: counts.arrivals },
+              { label: "Chiqish", value: counts.departures },
+              { label: "Joylashgan", value: counts.in_house },
+            ]}
+          />
+          <View style={styles.segs}>
+            {SEGMENTS.map((s) => {
+              const on = segment === s.id;
+              return (
+                <Pressable
+                  key={s.id}
+                  style={[styles.seg, on && styles.segOn]}
+                  onPress={() => setSegment(s.id)}
+                >
+                  <Text style={[styles.segText, on && styles.segTextOn]}>
+                    {s.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
       ) : (
         <Text style={styles.searchMeta}>
           {searching ? "Qidirilmoqda…" : `${searchHits.length} ta natija`}
@@ -232,22 +250,29 @@ export function TodayScreen({
               tintColor={colors.accent}
             />
           }
-          ListEmptyComponent={<Text style={ui.empty}>Ro‘yxat bo‘sh</Text>}
+          ListEmptyComponent={
+            <EmptyState title="Ro‘yxat bo‘sh" hint="Hozircha yozuv yo‘q" />
+          }
           renderItem={({ item }) => (
             <Pressable
-              style={styles.card}
+              style={({ pressed }) => [
+                styles.card,
+                pressed && { opacity: 0.92 },
+              ]}
               onPress={() => onOpenReservation(item.id)}
             >
               <View style={styles.cardTop}>
                 <Text style={styles.room}>{item.room.number || "—"}</Text>
-                <Text style={styles.code}>{item.code}</Text>
+                <StatusBadge
+                  label={STATUS_LABEL[item.status] || item.status}
+                  tone={statusTone(item.status)}
+                />
               </View>
               <Text style={styles.guest} numberOfLines={1}>
                 {item.guest.name || "—"}
               </Text>
               <Text style={styles.meta}>
-                {item.check_in} → {item.check_out} ·{" "}
-                {STATUS_LABEL[item.status] || item.status}
+                {item.code} · {item.check_in} → {item.check_out}
               </Text>
             </Pressable>
           )}
@@ -258,43 +283,28 @@ export function TodayScreen({
 }
 
 const styles = StyleSheet.create({
-  searchWrap: { paddingHorizontal: space.md, paddingTop: space.md },
-  search: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.line,
-    paddingHorizontal: space.lg,
-    paddingVertical: 13,
-    fontSize: 16,
-    color: colors.ink,
-    fontFamily: fontUi,
-  },
+  searchWrap: { paddingHorizontal: space.lg, paddingTop: space.md },
   segs: {
     flexDirection: "row",
     gap: space.sm,
-    paddingHorizontal: space.md,
+    paddingHorizontal: space.lg,
     paddingVertical: space.md,
   },
   seg: {
     flex: 1,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
-    paddingVertical: 11,
+    paddingVertical: 12,
     alignItems: "center",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
   },
-  segOn: { backgroundColor: colors.night },
+  segOn: { backgroundColor: colors.night, borderColor: colors.night },
   segText: {
     fontWeight: "700",
     color: colors.inkSoft,
     fontSize: 13,
     fontFamily: fontUi,
-  },
-  segCount: {
-    marginTop: 2,
-    color: colors.muted,
-    fontWeight: "600",
-    fontSize: 12,
   },
   segTextOn: { color: colors.white },
   searchMeta: {
@@ -305,37 +315,32 @@ const styles = StyleSheet.create({
     fontFamily: fontUi,
   },
   pad: { paddingHorizontal: space.lg, marginBottom: space.sm },
-  list: { paddingHorizontal: space.md, paddingBottom: 100 },
+  list: { paddingHorizontal: space.lg, paddingBottom: 100 },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: space.lg,
     marginBottom: space.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.lineSoft,
+    borderColor: colors.line,
   },
   cardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: space.sm,
   },
   room: {
-    fontSize: 22,
-    fontWeight: "600",
+    fontSize: 24,
+    fontWeight: "700",
     color: colors.ink,
     fontFamily: fontDisplay,
-  },
-  code: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.muted,
-    fontFamily: fontUi,
   },
   guest: {
     fontSize: 16,
     fontWeight: "600",
     color: colors.ink,
-    marginTop: 6,
+    marginTop: 8,
     fontFamily: fontUi,
   },
   meta: {
@@ -343,5 +348,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: 4,
     fontFamily: fontUi,
+    fontWeight: "500",
   },
 });

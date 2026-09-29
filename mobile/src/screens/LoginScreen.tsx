@@ -39,6 +39,7 @@ export function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.hero}>
+        <View style={styles.brandRule} />
         <Text style={styles.brandMark}>RIVOJ</Text>
         <Text style={styles.brandSub}>Hotel operations</Text>
       </View>
@@ -98,6 +99,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xxl,
     paddingBottom: space.xxl,
     backgroundColor: colors.night,
+  },
+  brandRule: {
+    width: 40,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.accent,
+    marginBottom: space.md,
   },
   brandMark: {
     fontFamily: fontDisplay,

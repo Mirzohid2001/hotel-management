@@ -18,6 +18,17 @@ import type {
   ServiceItem,
 } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { ScreenHeader } from "../ui/ScreenHeader";
+import {
+  FieldLabel,
+  FormCard,
+  PrimaryButton,
+  SegmentedTabs,
+  StatsStrip,
+  StatusBadge,
+} from "../ui/primitives";
+import { colors, fontUi, radius, space, ui } from "../ui/theme";
+import { sharePdfBase64 } from "../utils/sharePdf";
 
 type Props = {
   reservationId: number;
@@ -40,8 +51,24 @@ const PAY_METHODS = [
   { id: "transfer", label: "O‘tkazma" },
 ] as const;
 
-type Panel = "none" | "pay" | "charge" | "service" | "transfer" | "deposit" | "minibar" | "amend" | "split";
+type Panel =
+  | "none"
+  | "pay"
+  | "charge"
+  | "service"
+  | "transfer"
+  | "deposit"
+  | "minibar"
+  | "amend"
+  | "split"
+  | "emehmon"
+  | "checkin";
 type VacantRoom = BoardTile["room"];
+
+const DOC_TYPES = [
+  { id: "passport", label: "Pasport" },
+  { id: "id_card", label: "ID karta" },
+] as const;
 
 export function ReservationDetailScreen({
   reservationId,
@@ -70,11 +97,14 @@ export function ReservationDetailScreen({
     voidCharge,
     voidPayment,
     amendReservation,
+    syncOccupants,
     postEmehmon,
     fetchReceipt,
     transferToCompany,
     closeFolio,
     splitPay,
+    fetchCompanies,
+    fetchReferrers,
     me,
   } = useAuth();
   const [data, setData] = useState<ReservationDetail | null>(null);
@@ -93,8 +123,30 @@ export function ReservationDetailScreen({
   const [editingNotes, setEditingNotes] = useState(false);
   const [minibarItems, setMinibarItems] = useState<MinibarItem[]>([]);
   const [depositAmount, setDepositAmount] = useState("");
+  const [amendIn, setAmendIn] = useState("");
   const [amendOut, setAmendOut] = useState("");
   const [amendRate, setAmendRate] = useState("");
+  const [amendAdults, setAmendAdults] = useState("");
+  const [amendChildren, setAmendChildren] = useState("");
+  const [amendCompanyId, setAmendCompanyId] = useState<number | null>(null);
+  const [amendReferrerId, setAmendReferrerId] = useState<number | null>(null);
+  const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
+  const [referrers, setReferrers] = useState<
+    { id: number; name: string; percent: string }[]
+  >([]);
+  const [updateRate, setUpdateRate] = useState(true);
+  const [occFirst, setOccFirst] = useState("");
+  const [occLast, setOccLast] = useState("");
+  const [occPhone, setOccPhone] = useState("");
+  const [occKind, setOccKind] = useState<"adult" | "child">("adult");
+  const [occNationality, setOccNationality] = useState("UZ");
+  const [occDocType, setOccDocType] = useState<"passport" | "id_card">("passport");
+  const [occDocNumber, setOccDocNumber] = useState("");
+  const [occIssuedCountry, setOccIssuedCountry] = useState("UZ");
+  const [emehmonAmount, setEmehmonAmount] = useState("");
+  const [emehmonMethod, setEmehmonMethod] =
+    useState<(typeof PAY_METHODS)[number]["id"]>("cash");
+  const [collectEmehmon, setCollectEmehmon] = useState(true);
   const [splitA, setSplitA] = useState("");
   const [splitB, setSplitB] = useState("");
 
@@ -138,14 +190,26 @@ export function ReservationDetailScreen({
     allow_dirty?: boolean;
     allow_no_docs?: boolean;
   }) {
+    if (!force && panel !== "checkin") {
+      setEmehmonAmount(data?.emehmon_default || "");
+      setEmehmonMethod("cash");
+      setCollectEmehmon(true);
+      setPanel("checkin");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       const result = await checkIn(reservationId, {
         allow_dirty: force?.allow_dirty,
         allow_no_docs: force?.allow_no_docs,
-        collect_emehmon: true,
+        collect_emehmon: collectEmehmon,
+        emehmon_method: emehmonMethod,
+        emehmon_amount: collectEmehmon
+          ? emehmonAmount.trim() || undefined
+          : undefined,
       });
+      setPanel("none");
       await load();
       onChanged();
       const extra =
@@ -165,8 +229,8 @@ export function ReservationDetailScreen({
             onPress: () => doCheckIn({ allow_dirty: true }),
           },
         ]);
-      } else if (/hujjat|pasport|ID/i.test(msg)) {
-        Alert.alert("Hujjat", msg, [
+      } else if (/hujjat|pasport|ID|mehmon/i.test(msg)) {
+        Alert.alert("Hujjat / mehmonlar", msg, [
           { text: "Bekor", style: "cancel" },
           {
             text: "Hujjatsiz kirish",
@@ -351,7 +415,9 @@ export function ReservationDetailScreen({
             setBusy(true);
             setError(null);
             try {
-              const result = await transferRoom(reservationId, room.id);
+              const result = await transferRoom(reservationId, room.id, {
+                update_rate: updateRate,
+              });
               setPanel("none");
               await load();
               onChanged();
@@ -576,9 +642,29 @@ export function ReservationDetailScreen({
     setBusy(true);
     setError(null);
     try {
+      const adultsParsed = amendAdults.trim()
+        ? Number(amendAdults.trim())
+        : undefined;
+      const childrenParsed = amendChildren.trim()
+        ? Number(amendChildren.trim())
+        : undefined;
       await amendReservation(reservationId, {
+        check_in: amendIn.trim() || data.check_in,
         check_out: amendOut.trim() || data.check_out,
         nightly_rate: amendRate.trim() || undefined,
+        adults:
+          adultsParsed !== undefined && !Number.isNaN(adultsParsed)
+            ? adultsParsed
+            : undefined,
+        children:
+          childrenParsed !== undefined && !Number.isNaN(childrenParsed)
+            ? childrenParsed
+            : undefined,
+        company_id: amendCompanyId,
+        referrer_id: amendReferrerId,
+        commission_percent: amendReferrerId
+          ? referrers.find((r) => r.id === amendReferrerId)?.percent ?? undefined
+          : null,
         reason: "mobile amend",
       });
       setPanel("none");
@@ -592,11 +678,142 @@ export function ReservationDetailScreen({
     }
   }
 
-  async function doEmehmon() {
+  async function doAddCompanion() {
+    if (!data) return;
+    const first = occFirst.trim();
+    if (!first) {
+      setError("Hamroh ismini kiriting.");
+      return;
+    }
+    if (!occDocNumber.trim()) {
+      setError("Pasport / ID raqamini kiriting (web bilan bir xil).");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const r = await postEmehmon(reservationId, "cash");
+      const existing = (data.occupants || [])
+        .filter((o) => !o.is_primary)
+        .map((o) => ({
+          guest_id: o.guest.id,
+          kind: o.kind || "adult",
+          first_name: o.guest.first_name || undefined,
+          last_name: o.guest.last_name || undefined,
+          phone: o.guest.phone || undefined,
+          nationality: o.guest.nationality || undefined,
+          doc_type: o.guest.documents?.[0]?.doc_type,
+          doc_number: o.guest.documents?.[0]?.number,
+          issued_country: o.guest.documents?.[0]?.issued_country,
+        }));
+      const companions = [
+        ...existing,
+        {
+          first_name: first,
+          last_name: occLast.trim(),
+          phone: occPhone.trim(),
+          kind: occKind,
+          nationality: occNationality.trim() || "UZ",
+          doc_type: occDocType,
+          doc_number: occDocNumber.trim(),
+          issued_country: occIssuedCountry.trim() || occNationality.trim() || "UZ",
+        },
+      ];
+      await syncOccupants(reservationId, companions);
+
+      // Headcount must match named people (E-mehmon = unit × nights × guests)
+      const adultsNamed =
+        1 + companions.filter((c) => (c.kind || "adult") !== "child").length;
+      const childrenNamed = companions.filter(
+        (c) => c.kind === "child"
+      ).length;
+      if (
+        adultsNamed !== data.adults ||
+        childrenNamed !== (data.children || 0)
+      ) {
+        await amendReservation(reservationId, {
+          adults: adultsNamed,
+          children: childrenNamed,
+          reason: "occupant sync",
+        });
+      }
+
+      setOccFirst("");
+      setOccLast("");
+      setOccPhone("");
+      setOccKind("adult");
+      setOccNationality("UZ");
+      setOccDocType("passport");
+      setOccDocNumber("");
+      setOccIssuedCountry("UZ");
+      await load();
+      onChanged();
+      Alert.alert(
+        "Mehmonlar",
+        `Hamroh qo‘shildi · E-mehmon: ${adultsNamed + childrenNamed} kishi`
+      );
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Hamroh xatosi");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function doRemoveCompanion(guestId: number) {
+    if (!data) return;
+    Alert.alert("Hamroh", "Bu mehmon xonadan olib tashlansinmi?", [
+      { text: "Bekor", style: "cancel" },
+      {
+        text: "O‘chirish",
+        style: "destructive",
+        onPress: async () => {
+          setBusy(true);
+          setError(null);
+          try {
+            const companions = (data.occupants || [])
+              .filter((o) => !o.is_primary && o.guest.id !== guestId)
+              .map((o) => ({
+                guest_id: o.guest.id,
+                kind: o.kind || "adult",
+              }));
+            await syncOccupants(reservationId, companions);
+            const adultsNamed =
+              1 +
+              companions.filter((c) => (c.kind || "adult") !== "child").length;
+            const childrenNamed = companions.filter(
+              (c) => c.kind === "child"
+            ).length;
+            await amendReservation(reservationId, {
+              adults: Math.max(1, adultsNamed),
+              children: childrenNamed,
+              reason: "occupant remove",
+            });
+            await load();
+            onChanged();
+          } catch (e) {
+            setError(e instanceof ApiError ? e.message : "O‘chirish xatosi");
+          } finally {
+            setBusy(false);
+          }
+        },
+      },
+    ]);
+  }
+
+  async function doEmehmon() {
+    if (panel !== "emehmon") {
+      setEmehmonAmount(data?.emehmon_default || "");
+      setEmehmonMethod("cash");
+      setPanel("emehmon");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await postEmehmon(reservationId, {
+        method: emehmonMethod,
+        amount: emehmonAmount.trim() || undefined,
+      });
+      setPanel("none");
       await load();
       onChanged();
       Alert.alert("E-mehmon", `Yozildi: ${r.amount}`);
@@ -611,7 +828,7 @@ export function ReservationDetailScreen({
     if (!data?.folio?.id) return;
     setBusy(true);
     try {
-      const r = await fetchReceipt(data.folio.id);
+      const r = await fetchReceipt(data.folio.id, true);
       const charges = (Array.isArray(r.charges) ? r.charges : []) as {
         description?: string;
         amount?: string;
@@ -620,10 +837,27 @@ export function ReservationDetailScreen({
         .slice(0, 8)
         .map((c) => `${c.description || "?"}: ${c.amount || ""}`)
         .join("\n");
-      Alert.alert(
-        "Chek",
-        `Balans: ${String(r.balance ?? "")}\n\n${lines || "Yozuv yo‘q"}`
-      );
+      const pdfB64 = typeof r.pdf_base64 === "string" ? r.pdf_base64 : "";
+      const filename =
+        typeof r.filename === "string" ? r.filename : `invoice-${data.code}.pdf`;
+      if (pdfB64) {
+        Alert.alert(
+          "Chek",
+          `Balans: ${String(r.balance ?? "")}\n\n${lines || "Yozuv yo‘q"}`,
+          [
+            { text: "OK", style: "cancel" },
+            {
+              text: "PDF ulashish",
+              onPress: () => sharePdfBase64(pdfB64, filename),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Chek",
+          `Balans: ${String(r.balance ?? "")}\n\n${lines || "Yozuv yo‘q"}`
+        );
+      }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Chek xatosi");
     } finally {
@@ -700,7 +934,7 @@ export function ReservationDetailScreen({
   if (loading && !data) {
     return (
       <View style={styles.boot}>
-        <ActivityIndicator size="large" color="#0e6b56" />
+        <ActivityIndicator size="large" color="#c45c26" />
       </View>
     );
   }
@@ -717,6 +951,16 @@ export function ReservationDetailScreen({
   }
 
   const statusLabel = STATUS_LABEL[data.status] || data.status;
+  const statusTone =
+    data.status === "checked_in"
+      ? ("success" as const)
+      : data.status === "confirmed"
+        ? ("accent" as const)
+        : data.status === "cancelled" || data.status === "no_show"
+          ? ("danger" as const)
+          : data.status === "inquiry"
+            ? ("warn" as const)
+            : ("neutral" as const);
   const showCheckIn = canStay && data.status === "confirmed";
   const showCheckOut = canStay && data.status === "checked_in";
   const showConfirm = canStay && data.status === "inquiry";
@@ -747,29 +991,236 @@ export function ReservationDetailScreen({
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Pressable onPress={onBack} hitSlop={12}>
-          <Text style={styles.back}>← Doska</Text>
-        </Pressable>
-        <Text style={styles.code}>{data.code}</Text>
-        <Text style={styles.status}>{statusLabel}</Text>
-      </View>
+      <ScreenHeader
+        eyebrow="Bron"
+        title={data.guest.name || data.code}
+        subtitle={`${data.room.number || "—"} · ${data.check_in} → ${data.check_out}`}
+        onBack={onBack}
+        right={<StatusBadge label={statusLabel} tone={statusTone} />}
+      />
+
+      {data.folio ? (
+        <StatsStrip
+          items={[
+            { label: "Balans", value: data.folio.balance },
+            {
+              label: "Mehmonlar",
+              value: `${data.adults}${data.children ? `+${data.children}` : ""}`,
+            },
+            { label: "Kod", value: data.code },
+          ]}
+        />
+      ) : (
+        <StatsStrip
+          items={[
+            { label: "Xona", value: data.room.number || "—" },
+            {
+              label: "Mehmonlar",
+              value: `${data.adults}${data.children ? `+${data.children}` : ""}`,
+            },
+            { label: "Kod", value: data.code },
+          ]}
+        />
+      )}
 
       <ScrollView
         contentContainerStyle={styles.body}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.guest}>{data.guest.name || "—"}</Text>
-        <Row label="Xona" value={data.room.number || "—"} />
-        <Row label="Kirish" value={data.check_in} />
-        <Row label="Chiqish" value={data.check_out} />
-        <Row
-          label="Mehmonlar"
-          value={`${data.adults} katta${data.children ? ` · ${data.children} bola` : ""}`}
-        />
-        {data.folio ? <Row label="Balans" value={data.folio.balance} /> : null}
+        <FormCard>
+          <Row label="Xona" value={data.room.number || "—"} />
+          <Row label="Kirish" value={data.check_in} />
+          <Row label="Chiqish" value={data.check_out} />
+          <Row
+            label="Mehmonlar"
+            value={`${data.adults} katta${data.children ? ` · ${data.children} bola` : ""}`}
+          />
+          {data.company?.name ? (
+            <Row label="Kompaniya" value={data.company.name} />
+          ) : null}
+          {data.referrer?.name ? (
+            <Row label="Yo‘naltiruvchi" value={data.referrer.name} />
+          ) : null}
+          {data.rate_plan?.name ? (
+            <Row label="Tarif" value={data.rate_plan.name} />
+          ) : null}
+        </FormCard>
 
-        <View style={styles.notesBox}>
+        <FormCard>
+          <Text style={styles.ledgerTitle}>Xonadagi mehmonlar</Text>
+          <Text style={styles.occHint}>
+            Asosiy + hamrohlar. Har bir kishi: ism va pasport/ID. E-mehmon =
+            tarif × kecha × mehmonlar soni.
+          </Text>
+          {(data.occupants || []).length === 0 ? (
+            <Text style={styles.emptySvc}>Hali mehmonlar yozilmagan</Text>
+          ) : (
+            (data.occupants || []).map((o) => {
+              const kindLabel = o.is_primary
+                ? "Asosiy"
+                : o.kind === "child"
+                  ? "Bola"
+                  : "Katta";
+              const tone = o.is_primary
+                ? ("accent" as const)
+                : o.kind === "child"
+                  ? ("info" as const)
+                  : ("neutral" as const);
+              const doc = o.guest?.documents?.[0];
+              return (
+                <View key={o.id} style={styles.occRow}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.occName} numberOfLines={1}>
+                      {o.guest?.name || "—"}
+                    </Text>
+                    {o.guest?.phone ? (
+                      <Text style={styles.occPhone}>{o.guest.phone}</Text>
+                    ) : null}
+                    {doc?.number ? (
+                      <Text style={styles.occPhone}>
+                        {doc.doc_type === "id_card" ? "ID" : "Pasport"} ·{" "}
+                        {doc.number}
+                        {doc.issued_country ? ` · ${doc.issued_country}` : ""}
+                      </Text>
+                    ) : (
+                      <Text style={[styles.occPhone, { color: colors.warn }]}>
+                        Hujjat yo‘q
+                      </Text>
+                    )}
+                  </View>
+                  <View style={{ alignItems: "flex-end", gap: 6 }}>
+                    <StatusBadge label={kindLabel} tone={tone} />
+                    {!o.is_primary &&
+                    canStay &&
+                    !["cancelled", "checked_out", "no_show"].includes(
+                      data.status
+                    ) ? (
+                      <Pressable
+                        onPress={() => doRemoveCompanion(o.guest.id)}
+                        hitSlop={8}
+                      >
+                        <Text style={styles.occRemove}>O‘chirish</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </View>
+              );
+            })
+          )}
+          {(data.occupants_missing ?? 0) > 0 ? (
+            <Text style={styles.occWarn}>
+              Yetishmayapti: {data.occupants_missing} mehmon
+              {data.occupants_expected
+                ? ` (kutiladi: ${data.occupants_expected})`
+                : ""}
+            </Text>
+          ) : null}
+          {data.emehmon_unit ? (
+            <Text style={styles.occHint}>
+              E-mehmon tarif: {data.emehmon_unit} × {data.nights ?? "?"} kecha ×{" "}
+              {data.emehmon_guests ?? data.adults + (data.children || 0)} kishi
+              {data.emehmon_default ? ` = ${data.emehmon_default}` : ""}
+              {data.emehmon_paid ? " · olingan" : ""}
+            </Text>
+          ) : null}
+          {canStay &&
+          !["cancelled", "checked_out", "no_show"].includes(data.status) ? (
+            <View style={styles.occForm}>
+              <Text style={styles.ledgerTitle}>Yangi hamroh</Text>
+              <Text style={styles.occHint}>
+                Avval ism va pasport/ID. Qolgani ixtiyoriy.
+              </Text>
+              <FieldLabel>Ism *</FieldLabel>
+              <TextInput
+                style={styles.payInput}
+                value={occFirst}
+                onChangeText={(t) => {
+                  setOccFirst(t);
+                  if (
+                    error === "Hamroh ismini kiriting." ||
+                    error === "Pasport / ID raqamini kiriting (web bilan bir xil)."
+                  ) {
+                    setError(null);
+                  }
+                }}
+                placeholder="Masalan: Ali"
+                placeholderTextColor={colors.faint}
+              />
+              <FieldLabel>Familiya</FieldLabel>
+              <TextInput
+                style={styles.payInput}
+                value={occLast}
+                onChangeText={setOccLast}
+                placeholder="Familiya"
+                placeholderTextColor={colors.faint}
+              />
+              <FieldLabel>Pasport / ID *</FieldLabel>
+              <TextInput
+                style={styles.payInput}
+                value={occDocNumber}
+                onChangeText={setOccDocNumber}
+                placeholder="AA 1234567"
+                placeholderTextColor={colors.faint}
+                autoCapitalize="characters"
+              />
+              <FieldLabel>Turi</FieldLabel>
+              <SegmentedTabs
+                tabs={[
+                  { id: "adult", label: "Katta" },
+                  { id: "child", label: "Bola" },
+                ]}
+                value={occKind}
+                onChange={setOccKind}
+              />
+              {error === "Hamroh ismini kiriting." ||
+              error === "Pasport / ID raqamini kiriting (web bilan bir xil)." ? (
+                <Text style={styles.error}>{error}</Text>
+              ) : null}
+              <View style={{ marginTop: space.sm }}>
+                <PrimaryButton
+                  label="Hamroh qo‘shish"
+                  onPress={doAddCompanion}
+                  loading={busy}
+                />
+              </View>
+              <FieldLabel>Telefon</FieldLabel>
+              <TextInput
+                style={styles.payInput}
+                value={occPhone}
+                onChangeText={setOccPhone}
+                placeholder="+998…"
+                keyboardType="phone-pad"
+                placeholderTextColor={colors.faint}
+              />
+              <FieldLabel>Hujjat turi</FieldLabel>
+              <SegmentedTabs
+                tabs={DOC_TYPES.map((d) => ({ id: d.id, label: d.label }))}
+                value={occDocType}
+                onChange={setOccDocType}
+              />
+              <FieldLabel>Fuqarolik</FieldLabel>
+              <TextInput
+                style={styles.payInput}
+                value={occNationality}
+                onChangeText={setOccNationality}
+                placeholder="UZ"
+                placeholderTextColor={colors.faint}
+                autoCapitalize="characters"
+              />
+              <FieldLabel>Berilgan mamlakat</FieldLabel>
+              <TextInput
+                style={styles.payInput}
+                value={occIssuedCountry}
+                onChangeText={setOccIssuedCountry}
+                placeholder="UZ"
+                placeholderTextColor={colors.faint}
+                autoCapitalize="characters"
+              />
+            </View>
+          ) : null}
+        </FormCard>
+
+        <FormCard>
           <View style={styles.notesHead}>
             <Text style={styles.notesTitle}>Izoh</Text>
             {showNotes && !editingNotes ? (
@@ -780,13 +1231,14 @@ export function ReservationDetailScreen({
           </View>
           {editingNotes ? (
             <>
+              <FieldLabel>Matn</FieldLabel>
               <TextInput
                 style={styles.notesInput}
                 value={notesDraft}
                 onChangeText={setNotesDraft}
                 multiline
                 placeholder="Izoh…"
-                placeholderTextColor="#a89f94"
+                placeholderTextColor={colors.faint}
               />
               <View style={styles.notesActions}>
                 <Pressable
@@ -798,13 +1250,13 @@ export function ReservationDetailScreen({
                 >
                   <Text style={styles.notesCancelText}>Bekor</Text>
                 </Pressable>
-                <Pressable
-                  style={[styles.notesSave, busy && styles.disabled]}
-                  onPress={doSaveNotes}
-                  disabled={busy}
-                >
-                  <Text style={styles.actionText}>Saqlash</Text>
-                </Pressable>
+                <View style={{ flex: 2 }}>
+                  <PrimaryButton
+                    label="Saqlash"
+                    onPress={doSaveNotes}
+                    loading={busy}
+                  />
+                </View>
               </View>
             </>
           ) : (
@@ -812,10 +1264,10 @@ export function ReservationDetailScreen({
               {data.notes?.trim() ? data.notes : "Izoh yo‘q"}
             </Text>
           )}
-        </View>
+        </FormCard>
 
         {(charges.length > 0 || payments.length > 0) && (
-          <View style={styles.ledger}>
+          <FormCard>
             <Text style={styles.ledgerTitle}>Hisob</Text>
             {charges.map((c) => (
               <Pressable
@@ -881,51 +1333,40 @@ export function ReservationDetailScreen({
                 Bekor qilish: yozuvni uzoq bosib turing
               </Text>
             ) : null}
-          </View>
+          </FormCard>
         )}
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error &&
+        error !== "Hamroh ismini kiriting." &&
+        error !== "Pasport / ID raqamini kiriting (web bilan bir xil)." ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : null}
 
         {showConfirm ? (
-          <Pressable
-            style={[styles.action, busy && styles.disabled]}
+          <PrimaryButton
+            label="So‘rovni tasdiqlash"
             onPress={doConfirm}
-            disabled={busy}
-          >
-            {busy ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.actionText}>So‘rovni tasdiqlash</Text>
-            )}
-          </Pressable>
+            loading={busy}
+            tone="success"
+          />
         ) : null}
 
         {showCheckIn ? (
-          <Pressable
-            style={[styles.action, busy && styles.disabled]}
+          <PrimaryButton
+            label="Kirish (zayezd)"
             onPress={() => doCheckIn()}
-            disabled={busy}
-          >
-            {busy ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.actionText}>Kirish (zayezd)</Text>
-            )}
-          </Pressable>
+            loading={busy}
+            tone="success"
+          />
         ) : null}
 
         {showCheckOut ? (
-          <Pressable
-            style={[styles.action, styles.actionOut, busy && styles.disabled]}
+          <PrimaryButton
+            label="Chiqish"
             onPress={doCheckOut}
-            disabled={busy}
-          >
-            {busy ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.actionText}>Chiqish</Text>
-            )}
-          </Pressable>
+            loading={busy}
+            tone="ink"
+          />
         ) : null}
 
         {(showExtend || showTransfer) && (
@@ -1046,10 +1487,36 @@ export function ReservationDetailScreen({
               style={[styles.miniBtn, styles.miniExtend]}
               onPress={() => {
                 if (data) {
+                  setAmendIn(data.check_in);
                   setAmendOut(data.check_out);
                   setAmendRate(data.nightly_rate || "");
+                  setAmendAdults(String(data.adults ?? ""));
+                  setAmendChildren(String(data.children ?? ""));
+                  setAmendCompanyId(data.company?.id ?? null);
+                  setAmendReferrerId(data.referrer?.id ?? null);
                 }
-                setPanel(panel === "amend" ? "none" : "amend");
+                const opening = panel !== "amend";
+                setPanel(opening ? "amend" : "none");
+                if (opening && companies.length === 0 && referrers.length === 0) {
+                  Promise.all([
+                    fetchCompanies().catch(() => []),
+                    fetchReferrers().catch(() => []),
+                  ]).then(([cs, rs]) => {
+                    setCompanies(
+                      cs.map((c) => ({
+                        id: Number(c.id),
+                        name: String(c.name || ""),
+                      }))
+                    );
+                    setReferrers(
+                      rs.map((r) => ({
+                        id: Number(r.id),
+                        name: String(r.name || ""),
+                        percent: String(r.default_commission_percent ?? ""),
+                      }))
+                    );
+                  });
+                }
               }}
               disabled={busy}
             >
@@ -1065,10 +1532,13 @@ export function ReservationDetailScreen({
               <Text style={styles.miniText}>Chek</Text>
             </Pressable>
           ) : null}
-          {showMoney ? (
+          {showMoney && !data?.emehmon_paid ? (
             <Pressable
               style={[styles.miniBtn, styles.miniCharge]}
-              onPress={doEmehmon}
+              onPress={() => {
+                setEmehmonAmount(data?.emehmon_default || "");
+                setPanel(panel === "emehmon" ? "none" : "emehmon");
+              }}
               disabled={busy}
             >
               <Text style={styles.miniText}>E-mehmon</Text>
@@ -1102,9 +1572,110 @@ export function ReservationDetailScreen({
           </View>
         ) : null}
 
+        {panel === "checkin" ? (
+          <View style={styles.payBox}>
+            <Text style={styles.payTitle}>Kirish · E-mehmon</Text>
+            <Text style={styles.occHint}>
+              {data?.emehmon_unit || "0"} × {data?.nights ?? "?"} kecha ×{" "}
+              {data?.emehmon_guests ?? "?"} kishi
+            </Text>
+            <Pressable
+              style={[ui.chip, collectEmehmon && ui.chipOn, { marginBottom: 8 }]}
+              onPress={() => setCollectEmehmon((v) => !v)}
+            >
+              <Text
+                style={[ui.chipText, collectEmehmon && ui.chipTextOn]}
+              >
+                {collectEmehmon ? "✓ E-mehmon olinsin" : "E-mehmon olinmasin"}
+              </Text>
+            </Pressable>
+            {collectEmehmon ? (
+              <>
+                <FieldLabel>Summa</FieldLabel>
+                <TextInput
+                  style={styles.payInput}
+                  value={emehmonAmount}
+                  onChangeText={setEmehmonAmount}
+                  keyboardType="decimal-pad"
+                  placeholder={data?.emehmon_default || "0"}
+                  placeholderTextColor={colors.faint}
+                />
+                <FieldLabel>To‘lov usuli</FieldLabel>
+                <SegmentedTabs
+                  tabs={PAY_METHODS.map((m) => ({
+                    id: m.id,
+                    label: m.label,
+                  }))}
+                  value={emehmonMethod}
+                  onChange={setEmehmonMethod}
+                />
+              </>
+            ) : null}
+            {(data?.occupants_missing ?? 0) > 0 ? (
+              <Text style={styles.occWarn}>
+                Avval yetishmayotgan {data?.occupants_missing} mehmonni
+                to‘ldiring (yoki hujjatsiz kirish).
+              </Text>
+            ) : null}
+            <PrimaryButton
+              label="Joylash"
+              onPress={() => doCheckIn({})}
+              loading={busy}
+            />
+            <PrimaryButton
+              label="Bekor"
+              tone="ghost"
+              onPress={() => setPanel("none")}
+            />
+          </View>
+        ) : null}
+
+        {panel === "emehmon" ? (
+          <View style={styles.payBox}>
+            <Text style={styles.payTitle}>E-mehmon to‘lovi</Text>
+            <Text style={styles.occHint}>
+              Tarif {data?.emehmon_unit || "—"} ·{" "}
+              {data?.nights ?? "?"} kecha · {data?.emehmon_guests ?? "?"} kishi
+            </Text>
+            <FieldLabel>Summa</FieldLabel>
+            <TextInput
+              style={styles.payInput}
+              value={emehmonAmount}
+              onChangeText={setEmehmonAmount}
+              keyboardType="decimal-pad"
+              placeholder={data?.emehmon_default || "0"}
+              placeholderTextColor={colors.faint}
+            />
+            <FieldLabel>To‘lov usuli</FieldLabel>
+            <SegmentedTabs
+              tabs={PAY_METHODS.map((m) => ({ id: m.id, label: m.label }))}
+              value={emehmonMethod}
+              onChange={setEmehmonMethod}
+            />
+            <PrimaryButton
+              label="Yozish"
+              onPress={doEmehmon}
+              loading={busy}
+            />
+            <PrimaryButton
+              label="Bekor"
+              tone="ghost"
+              onPress={() => setPanel("none")}
+            />
+          </View>
+        ) : null}
+
         {panel === "amend" ? (
           <View style={styles.payBox}>
             <Text style={styles.payTitle}>Bronni o‘zgartirish</Text>
+            <TextInput
+              style={styles.payInput}
+              value={amendIn}
+              onChangeText={setAmendIn}
+              placeholder="Kirish (YYYY-MM-DD)"
+              placeholderTextColor="#a89f94"
+              autoCapitalize="none"
+            />
             <TextInput
               style={styles.payInput}
               value={amendOut}
@@ -1121,6 +1692,64 @@ export function ReservationDetailScreen({
               placeholder="Kunlik narx"
               placeholderTextColor="#a89f94"
             />
+            <TextInput
+              style={styles.payInput}
+              value={amendAdults}
+              onChangeText={setAmendAdults}
+              keyboardType="number-pad"
+              placeholder="Kattalar"
+              placeholderTextColor="#a89f94"
+            />
+            <TextInput
+              style={styles.payInput}
+              value={amendChildren}
+              onChangeText={setAmendChildren}
+              keyboardType="number-pad"
+              placeholder="Bolalar"
+              placeholderTextColor="#a89f94"
+            />
+            <Text style={[styles.payTitle, { marginTop: 8 }]}>Kompaniya</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              <Pressable
+                style={[styles.miniBtn, amendCompanyId == null && styles.miniExtend]}
+                onPress={() => setAmendCompanyId(null)}
+              >
+                <Text style={styles.miniText}>Yo‘q</Text>
+              </Pressable>
+              {companies.map((c) => (
+                <Pressable
+                  key={c.id}
+                  style={[
+                    styles.miniBtn,
+                    amendCompanyId === c.id && styles.miniExtend,
+                  ]}
+                  onPress={() => setAmendCompanyId(c.id)}
+                >
+                  <Text style={styles.miniText}>{c.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={[styles.payTitle, { marginTop: 8 }]}>Yo‘naltiruvchi</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              <Pressable
+                style={[styles.miniBtn, amendReferrerId == null && styles.miniExtend]}
+                onPress={() => setAmendReferrerId(null)}
+              >
+                <Text style={styles.miniText}>Yo‘q</Text>
+              </Pressable>
+              {referrers.map((r) => (
+                <Pressable
+                  key={r.id}
+                  style={[
+                    styles.miniBtn,
+                    amendReferrerId === r.id && styles.miniExtend,
+                  ]}
+                  onPress={() => setAmendReferrerId(r.id)}
+                >
+                  <Text style={styles.miniText}>{r.name}</Text>
+                </Pressable>
+              ))}
+            </View>
             <Pressable
               style={[styles.paySubmit, busy && styles.disabled]}
               onPress={doAmend}
@@ -1337,6 +1966,16 @@ export function ReservationDetailScreen({
         {panel === "transfer" ? (
           <View style={styles.payBox}>
             <Text style={styles.payTitle}>Bo‘sh xonaga o‘tkazish</Text>
+            <Pressable
+              style={[styles.miniBtn, updateRate && styles.miniExtend, { marginBottom: 8 }]}
+              onPress={() => setUpdateRate((v) => !v)}
+            >
+              <Text style={styles.miniText}>
+                {updateRate
+                  ? "Yangi xona tarifi qo‘llanadi"
+                  : "Eski tarif saqlanadi"}
+              </Text>
+            </Pressable>
             {vacantRooms.length === 0 ? (
               <Text style={styles.emptySvc}>Bo‘sh xona yo‘q</Text>
             ) : (
@@ -1372,37 +2011,15 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#eef0f3" },
+  root: { flex: 1, backgroundColor: colors.paper },
   boot: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#eef0f3",
+    backgroundColor: colors.paper,
     padding: 24,
   },
-  header: {
-    backgroundColor: "#12151a",
-    paddingTop: 56,
-    paddingBottom: 18,
-    paddingHorizontal: 18,
-  },
-  back: { color: "#e8a86a", fontWeight: "600", marginBottom: 10 },
-  code: { color: "#fff", fontSize: 22, fontWeight: "700" },
-  status: { color: "rgba(245,239,230,0.75)", marginTop: 4 },
-  body: { padding: 18, paddingBottom: 40 },
-  guest: {
-    fontSize: 28,
-    fontWeight: "600",
-    color: "#12151a",
-    marginBottom: 16,
-    fontFamily: "Georgia",
-  },
-  notesBox: {
-    backgroundColor: "#faf6f1",
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 8,
-  },
+  body: { padding: space.lg, paddingBottom: 40 },
   notesHead: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1412,174 +2029,256 @@ const styles = StyleSheet.create({
   notesTitle: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#7a7168",
+    color: colors.muted,
     letterSpacing: 0.4,
+    fontFamily: fontUi,
+    textTransform: "uppercase",
   },
-  notesEdit: { color: "#0e6b56", fontWeight: "700", fontSize: 13 },
-  notesBody: { color: "#12151a", fontSize: 15, lineHeight: 22 },
+  notesEdit: {
+    color: colors.accent,
+    fontWeight: "700",
+    fontSize: 13,
+    fontFamily: fontUi,
+  },
+  notesBody: {
+    color: colors.ink,
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: fontUi,
+  },
   notesInput: {
-    borderWidth: 1,
-    borderColor: "#d9cfc3",
-    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    borderRadius: radius.md,
     padding: 10,
     minHeight: 80,
     textAlignVertical: "top",
-    color: "#12151a",
+    color: colors.ink,
     fontSize: 15,
+    backgroundColor: colors.paper,
+    fontFamily: fontUi,
   },
-  notesActions: { flexDirection: "row", gap: 8, marginTop: 10 },
+  notesActions: { flexDirection: "row", gap: 8, marginTop: 4, alignItems: "center" },
   notesCancel: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: radius.md,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#d9cfc3",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
   },
-  notesCancelText: { fontWeight: "600", color: "#7a7168" },
-  notesSave: {
-    flex: 2,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    backgroundColor: "#0e6b56",
+  notesCancelText: {
+    fontWeight: "600",
+    color: colors.inkSoft,
+    fontFamily: fontUi,
   },
   row: {
-    backgroundColor: "#faf6f1",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 8,
+    backgroundColor: colors.paper,
+    borderRadius: radius.md,
+    padding: space.md,
+    marginBottom: space.sm,
   },
   rowLbl: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#7a7168",
+    color: colors.muted,
     letterSpacing: 0.4,
+    fontFamily: fontUi,
   },
-  rowVal: { fontSize: 16, fontWeight: "600", color: "#12151a", marginTop: 4 },
-  ledger: {
-    marginTop: 8,
-    marginBottom: 8,
-    backgroundColor: "#faf6f1",
-    borderRadius: 14,
-    padding: 14,
+  rowVal: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.ink,
+    marginTop: 4,
+    fontFamily: fontUi,
   },
   ledgerTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#7a7168",
-    marginBottom: 8,
+    color: colors.muted,
+    marginBottom: space.sm,
+    fontFamily: fontUi,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   ledgerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 12,
-    paddingVertical: 6,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#e8e2da",
+    paddingVertical: 12,
+    paddingHorizontal: space.md,
+    marginBottom: space.sm,
+    backgroundColor: colors.paper,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
   },
-  ledgerDesc: { flex: 1, color: "#12151a", fontSize: 14 },
-  ledgerAmt: { fontWeight: "700", color: "#12151a" },
-  ledgerPay: { color: "#2a6b4f" },
-  ledgerVoid: { color: "#a89f94", textDecorationLine: "line-through" },
+  ledgerDesc: {
+    flex: 1,
+    color: colors.ink,
+    fontSize: 14,
+    fontFamily: fontUi,
+  },
+  ledgerAmt: {
+    fontWeight: "700",
+    color: colors.ink,
+    fontFamily: fontUi,
+  },
+  ledgerPay: { color: colors.accent },
+  ledgerVoid: { color: colors.faint, textDecorationLine: "line-through" },
   voidHint: {
-    marginTop: 8,
+    marginTop: 4,
     fontSize: 11,
-    color: "#a89f94",
+    color: colors.faint,
+    fontFamily: fontUi,
   },
-  error: { color: "#9f2f28", marginVertical: 12 },
+  error: { color: colors.danger, marginVertical: 12, fontFamily: fontUi },
   action: {
     marginTop: 16,
-    backgroundColor: "#0e6b56",
-    borderRadius: 12,
+    backgroundColor: colors.accent,
+    borderRadius: radius.md,
     paddingVertical: 16,
     alignItems: "center",
   },
-  actionOut: { backgroundColor: "#221c18" },
-  actionText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  actionOut: { backgroundColor: colors.night },
+  actionText: { color: colors.white, fontWeight: "700", fontSize: 16 },
   actionRow: { flexDirection: "row", gap: 8, marginTop: 16 },
   miniBtn: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.md,
     alignItems: "center",
   },
-  miniPay: { backgroundColor: "#2a6b4f" },
-  miniDeposit: { backgroundColor: "#2a6b4f" },
-  miniRefund: { backgroundColor: "#221c18" },
-  miniCharge: { backgroundColor: "#221c18" },
-  miniSvc: { backgroundColor: "#221c18" },
-  miniMinibar: { backgroundColor: "#221c18" },
-  miniExtend: { backgroundColor: "#221c18" },
-  miniTransfer: { backgroundColor: "#221c18" },
-  miniCancel: { backgroundColor: "#9f2f28" },
-  miniNoShow: { backgroundColor: "#7a7168" },
-  miniText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  miniPay: { backgroundColor: colors.accent },
+  miniDeposit: { backgroundColor: colors.accent },
+  miniRefund: { backgroundColor: colors.night },
+  miniCharge: { backgroundColor: colors.night },
+  miniSvc: { backgroundColor: colors.night },
+  miniMinibar: { backgroundColor: colors.night },
+  miniExtend: { backgroundColor: colors.night },
+  miniTransfer: { backgroundColor: colors.night },
+  miniCancel: { backgroundColor: colors.danger },
+  miniNoShow: { backgroundColor: colors.muted },
+  miniText: { color: colors.white, fontWeight: "700", fontSize: 14 },
   disabled: { opacity: 0.7 },
   backBtn: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: "#0e6b56",
-    borderRadius: 10,
+    backgroundColor: colors.accent,
+    borderRadius: radius.md,
   },
-  backBtnText: { color: "#fff", fontWeight: "700" },
+  backBtnText: { color: colors.white, fontWeight: "700" },
   payBox: {
     marginTop: 12,
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#d9cfc3",
-    padding: 14,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    padding: space.lg,
   },
   payTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#12151a",
+    color: colors.ink,
     marginBottom: 10,
+    fontFamily: fontUi,
   },
   payInput: {
-    borderWidth: 1,
-    borderColor: "#d9cfc3",
-    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    borderRadius: radius.md,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
     fontWeight: "600",
-    color: "#12151a",
+    color: colors.ink,
     marginBottom: 10,
+    backgroundColor: colors.paper,
+    fontFamily: fontUi,
   },
   methodRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
   methodChip: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#d9cfc3",
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
     alignItems: "center",
-    backgroundColor: "#faf6f1",
+    backgroundColor: colors.paper,
   },
   methodChipOn: {
-    backgroundColor: "#2a6b4f",
-    borderColor: "#2a6b4f",
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
-  methodText: { fontWeight: "600", color: "#221c18", fontSize: 13 },
-  methodTextOn: { color: "#fff" },
+  methodText: {
+    fontWeight: "600",
+    color: colors.ink,
+    fontSize: 13,
+    fontFamily: fontUi,
+  },
+  methodTextOn: { color: colors.white },
   paySubmit: {
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: radius.md,
     alignItems: "center",
-    backgroundColor: "#2a6b4f",
+    backgroundColor: colors.accent,
   },
-  depositSubmit: { backgroundColor: "#1f6b5c" },
-  chargeSubmit: { backgroundColor: "#8a5a2b" },
-  emptySvc: { color: "#7a7168", paddingVertical: 8 },
+  depositSubmit: { backgroundColor: colors.accent },
+  chargeSubmit: { backgroundColor: colors.copper },
+  emptySvc: { color: colors.muted, paddingVertical: 8, fontFamily: fontUi },
   svcRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#e8e2da",
+    borderTopColor: colors.lineSoft,
   },
-  svcName: { fontWeight: "600", color: "#12151a", flex: 1 },
-  svcPrice: { fontWeight: "700", color: "#3a4f6b" },
+  svcName: { fontWeight: "600", color: colors.ink, flex: 1, fontFamily: fontUi },
+  svcPrice: { fontWeight: "700", color: colors.info, fontFamily: fontUi },
+  occRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: space.md,
+    marginBottom: space.sm,
+    backgroundColor: colors.paper,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+  },
+  occName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.ink,
+    fontFamily: fontUi,
+  },
+  occPhone: {
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 2,
+    fontFamily: fontUi,
+  },
+  occHint: {
+    fontSize: 12,
+    color: colors.muted,
+    lineHeight: 18,
+    marginBottom: space.sm,
+    fontFamily: fontUi,
+  },
+  occRemove: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.danger,
+    fontFamily: fontUi,
+  },
+  occWarn: {
+    color: colors.warn,
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: space.sm,
+    fontFamily: fontUi,
+  },
+  occForm: { marginTop: space.sm },
 });

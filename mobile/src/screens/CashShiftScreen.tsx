@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -12,17 +13,27 @@ import {
 import { ApiError } from "../api/client";
 import type { CashShift } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { FieldLabel, FormCard, ListCard, PrimaryButton, StatusBadge } from "../ui/primitives";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { colors, fontUi, radius, space, ui } from "../ui/theme";
+import { sharePdfBase64 } from "../utils/sharePdf";
 
 type Props = {
   onBack: () => void;
 };
 
 export function CashShiftScreen({ onBack }: Props) {
-  const { me, fetchCashShift, openCashShift, closeCashShift, postCashMovement } =
-    useAuth();
+  const {
+    me,
+    fetchCashShift,
+    openCashShift,
+    closeCashShift,
+    postCashMovement,
+    fetchCashShiftHistory,
+    printCashShift,
+  } = useAuth();
   const [shift, setShift] = useState<CashShift | null>(null);
+  const [history, setHistory] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,15 +46,19 @@ export function CashShiftScreen({ onBack }: Props) {
     setError(null);
     setLoading(true);
     try {
-      const s = await fetchCashShift();
+      const [s, hist] = await Promise.all([
+        fetchCashShift(),
+        fetchCashShiftHistory().catch(() => [] as Record<string, unknown>[]),
+      ]);
       setShift(s);
+      setHistory(hist);
       if (s?.expected_cash) setClosingCash(s.expected_cash);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Yuklash xatosi");
     } finally {
       setLoading(false);
     }
-  }, [fetchCashShift]);
+  }, [fetchCashShift, fetchCashShiftHistory]);
 
   useEffect(() => {
     load();
@@ -55,6 +70,7 @@ export function CashShiftScreen({ onBack }: Props) {
     try {
       const s = await openCashShift(openingFloat.trim() || "0");
       setShift(s);
+      await load();
       Alert.alert("Kassa", "Smena ochildi.");
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Ochish xatosi");
@@ -92,6 +108,21 @@ export function CashShiftScreen({ onBack }: Props) {
         },
       },
     ]);
+  }
+
+  async function onPrint(id: number) {
+    setBusy(true);
+    try {
+      const file = await printCashShift(id);
+      await sharePdfBase64(
+        file.pdf_base64,
+        file.filename || `cash-shift-${id}.pdf`
+      );
+    } catch (e) {
+      Alert.alert("PDF", e instanceof ApiError ? e.message : "Chop etish xatosi");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function doMove(kind: "pay_in" | "pay_out") {
@@ -135,17 +166,31 @@ export function CashShiftScreen({ onBack }: Props) {
         title="Smena"
         subtitle={me?.hotel?.name || me?.tenant.name || "Hotel"}
         onBack={onBack}
+        right={
+          shift?.id ? (
+            <Pressable
+              style={({ pressed }) => [
+                ui.copperBtn,
+                pressed && { opacity: 0.85 },
+                busy && { opacity: 0.5 },
+              ]}
+              onPress={() => onPrint(Number(shift.id))}
+              disabled={busy}
+            >
+              <Text style={ui.copperBtnText}>PDF</Text>
+            </Pressable>
+          ) : null
+        }
       />
 
-      <View style={styles.body}>
-        <View
-          style={[styles.badge, open ? styles.badgeOpen : styles.badgeClosed]}
-        >
-          <Text style={styles.badgeText}>{open ? "OCHIQ" : "YOPIQ"}</Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.body}>
+        <StatusBadge
+          label={open ? "OCHIQ" : "YOPIQ"}
+          tone={open ? "success" : "neutral"}
+        />
 
         {open && shift ? (
-          <>
+          <FormCard>
             <Row label="Boshlang‘ich" value={shift.opening_float} />
             <Row label="Kutilgan naqd" value={shift.expected_cash || "—"} />
             <Row
@@ -156,7 +201,7 @@ export function CashShiftScreen({ onBack }: Props) {
                   : "—"
               }
             />
-            <Text style={styles.label}>Yakuniy naqd *</Text>
+            <FieldLabel>Yakuniy naqd *</FieldLabel>
             <TextInput
               style={styles.input}
               value={closingCash}
@@ -164,7 +209,7 @@ export function CashShiftScreen({ onBack }: Props) {
               keyboardType="decimal-pad"
               placeholderTextColor={colors.faint}
             />
-            <Text style={styles.label}>Kassa harakati</Text>
+            <FieldLabel>Kassa harakati</FieldLabel>
             <TextInput
               style={styles.input}
               value={moveAmount}
@@ -197,24 +242,19 @@ export function CashShiftScreen({ onBack }: Props) {
               </Pressable>
             </View>
             {error ? <Text style={ui.error}>{error}</Text> : null}
-            <Pressable
-              style={[styles.btn, styles.btnClose, busy && styles.disabled]}
+            <PrimaryButton
+              label="Smenani yopish"
+              tone="ink"
               onPress={doClose}
-              disabled={busy}
-            >
-              {busy ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.btnText}>Smenani yopish</Text>
-              )}
-            </Pressable>
-          </>
+              loading={busy}
+            />
+          </FormCard>
         ) : (
-          <>
+          <FormCard>
             <Text style={styles.hint}>
               Naqd to‘lovlar uchun smenani oching.
             </Text>
-            <Text style={styles.label}>Boshlang‘ich naqd</Text>
+            <FieldLabel>Boshlang‘ich naqd</FieldLabel>
             <TextInput
               style={styles.input}
               value={openingFloat}
@@ -223,28 +263,46 @@ export function CashShiftScreen({ onBack }: Props) {
               placeholderTextColor={colors.faint}
             />
             {error ? <Text style={ui.error}>{error}</Text> : null}
-            <Pressable
-              style={[styles.btn, busy && styles.disabled]}
+            <PrimaryButton
+              label="Smenani ochish"
               onPress={doOpen}
-              disabled={busy}
-            >
-              {busy ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.btnText}>Smenani ochish</Text>
-              )}
-            </Pressable>
+              loading={busy}
+            />
             {shift && !shift.is_open ? (
-              <View style={{ marginTop: 16 }}>
+              <View style={{ marginTop: 12 }}>
                 <Row
                   label="Oxirgi farq"
                   value={shift.variance != null ? shift.variance : "—"}
                 />
               </View>
             ) : null}
-          </>
+          </FormCard>
         )}
-      </View>
+
+        <Text style={ui.section}>Tarix</Text>
+        {history.length === 0 ? (
+          <Text style={ui.rowMeta}>Yopilgan smena yo‘q</Text>
+        ) : (
+          history.map((h) => (
+            <ListCard
+              key={String(h.id)}
+              title={
+                h.is_open
+                  ? "Ochiq smena"
+                  : `Yopilgan · farq ${h.variance ?? "—"}`
+              }
+              meta={`${String(h.opened_at || "").replace("T", " ").slice(0, 16)} → ${
+                h.closed_at
+                  ? String(h.closed_at).replace("T", " ").slice(0, 16)
+                  : "…"
+              }`}
+              badge={h.is_open ? "OCHIQ" : "YOPIQ"}
+              badgeTone={h.is_open ? "success" : "neutral"}
+              onPress={() => onPrint(Number(h.id))}
+            />
+          ))
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -265,34 +323,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.paper,
   },
-  body: { padding: space.xl },
-  badge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radius.sm,
-    marginBottom: space.lg,
-  },
-  badgeOpen: { backgroundColor: colors.success },
-  badgeClosed: { backgroundColor: colors.muted },
-  badgeText: {
-    color: colors.white,
-    fontWeight: "800",
-    letterSpacing: 0.8,
-    fontFamily: fontUi,
-  },
+  body: { padding: space.lg, gap: space.md, paddingBottom: 48 },
   hint: {
     color: colors.muted,
-    marginBottom: space.lg,
+    marginBottom: space.md,
     lineHeight: 20,
-    fontFamily: fontUi,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.muted,
-    marginBottom: 6,
-    marginTop: 8,
     fontFamily: fontUi,
   },
   input: {
@@ -301,9 +336,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   row: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.paper,
     borderRadius: radius.md,
-    padding: space.lg,
+    padding: space.md,
     marginBottom: space.sm,
   },
   rowLbl: {
@@ -319,18 +354,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontFamily: fontUi,
   },
-  btn: {
-    backgroundColor: colors.accent,
-    borderRadius: radius.md,
-    paddingVertical: 16,
-    alignItems: "center",
-    marginTop: 4,
-  },
-  btnClose: { backgroundColor: colors.night },
   btnText: {
     color: colors.white,
     fontWeight: "700",
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: fontUi,
   },
   moveRow: { flexDirection: "row", gap: space.sm, marginBottom: space.md },

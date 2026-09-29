@@ -7276,6 +7276,22 @@ msgstr ""
 msgid "Buxgalteriya / kassa"
 msgstr "Бухгалтерия / касса"
 
+#: bookings/services.py templates/bookings/partials/board_page.html templates/bookings/reservation_detail.html
+msgid "Bu bron butunlay o‘chiriladi. Hisobi va to‘lovlari ham ketadi. Mehmon kartochkasi va xona qoladi."
+msgstr "Бронь будет удалена полностью. Счёт и оплаты тоже удалятся. Карточка гостя и номер останутся."
+
+msgid "Bron o‘chirildi: %(code)s"
+msgstr "Бронь удалена: %(code)s"
+
+msgid "Bu bron kompaniya hisobiga ulangan. Avval o‘sha hisobdan yeching."
+msgstr "Бронь привязана к счёту компании. Сначала отвяжите её."
+
+msgid "Bu bronda minibar savdosi bor. Avval uni bekor qiling."
+msgstr "По этой брони есть продажа минибара. Сначала отмените её."
+
+msgid "Bu bronda xizmat buyurtmasi bor. Avval uni bekor qiling."
+msgstr "По этой брони есть заказ услуги. Сначала отмените его."
+
 #, fuzzy
 #~ msgid "Taqsimlash"
 #~ msgstr "К распределению"

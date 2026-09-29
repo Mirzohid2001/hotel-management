@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from bookings.models import BookingReferrer, Reservation
+from bookings.models import BookingReferrer, Reservation, ReservationOccupant
 from bookings.services import (
     AvailabilityError,
     apply_amendment,
@@ -14,8 +14,9 @@ from bookings.services import (
     check_out_reservation,
     create_reservation,
 )
+from core.models import ActivityLog
 from core.tests.helpers import setup_tenant_user
-from folio.models import GuestPayment
+from folio.models import CashShift, CompanyInvoice, CompanyInvoiceLine, Folio, GuestPayment
 from guests.models import Company, Guest
 from properties.models import Property, RatePlan, Room, RoomType
 
@@ -35,6 +36,9 @@ class BookingFlowTests(TestCase):
         )
         self.room = Room.objects.create(
             tenant=self.tenant, property=self.prop, room_type=self.rt, number="101"
+        )
+        self.room_b = Room.objects.create(
+            tenant=self.tenant, property=self.prop, room_type=self.rt, number="102"
         )
         self.rate = RatePlan.objects.create(
             tenant=self.tenant,
@@ -306,3 +310,156 @@ class BookingFlowTests(TestCase):
         )
         with self.assertRaises(ValidationError):
             check_in_reservation(reservation, self.user)
+
+    def test_admin_purge_deletes_only_that_booking(self):
+        from tenants.models import TenantMembership
+
+        self.client.force_login(self.user)
+        later = self.today + timedelta(days=10)
+        keep = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=later,
+            check_out=later + timedelta(days=1),
+        )
+        target = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+        )
+        check_in_reservation(target, self.user)
+        other = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room_b,
+            rate_plan=self.rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+        )
+        check_in_reservation(other, self.user)
+        companion = Guest.objects.create(tenant=self.tenant, first_name="Companion", last_name="Guest")
+        ReservationOccupant.objects.create(
+            tenant=self.tenant,
+            reservation=target,
+            guest=companion,
+            is_primary=False,
+        )
+        folio = Folio.objects.get(reservation=target)
+        shift = CashShift.objects.create(
+            tenant=self.tenant, hotel=self.prop, opened_by=self.user
+        )
+        GuestPayment.objects.create(
+            tenant=self.tenant,
+            folio=folio,
+            amount=Decimal("10000"),
+            method=GuestPayment.Method.CASH,
+            cash_shift=shift,
+            received_by=self.user,
+        )
+        other_charges = Folio.objects.get(reservation=other).charges.count()
+        self.assertGreater(other_charges, 0)
+        self.room.refresh_from_db()
+        room_status = self.room.status
+        board = self.client.get(reverse("bookings:board"))
+        self.assertContains(board, reverse("bookings:purge", args=[target.pk]))
+        self.client.cookies["django_language"] = "ru"
+        board_ru = self.client.get(reverse("bookings:board"))
+        self.assertContains(board_ru, "Удалить")
+        self.assertContains(board_ru, "Бронь будет удалена полностью")
+        self.client.cookies["django_language"] = "uz"
+
+        resp = self.client.post(
+            reverse("bookings:purge", args=[target.pk]),
+            {"next": reverse("bookings:board")},
+        )
+        self.assertRedirects(resp, reverse("bookings:board"))
+        self.assertFalse(Reservation.objects.filter(pk=target.pk).exists())
+        self.assertFalse(Folio.objects.filter(reservation_id=target.pk).exists())
+        self.assertFalse(GuestPayment.objects.filter(folio_id=folio.pk).exists())
+        self.assertTrue(CashShift.objects.filter(pk=shift.pk).exists())
+        self.assertTrue(Reservation.objects.filter(pk=keep.pk).exists())
+        self.assertTrue(Reservation.objects.filter(pk=other.pk).exists())
+        self.assertEqual(Folio.objects.get(reservation=other).charges.count(), other_charges)
+        self.assertTrue(Guest.objects.filter(pk=self.guest.pk).exists())
+        self.assertTrue(Guest.objects.filter(pk=companion.pk).exists())
+        self.room.refresh_from_db()
+        self.assertEqual(self.room.status, room_status)
+        self.assertTrue(
+            ActivityLog.objects.filter(action="reservation.purge", object_id=str(target.pk)).exists()
+        )
+
+        TenantMembership.objects.filter(user=self.user, tenant=self.tenant).update(
+            role=TenantMembership.Role.RECEPTIONIST
+        )
+        denied = self.client.post(reverse("bookings:purge", args=[keep.pk]))
+        self.assertEqual(denied.status_code, 302)
+        self.assertTrue(Reservation.objects.filter(pk=keep.pk).exists())
+
+    def test_purge_keeps_booking_linked_to_a_service_order(self):
+        from services.models import ServiceItem, ServiceOrder
+
+        target = create_reservation(
+            tenant=self.tenant,
+            user=self.user,
+            property_obj=self.prop,
+            guest=self.guest,
+            room_type=self.rt,
+            room=self.room,
+            rate_plan=self.rate,
+            check_in=self.today,
+            check_out=self.today + timedelta(days=1),
+        )
+        service = ServiceItem.objects.create(
+            tenant=self.tenant, name="Laundry", code="laundry", unit_price=Decimal("10000")
+        )
+        ServiceOrder.objects.create(
+            tenant=self.tenant,
+            reservation=target,
+            service=service,
+            quantity=Decimal("1"),
+            unit_price=Decimal("10000"),
+            amount=Decimal("10000"),
+        )
+        from bookings.services import purge_reservation
+
+        with self.assertRaises(ValidationError):
+            purge_reservation(target, self.user)
+        self.client.force_login(self.user)
+        denied = self.client.post(reverse("bookings:purge", args=[target.pk]))
+        self.assertEqual(denied.status_code, 302)
+        self.assertEqual(denied.url, reverse("bookings:detail", args=[target.pk]))
+        self.assertTrue(Reservation.objects.filter(pk=target.pk).exists())
+        self.assertTrue(ServiceOrder.objects.filter(reservation=target).exists())
+        self.assertTrue(ServiceItem.objects.filter(pk=service.pk).exists())
+
+        company = Company.objects.create(tenant=self.tenant, name="ACME")
+        invoice = CompanyInvoice.objects.create(
+            tenant=self.tenant, company=company, hotel=self.prop, code="INV-KEEP"
+        )
+        line = CompanyInvoiceLine.objects.create(
+            tenant=self.tenant,
+            invoice=invoice,
+            description="Stay",
+            amount=Decimal("10000"),
+            source_reservation=target,
+        )
+        ServiceOrder.objects.filter(reservation=target).delete()
+        with self.assertRaises(ValidationError):
+            purge_reservation(target, self.user)
+        line.refresh_from_db()
+        self.assertEqual(line.source_reservation_id, target.pk)
+        self.assertTrue(CompanyInvoice.objects.filter(pk=invoice.pk).exists())

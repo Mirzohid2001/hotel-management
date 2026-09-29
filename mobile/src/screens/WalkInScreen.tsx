@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -13,7 +13,23 @@ import {
 } from "react-native";
 
 import { ApiError } from "../api/client";
+import type { GuestSummary } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { ScreenHeader } from "../ui/ScreenHeader";
+import {
+  FieldLabel,
+  FormCard,
+  PrimaryButton,
+  SearchField,
+} from "../ui/primitives";
+import { colors, fontUi, radius, space, ui } from "../ui/theme";
+import {
+  CompanionEditor,
+  companionPayload,
+  companionsIncomplete,
+  companionSlots,
+  type CompanionDraft,
+} from "../ui/companions";
 
 type RoomInfo = {
   id: number;
@@ -29,18 +45,131 @@ type Props = {
 };
 
 export function WalkInScreen({ room, onBack, onCreated }: Props) {
-  const { walkIn } = useAuth();
+  const {
+    walkIn,
+    searchGuests,
+    fetchCompanies,
+    fetchReferrers,
+    fetchPropertySettings,
+  } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [nights, setNights] = useState("1");
   const [adults, setAdults] = useState("1");
+  const [children, setChildren] = useState("0");
+  const [nightlyRate, setNightlyRate] = useState("");
   const [docNumber, setDocNumber] = useState("");
+  const [guestId, setGuestId] = useState<number | null>(null);
+  const [guestQ, setGuestQ] = useState("");
+  const [guestHits, setGuestHits] = useState<GuestSummary[]>([]);
+  const [searchingGuests, setSearchingGuests] = useState(false);
+  const [companyId, setCompanyId] = useState<number | null>(null);
+  const [referrerId, setReferrerId] = useState<number | null>(null);
+  const [companies, setCompanies] = useState<Record<string, unknown>[]>([]);
+  const [referrers, setReferrers] = useState<Record<string, unknown>[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [collectEmehmon, setCollectEmehmon] = useState(true);
+  const [emehmonUnit, setEmehmonUnit] = useState(0);
+  const [emehmonAmount, setEmehmonAmount] = useState("");
+  const [companions, setCompanions] = useState<CompanionDraft[]>([]);
+
+  const guestLocked = guestId != null;
+
+  const guestsCount = Math.max(
+    1,
+    (parseInt(adults, 10) || 1) + (parseInt(children, 10) || 0)
+  );
+  const nightsCount = Math.max(1, parseInt(nights, 10) || 1);
+  const emehmonDefault =
+    emehmonUnit > 0 ? String(emehmonUnit * nightsCount * guestsCount) : "";
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [cos, refs, settings] = await Promise.all([
+          fetchCompanies().catch(() => []),
+          fetchReferrers().catch(() => []),
+          fetchPropertySettings().catch(() => null),
+        ]);
+        if (!cancelled) {
+          setCompanies(cos);
+          setReferrers(refs);
+          const unit = Number(settings?.emehmon_fee || 0);
+          setEmehmonUnit(Number.isFinite(unit) ? unit : 0);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchCompanies, fetchReferrers, fetchPropertySettings]);
+
+  useEffect(() => {
+    if (emehmonDefault) setEmehmonAmount(emehmonDefault);
+  }, [emehmonDefault]);
+
+  useEffect(() => {
+    const a = Math.max(1, parseInt(adults, 10) || 1);
+    const c = Math.max(0, parseInt(children, 10) || 0);
+    setCompanions((prev) => companionSlots(a, c, prev));
+  }, [adults, children]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const q = guestQ.trim();
+    if (!q || guestLocked) {
+      setGuestHits([]);
+      setSearchingGuests(false);
+      return;
+    }
+    setSearchingGuests(true);
+    const t = setTimeout(async () => {
+      try {
+        const rows = await searchGuests(q);
+        if (!cancelled) setGuestHits(rows);
+      } catch {
+        if (!cancelled) setGuestHits([]);
+      } finally {
+        if (!cancelled) setSearchingGuests(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [guestQ, guestLocked, searchGuests]);
+
+  function pickGuest(g: GuestSummary) {
+    setGuestId(g.id);
+    setFirstName(g.first_name || g.name || "");
+    setLastName(g.last_name || "");
+    setPhone(g.phone || "");
+    setGuestQ("");
+    setGuestHits([]);
+  }
+
+  function clearGuest() {
+    setGuestId(null);
+    setFirstName("");
+    setLastName("");
+    setPhone("");
+    setGuestQ("");
+    setGuestHits([]);
+  }
 
   async function submit(force?: { allow_dirty?: boolean; allow_no_docs?: boolean }) {
     setError(null);
+    const missing = companionsIncomplete(companions);
+    if (missing) {
+      setError(missing);
+      setBusy(false);
+      return;
+    }
     setBusy(true);
     try {
       const result = await walkIn({
@@ -50,10 +179,22 @@ export function WalkInScreen({ room, onBack, onCreated }: Props) {
         phone: phone.trim(),
         nights: Math.max(1, parseInt(nights, 10) || 1),
         adults: Math.max(1, parseInt(adults, 10) || 1),
+        children: Math.max(0, parseInt(children, 10) || 0),
         doc_number: docNumber.trim(),
         allow_dirty: !!force?.allow_dirty || room.status === "dirty",
         allow_no_docs: !!force?.allow_no_docs || !docNumber.trim(),
-        collect_emehmon: true,
+        collect_emehmon: collectEmehmon,
+        emehmon_method: "cash",
+        ...(collectEmehmon && emehmonAmount.trim()
+          ? { emehmon_amount: emehmonAmount.trim() }
+          : {}),
+        ...(companions.length
+          ? { occupants: companionPayload(companions) }
+          : {}),
+        ...(guestId ? { guest_id: guestId } : {}),
+        ...(companyId ? { company_id: companyId } : {}),
+        ...(referrerId ? { referrer_id: referrerId } : {}),
+        ...(nightlyRate.trim() ? { nightly_rate: nightlyRate.trim() } : {}),
       });
       Alert.alert("Joylashdi", `${result.code}`);
       onCreated(result.reservation_id);
@@ -77,126 +218,313 @@ export function WalkInScreen({ room, onBack, onCreated }: Props) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+      style={ui.screen}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={styles.header}>
-        <Pressable onPress={onBack}>
-          <Text style={styles.back}>← Doska</Text>
-        </Pressable>
-        <Text style={styles.title}>Darhol joylash</Text>
-        <Text style={styles.sub}>
-          Xona {room.number}
-          {room.room_type ? ` · ${room.room_type}` : ""}
-        </Text>
-      </View>
+      <ScreenHeader
+        eyebrow="Walk-in"
+        title="Darhol joylash"
+        subtitle={`Xona ${room.number}${room.room_type ? ` · ${room.room_type}` : ""}`}
+        onBack={onBack}
+      />
 
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <Field label="Ism *" value={firstName} onChange={setFirstName} />
-        <Field label="Familiya" value={lastName} onChange={setLastName} />
-        <Field
-          label="Telefon"
-          value={phone}
-          onChange={setPhone}
-          keyboardType="phone-pad"
-        />
-        <Field
-          label="Kechalar"
-          value={nights}
-          onChange={setNights}
-          keyboardType="number-pad"
-        />
-        <Field
-          label="Kattalar"
-          value={adults}
-          onChange={setAdults}
-          keyboardType="number-pad"
-        />
-        <Field
-          label="Pasport/ID (ixtiyoriy)"
-          value={docNumber}
-          onChange={setDocNumber}
-          autoCapitalize="characters"
-        />
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <Pressable
-          style={[styles.btn, busy && styles.disabled]}
-          onPress={() => submit()}
-          disabled={busy || !firstName.trim()}
-        >
-          {busy ? (
-            <ActivityIndicator color="#fff" />
+      <ScrollView
+        contentContainerStyle={styles.body}
+        keyboardShouldPersistTaps="handled"
+      >
+        <FormCard>
+          <FieldLabel>Mehmon qidirish</FieldLabel>
+          {guestLocked ? (
+            <View style={styles.guestBanner}>
+              <Text style={styles.guestBannerText}>Mavjud mehmon</Text>
+              <Pressable onPress={clearGuest} hitSlop={8}>
+                <Text style={styles.clearLink}>Tozalash</Text>
+              </Pressable>
+            </View>
           ) : (
-            <Text style={styles.btnText}>Joylashtirish</Text>
+            <>
+              <SearchField
+                value={guestQ}
+                onChangeText={setGuestQ}
+                placeholder="Ism, telefon…"
+              />
+              {searchingGuests ? (
+                <ActivityIndicator
+                  color={colors.accent}
+                  style={{ marginVertical: 8 }}
+                />
+              ) : null}
+              {guestHits.map((g) => (
+                <Pressable
+                  key={g.id}
+                  style={styles.hitRow}
+                  onPress={() => pickGuest(g)}
+                >
+                  <Text style={styles.hitTitle}>{g.name}</Text>
+                  <Text style={styles.hitMeta}>{g.phone || "—"}</Text>
+                </Pressable>
+              ))}
+            </>
           )}
-        </Pressable>
+          <FieldLabel>Ism *</FieldLabel>
+          <TextInput
+            style={[ui.input, guestLocked && styles.inputLocked]}
+            value={firstName}
+            onChangeText={setFirstName}
+            autoCapitalize="words"
+            editable={!guestLocked}
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Familiya</FieldLabel>
+          <TextInput
+            style={[ui.input, guestLocked && styles.inputLocked]}
+            value={lastName}
+            onChangeText={setLastName}
+            autoCapitalize="words"
+            editable={!guestLocked}
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Telefon</FieldLabel>
+          <TextInput
+            style={[ui.input, guestLocked && styles.inputLocked]}
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+            editable={!guestLocked}
+            placeholderTextColor={colors.faint}
+          />
+        </FormCard>
+
+        <FormCard>
+          <FieldLabel>Kechalar</FieldLabel>
+          <TextInput
+            style={ui.input}
+            value={nights}
+            onChangeText={setNights}
+            keyboardType="number-pad"
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Kattalar</FieldLabel>
+          <TextInput
+            style={ui.input}
+            value={adults}
+            onChangeText={setAdults}
+            keyboardType="number-pad"
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Bolalar</FieldLabel>
+          <TextInput
+            style={ui.input}
+            value={children}
+            onChangeText={setChildren}
+            keyboardType="number-pad"
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Kecha narxi (ixtiyoriy)</FieldLabel>
+          <TextInput
+            style={ui.input}
+            value={nightlyRate}
+            onChangeText={setNightlyRate}
+            keyboardType="decimal-pad"
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Pasport/ID (ixtiyoriy)</FieldLabel>
+          <TextInput
+            style={ui.input}
+            value={docNumber}
+            onChangeText={setDocNumber}
+            autoCapitalize="characters"
+            placeholderTextColor={colors.faint}
+          />
+        </FormCard>
+
+        <FormCard>
+          <Text style={styles.section}>E-mehmon</Text>
+          <Text style={styles.hint}>
+            {emehmonUnit > 0
+              ? `${emehmonUnit} × ${nightsCount} kecha × ${guestsCount} kishi`
+              : "Setup’da tarif yo‘q"}
+          </Text>
+          <Pressable
+            style={[ui.chip, collectEmehmon && ui.chipOn, { marginBottom: 8 }]}
+            onPress={() => setCollectEmehmon((v) => !v)}
+          >
+            <Text style={[ui.chipText, collectEmehmon && ui.chipTextOn]}>
+              {collectEmehmon ? "✓ E-mehmon olinsin" : "E-mehmon olinmasin"}
+            </Text>
+          </Pressable>
+          {collectEmehmon ? (
+            <>
+              <FieldLabel>Summa (o‘zgartirish mumkin)</FieldLabel>
+              <TextInput
+                style={ui.input}
+                value={emehmonAmount}
+                onChangeText={setEmehmonAmount}
+                keyboardType="decimal-pad"
+                placeholder={emehmonDefault || "0"}
+                placeholderTextColor={colors.faint}
+              />
+            </>
+          ) : null}
+          <Text style={styles.hint}>
+            Qo‘shimcha kishilar soni kattalar/bolalar bilan ochiladi.
+          </Text>
+          {companions.length > 0 ? (
+            <CompanionEditor rows={companions} onChange={setCompanions} />
+          ) : null}
+        </FormCard>
+
+        {companies.length > 0 ? (
+          <FormCard>
+            <Text style={styles.section}>Kompaniya</Text>
+            <View style={styles.chipWrap}>
+              <Pressable
+                style={[ui.chip, companyId == null && ui.chipOn]}
+                onPress={() => setCompanyId(null)}
+              >
+                <Text
+                  style={[
+                    ui.chipText,
+                    companyId == null && ui.chipTextOn,
+                  ]}
+                >
+                  Yo‘q
+                </Text>
+              </Pressable>
+              {companies.map((c) => {
+                const id = Number(c.id);
+                const on = companyId === id;
+                return (
+                  <Pressable
+                    key={id}
+                    style={[ui.chip, on && ui.chipOn]}
+                    onPress={() => setCompanyId(on ? null : id)}
+                  >
+                    <Text style={[ui.chipText, on && ui.chipTextOn]}>
+                      {String(c.name)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </FormCard>
+        ) : null}
+
+        {referrers.length > 0 ? (
+          <FormCard>
+            <Text style={styles.section}>Referrer</Text>
+            <View style={styles.chipWrap}>
+              <Pressable
+                style={[ui.chip, referrerId == null && ui.chipOn]}
+                onPress={() => setReferrerId(null)}
+              >
+                <Text
+                  style={[
+                    ui.chipText,
+                    referrerId == null && ui.chipTextOn,
+                  ]}
+                >
+                  Yo‘q
+                </Text>
+              </Pressable>
+              {referrers.map((r) => {
+                const id = Number(r.id);
+                const on = referrerId === id;
+                return (
+                  <Pressable
+                    key={id}
+                    style={[ui.chip, on && ui.chipOn]}
+                    onPress={() => setReferrerId(on ? null : id)}
+                  >
+                    <Text style={[ui.chipText, on && ui.chipTextOn]}>
+                      {String(r.name)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </FormCard>
+        ) : null}
+
+        {error ? <Text style={ui.error}>{error}</Text> : null}
+
+        <PrimaryButton
+          label="Joylashtirish"
+          onPress={() => submit()}
+          loading={busy}
+          disabled={busy || !firstName.trim()}
+          tone="success"
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  keyboardType,
-  autoCapitalize,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  keyboardType?: "default" | "phone-pad" | "number-pad";
-  autoCapitalize?: "none" | "characters" | "words";
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChange}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize || "words"}
-        placeholderTextColor="#a89f94"
-      />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#eef0f3" },
-  header: {
-    backgroundColor: "#12151a",
-    paddingTop: 56,
-    paddingBottom: 18,
-    paddingHorizontal: 18,
+  body: {
+    padding: space.lg,
+    paddingBottom: 40,
   },
-  back: { color: "#e8a86a", fontWeight: "600", marginBottom: 10 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  sub: { color: "rgba(245,239,230,0.75)", marginTop: 4 },
-  body: { padding: 18, paddingBottom: 40 },
-  field: { marginBottom: 12 },
-  label: { fontSize: 12, fontWeight: "600", color: "#7a7168", marginBottom: 6 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#d9cfc3",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: "#12151a",
-    backgroundColor: "#fff",
+  section: {
+    marginBottom: space.sm,
+    fontWeight: "700",
+    color: colors.ink,
+    fontSize: 15,
+    fontFamily: fontUi,
   },
-  error: { color: "#9f2f28", marginBottom: 10 },
-  btn: {
-    marginTop: 8,
-    backgroundColor: "#0e6b56",
-    borderRadius: 12,
-    paddingVertical: 16,
+  hint: {
+    marginBottom: space.sm,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.muted,
+    fontFamily: fontUi,
+  },
+  chipWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: space.sm,
+  },
+  guestBanner: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.accentFog,
+    borderRadius: radius.sm,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    marginBottom: space.sm,
   },
-  btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  disabled: { opacity: 0.7 },
+  guestBannerText: {
+    fontFamily: fontUi,
+    fontWeight: "600",
+    color: colors.accentDeep,
+    fontSize: 13,
+  },
+  clearLink: {
+    fontFamily: fontUi,
+    fontWeight: "700",
+    color: colors.copper,
+    fontSize: 13,
+  },
+  hitRow: {
+    paddingVertical: space.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.line,
+  },
+  hitTitle: {
+    fontFamily: fontUi,
+    fontWeight: "600",
+    color: colors.ink,
+    fontSize: 14,
+  },
+  hitMeta: {
+    fontFamily: fontUi,
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  inputLocked: {
+    opacity: 0.65,
+    backgroundColor: colors.paperDeep,
+  },
 });

@@ -13,17 +13,27 @@ import {
 import { ApiError } from "../api/client";
 import type { HkBoard } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { EmptyState, ListCard, StatsStrip } from "../ui/primitives";
 import { ScreenHeader } from "../ui/ScreenHeader";
-import { colors, space, ui } from "../ui/theme";
+import { colors, fontUi, radius, space, ui } from "../ui/theme";
 
 type Props = {
   onBack?: () => void;
   onChanged?: () => void;
 };
 
+type Staff = { id: number; username: string; name: string };
+
 export function HousekeepingScreen({ onBack, onChanged }: Props) {
-  const { fetchHousekeeping, completeHkTask, setRoomStatus } = useAuth();
+  const {
+    fetchHousekeeping,
+    completeHkTask,
+    setRoomStatus,
+    fetchHkStaff,
+    assignHkTask,
+  } = useAuth();
   const [data, setData] = useState<HkBoard | null>(null);
+  const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +44,12 @@ export function HousekeepingScreen({ onBack, onChanged }: Props) {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
       try {
-        setData(await fetchHousekeeping());
+        const [board, staffList] = await Promise.all([
+          fetchHousekeeping(),
+          fetchHkStaff().catch(() => [] as Staff[]),
+        ]);
+        setData(board);
+        setStaff(staffList);
       } catch (e) {
         setError(e instanceof ApiError ? e.message : "Yuklash xatosi");
       } finally {
@@ -42,7 +57,7 @@ export function HousekeepingScreen({ onBack, onChanged }: Props) {
         setRefreshing(false);
       }
     },
-    [fetchHousekeeping]
+    [fetchHousekeeping, fetchHkStaff]
   );
 
   useEffect(() => {
@@ -70,6 +85,43 @@ export function HousekeepingScreen({ onBack, onChanged }: Props) {
     }
   }
 
+  function assignTask(taskId: number) {
+    const buttons: {
+      text: string;
+      style?: "cancel" | "destructive" | "default";
+      onPress?: () => void;
+    }[] = [
+      { text: "Bekor", style: "cancel" },
+      {
+        text: "Menga",
+        onPress: async () => {
+          try {
+            await assignHkTask(taskId);
+            await load(true);
+            onChanged?.();
+          } catch (e) {
+            Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
+          }
+        },
+      },
+    ];
+    for (const s of staff.slice(0, 8)) {
+      buttons.push({
+        text: s.name || s.username,
+        onPress: async () => {
+          try {
+            await assignHkTask(taskId, s.id);
+            await load(true);
+            onChanged?.();
+          } catch (e) {
+            Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
+          }
+        },
+      });
+    }
+    Alert.alert("Biriktirish", "Kimga biriktirilsin?", buttons);
+  }
+
   const dirty =
     data?.rooms.filter((r) => r.status === "dirty" || r.status === "cleaning") ||
     [];
@@ -81,7 +133,7 @@ export function HousekeepingScreen({ onBack, onChanged }: Props) {
         title="Tozalash"
         subtitle={
           data
-            ? `Kir ${data.stats.dirty} · Tayyor ${data.stats.ready} · Vazifa ${data.tasks.length}`
+            ? `Kir ${data.stats.dirty} · Tayyor ${data.stats.ready}`
             : undefined
         }
         onBack={onBack}
@@ -105,46 +157,77 @@ export function HousekeepingScreen({ onBack, onChanged }: Props) {
           }
           ListHeaderComponent={
             <>
-              <Text style={ui.section}>Vazifalar</Text>
+              {data ? (
+                <StatsStrip
+                  items={[
+                    {
+                      label: "Kir",
+                      value: data.stats.dirty,
+                      warn: data.stats.dirty > 0,
+                    },
+                    { label: "Tayyor", value: data.stats.ready },
+                    { label: "Vazifa", value: data.tasks.length },
+                  ]}
+                />
+              ) : null}
+
+              <Text style={[ui.section, { marginTop: space.md }]}>Vazifalar</Text>
               {(data?.tasks || []).length === 0 ? (
-                <Text style={[ui.empty, styles.softEmpty]}>
-                  Ochiq vazifa yo‘q
-                </Text>
+                <EmptyState title="Ochiq vazifa yo‘q" />
               ) : (
                 data!.tasks.map((t) => (
-                  <Pressable
+                  <ListCard
                     key={t.id}
-                    style={ui.rowItem}
-                    onPress={() => completeTask(t.id)}
+                    title={`${t.room.number} · ${t.title}`}
+                    meta={
+                      t.assigned_to
+                        ? `${t.status} · ${t.assigned_to}`
+                        : `${t.status} · biriktirilmagan`
+                    }
+                    badge={t.assigned_to ? "Biriktirilgan" : "Ochiq"}
+                    badgeTone={t.assigned_to ? "accent" : "warn"}
                   >
-                    <Text style={ui.rowTitle}>
-                      {t.room.number} · {t.title}
-                    </Text>
-                    <Text style={ui.rowMeta}>
-                      {t.status}
-                      {t.assigned_to ? ` · ${t.assigned_to}` : ""} · bajarish ›
-                    </Text>
-                  </Pressable>
+                    <View style={styles.taskActions}>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.mini,
+                          pressed && { opacity: 0.85 },
+                        ]}
+                        onPress={() => assignTask(t.id)}
+                      >
+                        <Text style={styles.miniText}>Biriktir</Text>
+                      </Pressable>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.mini,
+                          styles.miniDone,
+                          pressed && { opacity: 0.85 },
+                        ]}
+                        onPress={() => completeTask(t.id)}
+                      >
+                        <Text style={styles.miniText}>Tayyor</Text>
+                      </Pressable>
+                    </View>
+                  </ListCard>
                 ))
               )}
-              <Text style={ui.section}>Kir / tozalanayotgan</Text>
+              <Text style={[ui.section, { marginTop: space.lg }]}>
+                Kir xonalar
+              </Text>
             </>
           }
-          contentContainerStyle={ui.listPad}
           ListEmptyComponent={
-            <Text style={[ui.empty, styles.softEmpty]}>Hammasi toza</Text>
+            <EmptyState title="Kir xona yo‘q" hint="Hammasi toza" />
           }
+          contentContainerStyle={ui.listPad}
           renderItem={({ item }) => (
-            <Pressable
-              style={ui.rowItem}
+            <ListCard
+              title={`${item.number} · ${item.room_type}`}
+              meta="Bosing — tayyor deb belgilash"
+              badge={item.status}
+              badgeTone={item.status === "cleaning" ? "info" : "warn"}
               onPress={() => markReady(item.id, item.number)}
-            >
-              <Text style={ui.rowTitle}>
-                {item.number}
-                {item.room_type ? ` · ${item.room_type}` : ""}
-              </Text>
-              <Text style={ui.rowMeta}>{item.status} · tayyor qilish ›</Text>
-            </Pressable>
+            />
           )}
         />
       )}
@@ -153,9 +236,22 @@ export function HousekeepingScreen({ onBack, onChanged }: Props) {
 }
 
 const styles = StyleSheet.create({
-  softEmpty: {
-    marginTop: space.sm,
-    marginBottom: space.md,
-    textAlign: "left",
+  taskActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
+  },
+  mini: {
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: radius.sm,
+    backgroundColor: colors.nightLift,
+  },
+  miniDone: { backgroundColor: colors.accent },
+  miniText: {
+    color: colors.white,
+    fontWeight: "700",
+    fontSize: 12,
+    fontFamily: fontUi,
   },
 });

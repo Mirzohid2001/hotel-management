@@ -1,37 +1,41 @@
 import { Platform, StyleSheet, TextStyle, ViewStyle } from "react-native";
 
-/** Clean hotel-ops system: charcoal + emerald (not muddy cream cards). */
+/** Web `static/css/app.css` :root — warm linen + brass hospitality. */
 export const colors = {
-  ink: "#12151a",
-  inkSoft: "#3a4048",
-  muted: "#6b7280",
-  faint: "#9ca3af",
-  paper: "#eef0f3",
-  paperDeep: "#e2e5ea",
+  ink: "#1c1814",
+  inkSoft: "#3a322a",
+  muted: "#6f675e",
+  faint: "#a8947c",
+  paper: "#ebe6df",
+  paperDeep: "#ddd5cb",
   surface: "#ffffff",
-  line: "#d8dde5",
-  lineSoft: "rgba(18,21,26,0.08)",
-  accent: "#0e6b56",
-  accentDeep: "#0a5242",
-  accentSoft: "#b7e0d4",
-  accentFog: "#e6f5f0",
-  night: "#111318",
-  nightLift: "#1c2028",
-  nightFog: "rgba(255,255,255,0.78)",
-  nightFogDim: "rgba(255,255,255,0.48)",
-  success: "#0e6b56",
-  successSoft: "#e6f5f0",
-  danger: "#b42318",
-  dangerSoft: "#fde8e6",
-  warn: "#b54708",
-  warnSoft: "#fef0c7",
-  info: "#175cd3",
-  infoSoft: "#dbe8fe",
+  panel: "#f7f4ef",
+  line: "#d4cbc0",
+  lineSoft: "rgba(28,24,20,0.07)",
+  accent: "#c45c26",
+  accentMid: "#d4783a",
+  accentDeep: "#9a3f14",
+  accentSoft: "#e8a86a",
+  accentFog: "#f3e6dc",
+  accentInk: "#fff8f0",
+  brass: "#b86a2e",
+  night: "#12100e",
+  nightLift: "#1c1814",
+  nightFog: "#f5efe6",
+  nightFogDim: "#a8947c",
+  success: "#2a7a55",
+  successSoft: "#e6f2ec",
+  danger: "#a83a30",
+  dangerSoft: "#fff6f6",
+  warn: "#b87820",
+  warnSoft: "#fff8eb",
+  info: "#3a6280",
+  infoSoft: "#e8eef3",
   white: "#ffffff",
-  // aliases used by older screens
-  copper: "#0e6b56",
-  copperDeep: "#0a5242",
-  copperSoft: "#7dd3be",
+  // aliases
+  copper: "#c45c26",
+  copperDeep: "#9a3f14",
+  copperSoft: "#e8a86a",
 } as const;
 
 export const space = {
@@ -51,8 +55,8 @@ export const radius = {
 } as const;
 
 const displayFont = Platform.select({
-  ios: "Avenir Next",
-  android: "sans-serif-medium",
+  ios: "Palatino",
+  android: "serif",
   default: "System",
 });
 
@@ -135,7 +139,7 @@ export const type = {
     fontFamily: uiFont,
     fontSize: 15,
     fontWeight: "700" as const,
-    color: colors.white,
+    color: colors.accentInk,
   },
   room: {
     fontFamily: displayFont,
@@ -144,41 +148,42 @@ export const type = {
   },
 };
 
+/** Room tiles — match web --status-* tokens. */
 export const roomState = {
   vacant: {
     bg: colors.surface,
     fg: colors.ink,
-    accent: colors.accent,
-    pillBg: colors.accentFog,
-    pillFg: colors.accentDeep,
+    accent: colors.success,
+    pillBg: colors.successSoft,
+    pillFg: colors.success,
   },
   occupied: {
     bg: colors.accent,
-    fg: colors.white,
+    fg: colors.accentInk,
     accent: colors.accentSoft,
-    pillBg: "rgba(255,255,255,0.2)",
+    pillBg: "rgba(255,255,255,0.22)",
     pillFg: colors.white,
   },
   dirty: {
-    bg: colors.warnSoft,
+    bg: colors.dangerSoft,
     fg: colors.ink,
-    accent: colors.warn,
-    pillBg: "#fde68a",
-    pillFg: colors.warn,
+    accent: colors.danger,
+    pillBg: "#f5d4d1",
+    pillFg: colors.danger,
   },
   ooo: {
     bg: colors.paperDeep,
     fg: colors.muted,
-    accent: colors.faint,
+    accent: "#6a6460",
     pillBg: colors.line,
-    pillFg: colors.muted,
+    pillFg: "#6a6460",
   },
   cleaning: {
-    bg: colors.infoSoft,
-    fg: colors.info,
-    accent: colors.info,
-    pillBg: "#bfdbfe",
-    pillFg: colors.info,
+    bg: colors.accentFog,
+    fg: colors.accentDeep,
+    accent: colors.accent,
+    pillBg: "rgba(196,92,38,0.18)",
+    pillFg: colors.accentDeep,
   },
 } as const;
 
@@ -249,13 +254,13 @@ export const ui = StyleSheet.create({
   } as TextStyle,
   ghostBtn: {
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "rgba(245,239,230,0.22)",
     borderRadius: radius.sm,
     paddingHorizontal: space.md,
     paddingVertical: 8,
   } as ViewStyle,
   ghostBtnText: {
-    color: colors.white,
+    color: colors.nightFog,
     fontWeight: "600",
     fontSize: 13,
     fontFamily: uiFont,
@@ -267,7 +272,7 @@ export const ui = StyleSheet.create({
     paddingVertical: 8,
   } as ViewStyle,
   copperBtnText: {
-    color: colors.white,
+    color: colors.accentInk,
     fontWeight: "700",
     fontSize: 13,
     fontFamily: uiFont,
@@ -294,6 +299,8 @@ export const ui = StyleSheet.create({
     paddingVertical: space.lg,
     paddingHorizontal: space.lg,
     marginBottom: space.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
   } as ViewStyle,
   rowTitle: {
     ...type.bodyStrong,
@@ -318,7 +325,7 @@ export const ui = StyleSheet.create({
     color: colors.inkSoft,
   } as TextStyle,
   chipTextOn: {
-    color: colors.white,
+    color: colors.accentInk,
   } as TextStyle,
 });
 

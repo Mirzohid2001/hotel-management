@@ -8,7 +8,13 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
-from bookings.models import Reservation
+from bookings.models import BookingReferrer, Reservation
+from bookings.occupants import (
+    occupant_expected_count,
+    occupant_missing_slots,
+    occupants_qs,
+    sync_reservation_occupants,
+)
 from bookings.services import (
     apply_amendment,
     cancel_reservation,
@@ -26,8 +32,8 @@ from core.roles import (
     SERVICES,
     STAY_DESK,
 )
-from guests.models import Guest
-from properties.models import Room
+from guests.models import Company, Guest
+from properties.models import RatePlan, Room
 from tenants.models import TenantMembership
 
 from .auth import (
@@ -43,6 +49,87 @@ from .models import ApiToken
 
 # Reception + housekeeping can flip room status on mobile board.
 ROOM_STATUS_ROLES = (*FLOOR_VIEW, TenantMembership.Role.HOUSEKEEPER)
+
+
+def _resolve_booking_links(request, data: dict) -> dict:
+    """Resolve optional guest / company / referrer / rate_plan from JSON body."""
+    hotel = getattr(request, "active_property", None)
+    out: dict = {
+        "guest": None,
+        "company": None,
+        "referrer": None,
+        "rate_plan": None,
+        "first_name": (data.get("first_name") or "").strip(),
+        "last_name": (data.get("last_name") or "").strip(),
+        "phone": (data.get("phone") or "").strip(),
+    }
+
+    guest_id = data.get("guest_id")
+    if guest_id:
+        guest = Guest.objects.filter(pk=guest_id, tenant=request.tenant).first()
+        if guest is None:
+            raise ValidationError("Guest not found.")
+        out["guest"] = guest
+        out["first_name"] = guest.first_name
+        out["last_name"] = guest.last_name or ""
+        out["phone"] = guest.phone or out["phone"]
+
+    if data.get("company_id"):
+        company = Company.objects.filter(
+            pk=data["company_id"], tenant=request.tenant, is_active=True
+        ).first()
+        if company is None:
+            raise ValidationError("Company not found.")
+        out["company"] = company
+
+    if data.get("referrer_id"):
+        referrer = BookingReferrer.objects.filter(
+            pk=data["referrer_id"], tenant=request.tenant, is_active=True
+        ).first()
+        if referrer is None:
+            raise ValidationError("Referrer not found.")
+        out["referrer"] = referrer
+
+    if data.get("rate_plan_id"):
+        rp = RatePlan.objects.filter(
+            pk=data["rate_plan_id"], tenant=request.tenant, is_active=True
+        ).first()
+        if rp is None:
+            raise ValidationError("Rate plan not found.")
+        if hotel is not None and rp.property_id and rp.property_id != hotel.pk:
+            raise ValidationError("Rate plan is for another hotel.")
+        out["rate_plan"] = rp
+
+    return out
+
+
+def _occupant_row(occ) -> dict:
+    guest = occ.guest if occ.guest_id else None
+    docs = []
+    if guest is not None:
+        for d in guest.documents.all()[:3]:
+            docs.append(
+                {
+                    "id": d.pk,
+                    "doc_type": d.doc_type,
+                    "number": d.number or "",
+                    "issued_country": getattr(d, "issued_country", "") or "",
+                }
+            )
+    return {
+        "id": occ.pk,
+        "kind": occ.kind,
+        "is_primary": occ.is_primary,
+        "guest": {
+            "id": occ.guest_id,
+            "name": str(guest) if guest else "",
+            "first_name": getattr(guest, "first_name", "") or "",
+            "last_name": getattr(guest, "last_name", "") or "",
+            "phone": getattr(guest, "phone", "") or "",
+            "nationality": getattr(guest, "nationality", "") or "",
+            "documents": docs,
+        },
+    }
 
 
 @csrf_exempt
@@ -122,6 +209,30 @@ def me(request):
 
 
 @api_login_required
+@require_POST
+def me_update(request):
+    """Update current user profile (web accounts:profile_edit parity)."""
+    data = parse_json(request)
+    user = request.user
+    if "first_name" in data:
+        user.first_name = (data.get("first_name") or "").strip()
+    if "last_name" in data:
+        user.last_name = (data.get("last_name") or "").strip()
+    if "email" in data:
+        user.email = (data.get("email") or "").strip()
+    if "phone" in data:
+        user.phone = (data.get("phone") or "").strip()
+    new_password = data.get("new_password") or data.get("password")
+    if new_password:
+        pwd = str(new_password)
+        if len(pwd) < 6:
+            return json_error("Parol kamida 6 belgi.")
+        user.set_password(pwd)
+    user.save()
+    return json_ok(me_payload(request))
+
+
+@api_login_required
 @api_role_required(*FLOOR_VIEW)
 @require_GET
 def board(request):
@@ -139,7 +250,9 @@ def board(request):
 def _get_reservation(request, pk: int) -> Reservation | None:
     return (
         Reservation.objects.filter(pk=pk, tenant=request.tenant)
-        .select_related("guest", "room", "hotel")
+        .select_related(
+            "guest", "room", "hotel", "company", "referrer", "rate_plan"
+        )
         .first()
     )
 
@@ -288,6 +401,14 @@ def _folio_payload(folio_obj) -> dict | None:
 @api_role_required(*FLOOR_VIEW)
 @require_GET
 def reservation_detail(request, pk):
+    from folio.services import (
+        default_emehmon_fee,
+        emehmon_already_posted,
+        emehmon_guest_count,
+        emehmon_nights_count,
+        emehmon_unit_rate,
+    )
+
     reservation = _get_reservation(request, pk)
     if reservation is None:
         return json_error("Reservation not found.", status=404)
@@ -295,6 +416,13 @@ def reservation_detail(request, pk):
         folio_obj = reservation.folio
     except Exception:
         folio_obj = None
+    named = list(occupants_qs(reservation))
+    missing_a, missing_c = occupant_missing_slots(reservation)
+    unit = emehmon_unit_rate(reservation.hotel_id)
+    nights = emehmon_nights_count(getattr(reservation, "nights", None))
+    guests = emehmon_guest_count(reservation.adults, reservation.children)
+    emehmon_default = default_emehmon_fee(reservation)
+    emehmon_paid = bool(folio_obj and emehmon_already_posted(folio_obj))
     return json_ok(
         {
             "id": reservation.pk,
@@ -302,12 +430,36 @@ def reservation_detail(request, pk):
             "status": reservation.status,
             "check_in": reservation.check_in.isoformat(),
             "check_out": reservation.check_out.isoformat(),
+            "nights": nights,
             "adults": reservation.adults,
             "children": reservation.children,
+            "emehmon_required": bool(getattr(reservation, "emehmon_required", False)),
+            "emehmon_unit": str(unit),
+            "emehmon_default": str(emehmon_default),
+            "emehmon_guests": guests,
+            "emehmon_paid": emehmon_paid,
             "guest": {
                 "id": reservation.guest_id,
                 "name": str(reservation.guest) if reservation.guest_id else "",
             },
+            "company": {
+                "id": reservation.company_id,
+                "name": reservation.company.name if reservation.company_id else "",
+            }
+            if reservation.company_id
+            else None,
+            "referrer": {
+                "id": reservation.referrer_id,
+                "name": reservation.referrer.name if reservation.referrer_id else "",
+            }
+            if reservation.referrer_id
+            else None,
+            "rate_plan": {
+                "id": reservation.rate_plan_id,
+                "name": reservation.rate_plan.name if reservation.rate_plan_id else "",
+            }
+            if reservation.rate_plan_id
+            else None,
             "room": {
                 "id": reservation.room_id,
                 "number": reservation.room.number if reservation.room_id else "",
@@ -318,6 +470,9 @@ def reservation_detail(request, pk):
             "nightly_rate": str(reservation.nightly_rate)
             if reservation.nightly_rate is not None
             else "",
+            "occupants": [_occupant_row(o) for o in named],
+            "occupants_expected": occupant_expected_count(reservation),
+            "occupants_missing": missing_a + missing_c,
             "folio": _folio_payload(folio_obj),
         }
     )
@@ -344,16 +499,27 @@ def reservation_check_in(request, pk):
         reservation.refresh_from_db()
         emehmon_note = None
         if collect_emehmon:
+            from decimal import Decimal, InvalidOperation
+
             from folio.services import collect_emehmon_fee, default_emehmon_fee
 
             if not reservation.emehmon_required:
                 reservation.emehmon_required = True
                 reservation.save(update_fields=["emehmon_required", "updated_at"])
+            amount = None
+            raw_amount = data.get("emehmon_amount")
+            if raw_amount not in (None, ""):
+                try:
+                    amount = Decimal(str(raw_amount).replace(",", "."))
+                except (InvalidOperation, TypeError, ValueError):
+                    return json_error("Invalid emehmon_amount.")
+            else:
+                amount = default_emehmon_fee(reservation)
             try:
                 collect_emehmon_fee(
                     reservation,
                     request.user,
-                    amount=default_emehmon_fee(reservation),
+                    amount=amount,
                     method=data.get("emehmon_method") or "cash",
                 )
                 emehmon_note = "collected"
@@ -402,9 +568,20 @@ def walk_in(request):
         return json_error("Select a hotel (X-Hotel-Id).", status=400)
 
     room_id = data.get("room_id")
-    first_name = (data.get("first_name") or "").strip()
-    if not room_id or not first_name:
-        return json_error("room_id and first_name required.")
+    if not room_id:
+        return json_error("room_id required.")
+
+    try:
+        links = _resolve_booking_links(request, data)
+    except ValidationError as exc:
+        return json_error(
+            "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
+            status=400,
+        )
+
+    first_name = links["first_name"]
+    if not first_name and links["guest"] is None:
+        return json_error("room_id and first_name (or guest_id) required.")
 
     try:
         nights = max(1, int(data.get("nights") or 1))
@@ -426,12 +603,15 @@ def walk_in(request):
     doc_number = (data.get("doc_number") or "").strip()
 
     try:
-        guest = Guest.objects.create(
-            tenant=request.tenant,
-            first_name=first_name,
-            last_name=(data.get("last_name") or "").strip(),
-            phone=(data.get("phone") or "").strip(),
-        )
+        guest = links["guest"]
+        if guest is None:
+            guest = Guest.objects.create(
+                tenant=request.tenant,
+                first_name=first_name,
+                last_name=links["last_name"],
+                phone=links["phone"],
+                company=links["company"],
+            )
         if doc_number:
             from guests.models import GuestDocument
 
@@ -454,6 +634,7 @@ def walk_in(request):
             guest=guest,
             room_type=room.room_type,
             room=room,
+            rate_plan=links["rate_plan"],
             nightly_rate=nightly_rate,
             check_in=today,
             check_out=today + timedelta(days=nights),
@@ -461,7 +642,10 @@ def walk_in(request):
             children=children,
             source=Reservation.Source.WALKIN,
             notes=(data.get("notes") or "").strip(),
+            company=links["company"],
+            referrer=links["referrer"],
             emehmon_required=bool(collect_emehmon),
+            occupants=data.get("occupants") or None,
         )
         check_in_reservation(
             reservation,
@@ -474,11 +658,20 @@ def walk_in(request):
         if collect_emehmon:
             from folio.services import collect_emehmon_fee, default_emehmon_fee
 
+            amount = None
+            raw_amount = data.get("emehmon_amount")
+            if raw_amount not in (None, ""):
+                try:
+                    amount = Decimal(str(raw_amount).replace(",", "."))
+                except (InvalidOperation, TypeError, ValueError):
+                    return json_error("Invalid emehmon_amount.")
+            else:
+                amount = default_emehmon_fee(reservation)
             try:
                 collect_emehmon_fee(
                     reservation,
                     request.user,
-                    amount=default_emehmon_fee(reservation),
+                    amount=amount,
                     method=data.get("emehmon_method") or "cash",
                 )
                 emehmon_note = "collected"
@@ -754,12 +947,16 @@ def reservation_transfer(request, pk):
         return json_error("Room not found.", status=404)
     if hotel is not None and room.property_id != hotel.pk:
         return json_error("Room belongs to another hotel.", status=400)
+    update_rate = data.get("update_rate", True)
+    if isinstance(update_rate, str):
+        update_rate = update_rate.strip().lower() not in {"0", "false", "no"}
     try:
         transfer_room(
             reservation,
             request.user,
             room,
             reason=(data.get("reason") or "").strip(),
+            update_rate=bool(update_rate),
         )
         reservation.refresh_from_db()
         return json_ok(
@@ -939,10 +1136,21 @@ def reservation_create(request):
     if hotel is None:
         return json_error("Select a hotel (X-Hotel-Id).", status=400)
 
-    first_name = (data.get("first_name") or "").strip()
     room_id = data.get("room_id")
-    if not first_name or not room_id:
-        return json_error("first_name and room_id required.")
+    if not room_id:
+        return json_error("room_id required.")
+
+    try:
+        links = _resolve_booking_links(request, data)
+    except ValidationError as exc:
+        return json_error(
+            "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc),
+            status=400,
+        )
+
+    first_name = links["first_name"]
+    if not first_name and links["guest"] is None:
+        return json_error("first_name or guest_id required.")
 
     try:
         check_in = date.fromisoformat(str(data.get("check_in") or "").strip())
@@ -973,12 +1181,40 @@ def reservation_create(request):
             return json_error("Invalid nightly_rate.")
 
     try:
-        guest = Guest.objects.create(
-            tenant=request.tenant,
-            first_name=first_name,
-            last_name=(data.get("last_name") or "").strip(),
-            phone=(data.get("phone") or "").strip(),
-        )
+        guest = links["guest"]
+        if guest is None:
+            guest = Guest.objects.create(
+                tenant=request.tenant,
+                first_name=first_name,
+                last_name=links["last_name"],
+                phone=links["phone"],
+                company=links["company"],
+            )
+        elif links["company"] and not guest.company_id:
+            guest.company = links["company"]
+            guest.save(update_fields=["company", "updated_at"])
+
+        source = (data.get("source") or Reservation.Source.PHONE).strip()
+        if source not in Reservation.Source.values:
+            return json_error("Invalid source.")
+        commission = None
+        raw_commission = data.get("commission_percent")
+        if raw_commission not in (None, ""):
+            try:
+                commission = Decimal(str(raw_commission).replace(",", "."))
+            except (InvalidOperation, TypeError, ValueError):
+                return json_error("Invalid commission_percent.")
+        doc_number = (data.get("doc_number") or "").strip()
+        if doc_number:
+            from guests.models import GuestDocument
+
+            GuestDocument.objects.create(
+                tenant=request.tenant,
+                guest=guest,
+                doc_type=data.get("doc_type") or GuestDocument.DocType.PASSPORT,
+                number=doc_number,
+                issued_country=(data.get("issued_country") or "").strip(),
+            )
         reservation = create_reservation(
             tenant=request.tenant,
             user=request.user,
@@ -986,14 +1222,19 @@ def reservation_create(request):
             guest=guest,
             room_type=room.room_type,
             room=room,
+            rate_plan=links["rate_plan"],
             nightly_rate=nightly_rate,
             check_in=check_in,
             check_out=check_out,
             adults=adults,
             children=children,
-            source=data.get("source") or Reservation.Source.PHONE,
+            source=source,
             notes=(data.get("notes") or "").strip(),
+            company=links["company"],
+            referrer=links["referrer"],
+            commission_percent=commission,
             emehmon_required=bool(data.get("emehmon_required", True)),
+            occupants=data.get("occupants") or None,
         )
         return json_ok(
             {

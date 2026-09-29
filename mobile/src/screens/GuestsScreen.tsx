@@ -15,7 +15,17 @@ import { ApiError } from "../api/client";
 import type { GuestSummary } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { ScreenHeader } from "../ui/ScreenHeader";
-import { colors, fontUi, radius, space, ui } from "../ui/theme";
+import {
+  AvatarMark,
+  EmptyState,
+  FieldLabel,
+  FormCard,
+  ListCard,
+  PrimaryButton,
+  SearchField,
+  StatusBadge,
+} from "../ui/primitives";
+import { colors, fontUi, space, ui } from "../ui/theme";
 
 type Props = {
   onBack: () => void;
@@ -28,18 +38,20 @@ type GuestDetail = {
   last_name: string;
   name: string;
   phone: string;
-  email: string;
-  nationality: string;
+  email?: string;
+  nationality?: string;
+  notes?: string;
   is_vip: boolean;
   is_blacklisted: boolean;
-  notes: string;
-  documents: { id: number; doc_type: string; number: string }[];
-  stays: {
+  blacklist_reason?: string;
+  documents?: { id: number; doc_type: string; number: string }[];
+  stays?: {
     id: number;
     code: string;
     status: string;
     check_in: string;
     check_out: string;
+    room?: { number: string };
   }[];
 };
 
@@ -62,6 +74,9 @@ export function GuestsScreen({ onBack, onOpenReservation }: Props) {
   const [editLast, setEditLast] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editVip, setEditVip] = useState(false);
+  const [editBlacklist, setEditBlacklist] = useState(false);
+  const [editBlackReason, setEditBlackReason] = useState("");
   const [docNumber, setDocNumber] = useState("");
 
   useEffect(() => {
@@ -101,6 +116,9 @@ export function GuestsScreen({ onBack, onOpenReservation }: Props) {
       setEditLast(d.last_name || "");
       setEditPhone(d.phone || "");
       setEditNotes(d.notes || "");
+      setEditVip(!!d.is_vip);
+      setEditBlacklist(!!d.is_blacklisted);
+      setEditBlackReason(d.blacklist_reason || "");
       setDocNumber("");
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Yuklash xatosi");
@@ -124,6 +142,9 @@ export function GuestsScreen({ onBack, onOpenReservation }: Props) {
         last_name: editLast.trim(),
         phone: editPhone.trim(),
         notes: editNotes.trim(),
+        is_vip: editVip,
+        is_blacklisted: editBlacklist,
+        blacklist_reason: editBlacklist ? editBlackReason.trim() : "",
       });
       const d = raw as unknown as GuestDetail;
       setDetail(d);
@@ -184,96 +205,139 @@ export function GuestsScreen({ onBack, onOpenReservation }: Props) {
         <ScreenHeader
           eyebrow="Mehmon"
           title={detail?.name || "Yuklanmoqda…"}
+          subtitle={detail?.phone || undefined}
           onBack={() => {
             setSelectedId(null);
             setDetail(null);
           }}
+          right={
+            detail ? (
+              <View style={styles.badgeRow}>
+                {detail.is_vip ? (
+                  <StatusBadge label="VIP" tone="accent" />
+                ) : null}
+                {detail.is_blacklisted ? (
+                  <StatusBadge label="QORA" tone="danger" />
+                ) : null}
+              </View>
+            ) : undefined
+          }
         />
         {detailBusy && !detail ? (
           <ActivityIndicator style={{ marginTop: 24 }} color={colors.accent} />
         ) : (
           <ScrollView contentContainerStyle={styles.detailPad}>
             {error ? <Text style={ui.error}>{error}</Text> : null}
-            <TextInput
-              style={ui.input}
-              value={editFirst}
-              onChangeText={setEditFirst}
-              placeholder="Ism"
-              placeholderTextColor={colors.faint}
-            />
-            <TextInput
-              style={ui.input}
-              value={editLast}
-              onChangeText={setEditLast}
-              placeholder="Familiya"
-              placeholderTextColor={colors.faint}
-            />
-            <TextInput
-              style={ui.input}
-              value={editPhone}
-              onChangeText={setEditPhone}
-              placeholder="Telefon"
-              keyboardType="phone-pad"
-              placeholderTextColor={colors.faint}
-            />
-            <TextInput
-              style={[ui.input, styles.notes]}
-              value={editNotes}
-              onChangeText={setEditNotes}
-              placeholder="Izoh"
-              multiline
-              placeholderTextColor={colors.faint}
-            />
-            <Pressable
-              style={[ui.primaryBtn, detailBusy && { opacity: 0.6 }]}
-              onPress={saveGuest}
-              disabled={detailBusy}
-            >
-              <Text style={ui.primaryBtnText}>Saqlash</Text>
-            </Pressable>
 
-            <Text style={styles.section}>Hujjatlar</Text>
-            {(detail?.documents || []).map((d) => (
-              <Text key={d.id} style={ui.rowMeta}>
-                {d.doc_type}: {d.number}
-              </Text>
-            ))}
-            {(detail?.documents || []).length === 0 ? (
-              <Text style={ui.empty}>Hujjat yo‘q</Text>
-            ) : null}
-            <TextInput
-              style={ui.input}
-              value={docNumber}
-              onChangeText={setDocNumber}
-              placeholder="Passport / ID raqami"
-              placeholderTextColor={colors.faint}
-              autoCapitalize="characters"
-            />
-            <Pressable
-              style={[ui.copperBtn, detailBusy && { opacity: 0.6 }]}
-              onPress={addDoc}
-              disabled={detailBusy}
-            >
-              <Text style={ui.copperBtnText}>Hujjat qo‘shish</Text>
-            </Pressable>
+            <FormCard>
+              <FieldLabel>Ism *</FieldLabel>
+              <TextInput
+                style={ui.input}
+                value={editFirst}
+                onChangeText={setEditFirst}
+                placeholder="Ism"
+                placeholderTextColor={colors.faint}
+              />
+              <FieldLabel>Familiya</FieldLabel>
+              <TextInput
+                style={ui.input}
+                value={editLast}
+                onChangeText={setEditLast}
+                placeholder="Familiya"
+                placeholderTextColor={colors.faint}
+              />
+              <FieldLabel>Telefon</FieldLabel>
+              <TextInput
+                style={ui.input}
+                value={editPhone}
+                onChangeText={setEditPhone}
+                placeholder="Telefon"
+                keyboardType="phone-pad"
+                placeholderTextColor={colors.faint}
+              />
+              <FieldLabel>Izoh</FieldLabel>
+              <TextInput
+                style={[ui.input, styles.notes]}
+                value={editNotes}
+                onChangeText={setEditNotes}
+                placeholder="Izoh"
+                multiline
+                placeholderTextColor={colors.faint}
+              />
+              <FieldLabel>Belgilar</FieldLabel>
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
+                <Pressable
+                  style={[ui.chip, editVip && ui.chipOn]}
+                  onPress={() => setEditVip((v) => !v)}
+                >
+                  <Text style={[ui.chipText, editVip && ui.chipTextOn]}>VIP</Text>
+                </Pressable>
+                <Pressable
+                  style={[ui.chip, editBlacklist && ui.chipOn]}
+                  onPress={() => setEditBlacklist((v) => !v)}
+                >
+                  <Text style={[ui.chipText, editBlacklist && ui.chipTextOn]}>
+                    Qora ro‘yxat
+                  </Text>
+                </Pressable>
+              </View>
+              {editBlacklist ? (
+                <>
+                  <FieldLabel>Sabab</FieldLabel>
+                  <TextInput
+                    style={ui.input}
+                    value={editBlackReason}
+                    onChangeText={setEditBlackReason}
+                    placeholder="Sabab"
+                    placeholderTextColor={colors.faint}
+                  />
+                </>
+              ) : null}
+              <PrimaryButton
+                label="Saqlash"
+                onPress={saveGuest}
+                loading={detailBusy}
+              />
+            </FormCard>
+
+            <FormCard>
+              <Text style={styles.section}>Hujjatlar</Text>
+              {(detail?.documents || []).map((d) => (
+                <Text key={d.id} style={styles.docLine}>
+                  {d.doc_type}: {d.number}
+                </Text>
+              ))}
+              {(detail?.documents || []).length === 0 ? (
+                <Text style={styles.muted}>Hujjat yo‘q</Text>
+              ) : null}
+              <FieldLabel>Passport / ID raqami</FieldLabel>
+              <TextInput
+                style={ui.input}
+                value={docNumber}
+                onChangeText={setDocNumber}
+                placeholder="Raqam"
+                placeholderTextColor={colors.faint}
+                autoCapitalize="characters"
+              />
+              <PrimaryButton
+                label="Hujjat qo‘shish"
+                tone="copper"
+                onPress={addDoc}
+                loading={detailBusy}
+              />
+            </FormCard>
 
             <Text style={styles.section}>Bronlar</Text>
             {(detail?.stays || []).map((r) => (
-              <Pressable
+              <ListCard
                 key={r.id}
-                style={ui.rowItem}
+                title={`${r.code} · ${r.status}`}
+                meta={`${r.check_in} → ${r.check_out}`}
                 onPress={() => onOpenReservation(r.id)}
-              >
-                <Text style={ui.rowTitle}>
-                  {r.code} · {r.status}
-                </Text>
-                <Text style={ui.rowMeta}>
-                  {r.check_in} → {r.check_out}
-                </Text>
-              </Pressable>
+              />
             ))}
             {(detail?.stays || []).length === 0 ? (
-              <Text style={ui.empty}>Bron yo‘q</Text>
+              <EmptyState title="Bron yo‘q" />
             ) : null}
           </ScrollView>
         )}
@@ -300,43 +364,43 @@ export function GuestsScreen({ onBack, onOpenReservation }: Props) {
       />
 
       <View style={styles.searchWrap}>
-        <TextInput
-          style={styles.search}
+        <SearchField
           value={q}
           onChangeText={setQ}
           placeholder="Ism, telefon…"
-          placeholderTextColor={colors.faint}
-          autoCorrect={false}
         />
       </View>
 
       {showCreate ? (
-        <View style={styles.create}>
-          <TextInput
-            style={ui.input}
-            placeholder="Ism *"
-            value={firstName}
-            onChangeText={setFirstName}
-            placeholderTextColor={colors.faint}
-          />
-          <TextInput
-            style={ui.input}
-            placeholder="Familiya"
-            value={lastName}
-            onChangeText={setLastName}
-            placeholderTextColor={colors.faint}
-          />
-          <TextInput
-            style={ui.input}
-            placeholder="Telefon"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            placeholderTextColor={colors.faint}
-          />
-          <Pressable style={ui.primaryBtn} onPress={onCreate}>
-            <Text style={ui.primaryBtnText}>Saqlash</Text>
-          </Pressable>
+        <View style={styles.createWrap}>
+          <FormCard>
+            <FieldLabel>Ism *</FieldLabel>
+            <TextInput
+              style={ui.input}
+              placeholder="Ism"
+              value={firstName}
+              onChangeText={setFirstName}
+              placeholderTextColor={colors.faint}
+            />
+            <FieldLabel>Familiya</FieldLabel>
+            <TextInput
+              style={ui.input}
+              placeholder="Familiya"
+              value={lastName}
+              onChangeText={setLastName}
+              placeholderTextColor={colors.faint}
+            />
+            <FieldLabel>Telefon</FieldLabel>
+            <TextInput
+              style={ui.input}
+              placeholder="Telefon"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              placeholderTextColor={colors.faint}
+            />
+            <PrimaryButton label="Saqlash" onPress={onCreate} />
+          </FormCard>
         </View>
       ) : null}
 
@@ -348,17 +412,36 @@ export function GuestsScreen({ onBack, onOpenReservation }: Props) {
           data={items}
           keyExtractor={(g) => String(g.id)}
           contentContainerStyle={ui.listPad}
-          ListEmptyComponent={<Text style={ui.empty}>Topilmadi</Text>}
-          renderItem={({ item }) => (
-            <Pressable style={ui.rowItem} onPress={() => openGuest(item.id)}>
-              <Text style={ui.rowTitle}>
-                {item.name}
-                {item.is_vip ? " · VIP" : ""}
-                {item.is_blacklisted ? " · QORA" : ""}
-              </Text>
-              <Text style={ui.rowMeta}>{item.phone || "Telefon yo‘q"}</Text>
-            </Pressable>
-          )}
+          ListEmptyComponent={
+            <EmptyState title="Topilmadi" hint="Ism yoki telefon bilan qidiring" />
+          }
+          renderItem={({ item }) => {
+            const badge = item.is_blacklisted
+              ? "QORA"
+              : item.is_vip
+                ? "VIP"
+                : undefined;
+            const badgeTone = item.is_blacklisted
+              ? "danger"
+              : item.is_vip
+                ? "accent"
+                : undefined;
+            return (
+              <ListCard
+                title={item.name}
+                meta={item.phone || "Telefon yo‘q"}
+                badge={badge}
+                badgeTone={badgeTone}
+                leading={
+                  <AvatarMark
+                    label={item.name}
+                    tone={item.is_blacklisted ? "danger" : "accent"}
+                  />
+                }
+                onPress={() => openGuest(item.id)}
+              />
+            );
+          }}
         />
       )}
     </View>
@@ -367,28 +450,16 @@ export function GuestsScreen({ onBack, onOpenReservation }: Props) {
 
 const styles = StyleSheet.create({
   searchWrap: { paddingHorizontal: space.lg, paddingTop: space.md },
-  search: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.line,
-    paddingHorizontal: space.lg,
-    paddingVertical: 13,
-    fontSize: 16,
-    color: colors.ink,
-    fontFamily: fontUi,
-  },
-  create: { paddingHorizontal: space.lg, marginTop: space.md },
+  createWrap: { paddingHorizontal: space.lg, marginTop: space.sm },
   pad: { paddingHorizontal: space.lg },
   detailPad: {
     paddingHorizontal: space.lg,
+    paddingTop: space.md,
     paddingBottom: space.xxl,
-    gap: space.sm,
   },
   notes: { minHeight: 72, textAlignVertical: "top" },
   section: {
-    marginTop: space.lg,
-    marginBottom: space.xs,
+    marginBottom: space.sm,
     fontSize: 13,
     fontWeight: "700",
     color: colors.muted,
@@ -396,4 +467,14 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.6,
   },
+  docLine: {
+    ...ui.rowMeta,
+    marginBottom: 4,
+  },
+  muted: {
+    color: colors.muted,
+    fontFamily: fontUi,
+    marginBottom: space.sm,
+  },
+  badgeRow: { flexDirection: "row", gap: space.sm, flexWrap: "wrap" },
 });

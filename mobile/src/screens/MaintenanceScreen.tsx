@@ -14,6 +14,13 @@ import {
 import { ApiError } from "../api/client";
 import type { MaintenanceTicket } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import {
+  EmptyState,
+  FieldLabel,
+  FormCard,
+  ListCard,
+  PrimaryButton,
+} from "../ui/primitives";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { colors, fontUi, radius, space, ui } from "../ui/theme";
 
@@ -30,7 +37,11 @@ export function MaintenanceScreen({ onBack }: Props) {
     fetchMaintenance,
     createMaintenance,
     completeMaintenance,
+    assignMaintenance,
+    cancelMaintenance,
+    spendMaintenance,
     fetchBoard,
+    fetchHkStaff,
     me,
   } = useAuth();
   const [items, setItems] = useState<MaintenanceTicket[]>([]);
@@ -45,10 +56,18 @@ export function MaintenanceScreen({ onBack }: Props) {
     useState<(typeof PRIORITIES)[number]["id"]>("medium");
   const [ooo, setOoo] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [spendId, setSpendId] = useState<number | null>(null);
+  const [spendAmount, setSpendAmount] = useState("");
+  const [assignFor, setAssignFor] = useState<number | null>(null);
+  const [actionItem, setActionItem] = useState<MaintenanceTicket | null>(null);
+  const [staff, setStaff] = useState<{ id: number; label: string }[]>([]);
 
   const canWrite =
     me?.permissions?.maintenance === true ||
     ["admin", "manager", "receptionist"].includes(me?.role || "");
+  const canSpend =
+    me?.permissions?.maintenance === true ||
+    ["admin", "manager"].includes(me?.role || "");
 
   const load = useCallback(
     async (isRefresh = false) => {
@@ -119,10 +138,79 @@ export function MaintenanceScreen({ onBack }: Props) {
   async function complete(id: number) {
     try {
       await completeMaintenance(id);
+      setActionItem(null);
       await load(true);
     } catch (e) {
       Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
     }
+  }
+
+  async function assign(id: number, userId?: number) {
+    try {
+      await assignMaintenance(id, userId);
+      setAssignFor(null);
+      setActionItem(null);
+      await load(true);
+      Alert.alert("Ta’mir", userId ? "Xodimga biriktirildi" : "O‘zingizga biriktirildi");
+    } catch (e) {
+      Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
+    }
+  }
+
+  async function openStaffPicker(ticketId: number) {
+    setAssignFor(ticketId);
+    try {
+      const rows = await fetchHkStaff();
+      setStaff(
+        rows
+          .map((r) => ({
+            id: Number(r.id),
+            label: String(r.name || r.username || r.id),
+          }))
+          .filter((r) => Number.isFinite(r.id) && r.id > 0)
+      );
+    } catch (e) {
+      Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
+    }
+  }
+
+  async function cancel(id: number) {
+    try {
+      await cancelMaintenance(id);
+      setActionItem(null);
+      await load(true);
+    } catch (e) {
+      Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
+    }
+  }
+
+  async function submitSpend() {
+    if (spendId == null || !spendAmount.trim()) {
+      Alert.alert("Xarajat", "Summani kiriting");
+      return;
+    }
+    setBusy(true);
+    try {
+      await spendMaintenance(spendId, {
+        amount: spendAmount.trim().replace(/\s/g, "").replace(",", "."),
+      });
+      setSpendId(null);
+      setSpendAmount("");
+      setActionItem(null);
+      await load(true);
+      Alert.alert("Ta’mir", "Xarajat yozildi");
+    } catch (e) {
+      Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function openActions(item: MaintenanceTicket) {
+    if (!canWrite) return;
+    setAssignFor(null);
+    setSpendId(null);
+    setActionItem(item);
   }
 
   return (
@@ -149,60 +237,174 @@ export function MaintenanceScreen({ onBack }: Props) {
       {error ? <Text style={[ui.error, { padding: space.lg }]}>{error}</Text> : null}
 
       {creating ? (
-        <View style={styles.form}>
-          <TextInput
-            style={ui.input}
-            placeholder="Sarlavha"
-            placeholderTextColor={colors.faint}
-            value={title}
-            onChangeText={setTitle}
-          />
-          <TextInput
-            style={[ui.input, styles.area]}
-            placeholder="Tavsif"
-            placeholderTextColor={colors.faint}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-          />
-          <TextInput
-            style={ui.input}
-            placeholder="Xona raqami (ixtiyoriy)"
-            placeholderTextColor={colors.faint}
-            value={roomNumber}
-            onChangeText={setRoomNumber}
-          />
-          <View style={styles.prioRow}>
-            {PRIORITIES.map((p) => (
-              <Pressable
-                key={p.id}
-                style={[ui.chip, priority === p.id && ui.chipOn, { flex: 1 }]}
-                onPress={() => setPriority(p.id)}
-              >
-                <Text
-                  style={[
-                    ui.chipText,
-                    priority === p.id && ui.chipTextOn,
-                    { textAlign: "center" },
-                  ]}
+        <View style={{ paddingHorizontal: space.lg, paddingTop: space.md }}>
+          <FormCard>
+            <FieldLabel>Sarlavha</FieldLabel>
+            <TextInput
+              style={ui.input}
+              placeholder="Masalan: Konditsioner"
+              placeholderTextColor={colors.faint}
+              value={title}
+              onChangeText={setTitle}
+            />
+            <FieldLabel>Tavsif</FieldLabel>
+            <TextInput
+              style={[ui.input, styles.area]}
+              placeholder="Muammo haqida"
+              placeholderTextColor={colors.faint}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+            />
+            <FieldLabel>Xona (ixtiyoriy)</FieldLabel>
+            <TextInput
+              style={ui.input}
+              placeholder="101"
+              placeholderTextColor={colors.faint}
+              value={roomNumber}
+              onChangeText={setRoomNumber}
+            />
+            <FieldLabel>Prioritet</FieldLabel>
+            <View style={styles.prioRow}>
+              {PRIORITIES.map((p) => (
+                <Pressable
+                  key={p.id}
+                  style={[ui.chip, priority === p.id && ui.chipOn, { flex: 1 }]}
+                  onPress={() => setPriority(p.id)}
                 >
-                  {p.label}
-                </Text>
+                  <Text
+                    style={[
+                      ui.chipText,
+                      priority === p.id && ui.chipTextOn,
+                      { textAlign: "center" },
+                    ]}
+                  >
+                    {p.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Pressable style={styles.check} onPress={() => setOoo((v) => !v)}>
+              <Text style={styles.checkText}>
+                {ooo ? "☑" : "☐"}  Xonani OOO qilish
+              </Text>
+            </Pressable>
+            <PrimaryButton label="Ariza ochish" onPress={submit} loading={busy} />
+          </FormCard>
+        </View>
+      ) : null}
+
+      {actionItem ? (
+        <View style={{ paddingHorizontal: space.lg, paddingTop: space.md }}>
+          <FormCard>
+            <Text style={ui.section}>{actionItem.title}</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              <Pressable style={ui.chip} onPress={() => assign(actionItem.id)}>
+                <Text style={ui.chipText}>Menga biriktirish</Text>
               </Pressable>
-            ))}
-          </View>
-          <Pressable style={styles.check} onPress={() => setOoo((v) => !v)}>
-            <Text style={styles.checkText}>
-              {ooo ? "☑" : "☐"}  Xonani OOO qilish
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[ui.primaryBtn, busy && { opacity: 0.7 }]}
-            onPress={submit}
-            disabled={busy}
-          >
-            <Text style={ui.primaryBtnText}>Ochish</Text>
-          </Pressable>
+              <Pressable
+                style={ui.chip}
+                onPress={() => openStaffPicker(actionItem.id)}
+              >
+                <Text style={ui.chipText}>Xodimga biriktirish</Text>
+              </Pressable>
+              <Pressable style={ui.chip} onPress={() => complete(actionItem.id)}>
+                <Text style={ui.chipText}>Bajarildi</Text>
+              </Pressable>
+              {canSpend ? (
+                <Pressable
+                  style={ui.chip}
+                  onPress={() => {
+                    setSpendId(actionItem.id);
+                    setSpendAmount("");
+                  }}
+                >
+                  <Text style={ui.chipText}>Xarajat yozish</Text>
+                </Pressable>
+              ) : null}
+              <Pressable
+                style={ui.chip}
+                onPress={() =>
+                  Alert.alert("Bekor", "Ariza bekor qilinsinmi?", [
+                    { text: "Yo‘q", style: "cancel" },
+                    {
+                      text: "Ha",
+                      style: "destructive",
+                      onPress: () => cancel(actionItem.id),
+                    },
+                  ])
+                }
+              >
+                <Text style={ui.chipText}>Bekor qilish</Text>
+              </Pressable>
+              <Pressable style={ui.chip} onPress={() => setActionItem(null)}>
+                <Text style={ui.chipText}>Yopish</Text>
+              </Pressable>
+            </View>
+          </FormCard>
+        </View>
+      ) : null}
+
+      {assignFor != null ? (
+        <View style={{ paddingHorizontal: space.lg, paddingTop: space.md }}>
+          <FormCard>
+            <Text style={ui.section}>Xodimga biriktirish</Text>
+            {staff.length === 0 ? (
+              <Text style={ui.rowMeta}>Xodimlar ro‘yxati ochilmadi</Text>
+            ) : (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {staff.map((s) => (
+                  <Pressable
+                    key={s.id}
+                    style={ui.chip}
+                    onPress={() => assign(assignFor, s.id)}
+                  >
+                    <Text style={ui.chipText}>{s.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            <Pressable
+              style={[ui.chip, { marginTop: 10, alignSelf: "flex-start" }]}
+              onPress={() => setAssignFor(null)}
+            >
+              <Text style={ui.chipText}>Bekor</Text>
+            </Pressable>
+          </FormCard>
+        </View>
+      ) : null}
+
+      {spendId != null ? (
+        <View style={{ paddingHorizontal: space.lg, paddingTop: space.md }}>
+          <FormCard>
+            <FieldLabel>{`Xarajat · ariza #${spendId}`}</FieldLabel>
+            <TextInput
+              style={ui.input}
+              placeholder="Summa"
+              placeholderTextColor={colors.faint}
+              keyboardType="decimal-pad"
+              value={spendAmount}
+              onChangeText={setSpendAmount}
+            />
+            <View style={styles.prioRow}>
+              <Pressable
+                style={[ui.chip, { flex: 1 }]}
+                onPress={() => {
+                  setSpendId(null);
+                  setSpendAmount("");
+                }}
+              >
+                <Text style={[ui.chipText, { textAlign: "center" }]}>Bekor</Text>
+              </Pressable>
+              <View style={{ flex: 1 }}>
+                <PrimaryButton
+                  label="Saqlash"
+                  onPress={submitSpend}
+                  loading={busy}
+                />
+              </View>
+            </View>
+          </FormCard>
         </View>
       ) : null}
 
@@ -220,37 +422,34 @@ export function MaintenanceScreen({ onBack }: Props) {
             />
           }
           contentContainerStyle={ui.listPad}
-          ListEmptyComponent={<Text style={ui.empty}>Ochiq ariza yo‘q</Text>}
-          renderItem={({ item }) => (
-            <Pressable
-              style={ui.rowItem}
-              onPress={() => {
-                if (!canWrite) return;
-                Alert.alert(item.title, "Arizani yakunlash?", [
-                  { text: "Bekor", style: "cancel" },
-                  {
-                    text: "Bajarildi",
-                    onPress: () => complete(item.id),
-                  },
-                ]);
-              }}
-            >
-              <Text style={ui.rowTitle}>
-                {item.room ? `${item.room.number} · ` : ""}
-                {item.title}
-              </Text>
-              <Text style={ui.rowMeta}>
-                {item.priority} · {item.status}
-                {item.assignee ? ` · ${item.assignee}` : ""}
-                {canWrite ? " · bajarish ›" : ""}
-              </Text>
-              {item.description ? (
-                <Text style={styles.desc} numberOfLines={2}>
-                  {item.description}
-                </Text>
-              ) : null}
-            </Pressable>
-          )}
+          ListEmptyComponent={
+            <EmptyState title="Ochiq ariza yo‘q" hint="Hammasi joyida" />
+          }
+          renderItem={({ item }) => {
+            const prioTone =
+              item.priority === "high"
+                ? "danger"
+                : item.priority === "low"
+                  ? "neutral"
+                  : "warn";
+            return (
+              <ListCard
+                title={`${item.room ? `${item.room.number} · ` : ""}${item.title}`}
+                meta={`${item.status}${item.assignee ? ` · ${item.assignee}` : ""}${
+                  canWrite ? " · amallar" : ""
+                }`}
+                badge={item.priority}
+                badgeTone={prioTone}
+                onPress={() => openActions(item)}
+              >
+                {item.description ? (
+                  <Text style={styles.desc} numberOfLines={2}>
+                    {item.description}
+                  </Text>
+                ) : null}
+              </ListCard>
+            );
+          }}
         />
       )}
     </View>
@@ -258,14 +457,13 @@ export function MaintenanceScreen({ onBack }: Props) {
 }
 
 const styles = StyleSheet.create({
-  form: {
-    margin: space.lg,
-    padding: space.lg,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-  },
   area: { minHeight: 72, textAlignVertical: "top" },
-  prioRow: { flexDirection: "row", gap: space.sm, marginBottom: space.sm },
+  prioRow: {
+    flexDirection: "row",
+    gap: space.sm,
+    marginBottom: space.sm,
+    alignItems: "center",
+  },
   check: { paddingVertical: space.sm, marginBottom: space.sm },
   checkText: {
     color: colors.ink,
@@ -273,9 +471,10 @@ const styles = StyleSheet.create({
     fontFamily: fontUi,
   },
   desc: {
-    marginTop: 6,
+    marginTop: 8,
     color: colors.inkSoft,
     fontSize: 13,
     fontFamily: fontUi,
+    lineHeight: 18,
   },
 });

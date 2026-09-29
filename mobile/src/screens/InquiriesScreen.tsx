@@ -2,9 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   RefreshControl,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -12,6 +10,12 @@ import {
 import { ApiError } from "../api/client";
 import type { ReservationSummary } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import {
+  AvatarMark,
+  EmptyState,
+  ListCard,
+  PrimaryButton,
+} from "../ui/primitives";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { colors, space, ui } from "../ui/theme";
 
@@ -66,7 +70,11 @@ export function InquiriesScreen({ onBack, onOpenReservation }: Props) {
       <ScreenHeader
         eyebrow="Front desk"
         title="So‘rovlar"
-        subtitle={items.length ? `${items.length} ta` : undefined}
+        subtitle={
+          items.length
+            ? `${items.length} ta so‘rov · tasdiqlash kutmoqda`
+            : "Tasdiqlash kutayotgan bronlar"
+        }
         onBack={onBack}
       />
       {error ? (
@@ -86,41 +94,31 @@ export function InquiriesScreen({ onBack, onOpenReservation }: Props) {
               tintColor={colors.accent}
             />
           }
-          ListEmptyComponent={<Text style={ui.empty}>So‘rov yo‘q</Text>}
+          ListEmptyComponent={
+            <EmptyState
+              title="So‘rov yo‘q"
+              hint="Yangi inquiry kelganda shu yerda ko‘rinadi"
+            />
+          }
           renderItem={({ item }) => (
-            <View style={ui.rowItem}>
-              <Pressable onPress={() => onOpenReservation(item.id)}>
-                <Text style={styles.code}>{item.code}</Text>
-                <Text style={ui.rowTitle}>{item.guest.name || "—"}</Text>
-                <Text style={ui.rowMeta}>
-                  {item.room.number || "—"} · {item.check_in} → {item.check_out}
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[ui.primaryBtn, { marginTop: space.md }]}
+            <ListCard
+              title={item.guest.name || "—"}
+              meta={`${item.code} · ${item.room.number || "—"} · ${item.check_in} → ${item.check_out}`}
+              badge="Inquiry"
+              badgeTone="warn"
+              leading={<AvatarMark label={item.guest.name || item.code} />}
+              onPress={() => onOpenReservation(item.id)}
+            >
+              <PrimaryButton
+                label="Tasdiqlash"
                 onPress={() => confirm(item.id)}
+                loading={busyId === item.id}
                 disabled={busyId === item.id}
-              >
-                {busyId === item.id ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={ui.primaryBtnText}>Tasdiqlash</Text>
-                )}
-              </Pressable>
-            </View>
+              />
+            </ListCard>
           )}
         />
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  code: {
-    fontWeight: "700",
-    color: colors.muted,
-    fontSize: 12,
-    marginBottom: 4,
-    letterSpacing: 0.4,
-  },
-});

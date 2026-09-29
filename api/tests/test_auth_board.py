@@ -677,3 +677,405 @@ class ApiAuthBoardTests(TestCase):
             HTTP_X_HOTEL_ID=str(self.prop.pk),
         )
         self.assertEqual(hr.status_code, 403)
+
+    def test_hk_assign_and_expense_create(self):
+        from finance.models import ExpenseCategory
+        from housekeeping.models import HousekeepingTask
+
+        token = self._login()
+        headers = {
+            "content_type": "application/json",
+            "HTTP_AUTHORIZATION": f"Bearer {token}",
+            "HTTP_X_HOTEL_ID": str(self.prop.pk),
+        }
+        task = HousekeepingTask.objects.create(
+            tenant=self.tenant,
+            room=self.room,
+            title="Clean 101",
+            status=HousekeepingTask.Status.PENDING,
+        )
+        assign = self.client.post(
+            reverse("api:housekeeping_assign", kwargs={"pk": task.pk}),
+            data="{}",
+            **headers,
+        )
+        self.assertEqual(assign.status_code, 200, assign.content)
+        self.assertEqual(assign.json()["data"]["assigned_to_id"], self.user.pk)
+
+        staff = self.client.get(
+            reverse("api:housekeeping_staff"),
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            HTTP_X_HOTEL_ID=str(self.prop.pk),
+        )
+        self.assertEqual(staff.status_code, 200, staff.content)
+        self.assertTrue(any(s["id"] == self.user.pk for s in staff.json()["data"]["items"]))
+
+        TenantMembership.objects.filter(user=self.user, tenant=self.tenant).update(
+            role=TenantMembership.Role.ADMIN
+        )
+        cat = ExpenseCategory.objects.create(tenant=self.tenant, name="Office")
+        created = self.client.post(
+            reverse("api:expense_create"),
+            data=(
+                '{"title":"Paper","amount":"50000","category_id":%s,'
+                '"expense_date":"%s"}' % (cat.pk, self.today.isoformat())
+            ),
+            **headers,
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        eid = created.json()["data"]["id"]
+        self.assertEqual(created.json()["data"]["status"], "draft")
+
+        approved = self.client.post(
+            reverse("api:expense_approve", kwargs={"pk": eid}),
+            data="{}",
+            **headers,
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertEqual(approved.json()["data"]["status"], "approved")
+
+        paid = self.client.post(
+            reverse("api:expense_pay", kwargs={"pk": eid}),
+            data="{}",
+            **headers,
+        )
+        self.assertEqual(paid.status_code, 200, paid.content)
+        self.assertEqual(paid.json()["data"]["status"], "paid")
+
+    def test_phase2_inventory_hr_setup_maintenance(self):
+        from maintenance.models import MaintenanceTicket
+
+        token = self._login()
+        TenantMembership.objects.filter(user=self.user, tenant=self.tenant).update(
+            role=TenantMembership.Role.ADMIN
+        )
+        headers = {
+            "content_type": "application/json",
+            "HTTP_AUTHORIZATION": f"Bearer {token}",
+            "HTTP_X_HOTEL_ID": str(self.prop.pk),
+        }
+
+        inv = self.client.post(
+            reverse("api:inventory_create"),
+            data='{"name":"Sovun","sku":"soap-01","quantity_on_hand":"20","reorder_level":"5"}',
+            **headers,
+        )
+        self.assertEqual(inv.status_code, 201, inv.content)
+        self.assertEqual(inv.json()["data"]["sku"], "soap-01")
+
+        emp = self.client.post(
+            reverse("api:hr_employee_create"),
+            data='{"full_name":"Ali Valiyev","position":"HK","base_salary":"3000000"}',
+            **headers,
+        )
+        self.assertEqual(emp.status_code, 201, emp.content)
+
+        payroll = self.client.post(
+            reverse("api:hr_payroll_generate"),
+            data="{}",
+            **headers,
+        )
+        self.assertIn(payroll.status_code, (200, 201), payroll.content)
+
+        settings = self.client.get(
+            reverse("api:property_settings"),
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            HTTP_X_HOTEL_ID=str(self.prop.pk),
+        )
+        self.assertEqual(settings.status_code, 200, settings.content)
+
+        svc = self.client.post(
+            reverse("api:services_catalog"),
+            data='{"name":"Kir yuvish","code":"laundry","unit_price":"25000"}',
+            **headers,
+        )
+        self.assertEqual(svc.status_code, 201, svc.content)
+
+        ticket = MaintenanceTicket.objects.create(
+            tenant=self.tenant,
+            room=self.room,
+            title="AC broken",
+            status=MaintenanceTicket.Status.OPEN,
+            priority=MaintenanceTicket.Priority.HIGH,
+        )
+        assigned = self.client.post(
+            reverse("api:maintenance_assign", kwargs={"pk": ticket.pk}),
+            data="{}",
+            **headers,
+        )
+        self.assertEqual(assigned.status_code, 200, assigned.content)
+
+        cancelled = self.client.post(
+            reverse("api:maintenance_cancel", kwargs={"pk": ticket.pk}),
+            data="{}",
+            **headers,
+        )
+        self.assertEqual(cancelled.status_code, 200, cancelled.content)
+        self.assertEqual(cancelled.json()["data"]["status"], "cancelled")
+
+    def test_phase3_staff_audit_export_rates(self):
+        from core.models import log_activity
+
+        token = self._login()
+        TenantMembership.objects.filter(user=self.user, tenant=self.tenant).update(
+            role=TenantMembership.Role.ADMIN
+        )
+        headers = {
+            "content_type": "application/json",
+            "HTTP_AUTHORIZATION": f"Bearer {token}",
+            "HTTP_X_HOTEL_ID": str(self.prop.pk),
+        }
+
+        meta = self.client.get(
+            reverse("api:staff_meta"),
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            HTTP_X_HOTEL_ID=str(self.prop.pk),
+        )
+        self.assertEqual(meta.status_code, 200, meta.content)
+        self.assertTrue(meta.json()["data"]["roles"])
+
+        invite = self.client.post(
+            reverse("api:staff_invite"),
+            data='{"username":"mobstaff1","password":"secret123","role":"receptionist"}',
+            **headers,
+        )
+        self.assertEqual(invite.status_code, 201, invite.content)
+        mid = invite.json()["data"]["id"]
+
+        updated = self.client.post(
+            reverse("api:staff_update", kwargs={"pk": mid}),
+            data='{"role":"manager","is_active":true}',
+            **headers,
+        )
+        self.assertEqual(updated.status_code, 200, updated.content)
+        self.assertEqual(updated.json()["data"]["role"], "manager")
+
+        log_activity(
+            tenant=self.tenant,
+            user=self.user,
+            action="payment_received",
+            model="GuestPayment",
+            object_id="1",
+            payload={"amount": "10000"},
+        )
+        audit = self.client.get(
+            reverse("api:audit_log"),
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            HTTP_X_HOTEL_ID=str(self.prop.pk),
+        )
+        self.assertEqual(audit.status_code, 200, audit.content)
+        self.assertTrue(
+            any(i["action"] == "payment_received" for i in audit.json()["data"]["items"])
+        )
+
+        csv_pay = self.client.get(
+            reverse("api:export_payments_csv"),
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            HTTP_X_HOTEL_ID=str(self.prop.pk),
+        )
+        self.assertEqual(csv_pay.status_code, 200, csv_pay.content)
+        self.assertIn("content_base64", csv_pay.json()["data"])
+
+        rate = self.client.post(
+            reverse("api:rate_plan_create"),
+            data=(
+                '{"name":"BAR","code":"bar","room_type_id":%s,"price":"350000"}'
+                % self.rt.pk
+            ),
+            **headers,
+        )
+        self.assertEqual(rate.status_code, 201, rate.content)
+
+        emehmon = self.client.get(
+            reverse("api:emehmon_report"),
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            HTTP_X_HOTEL_ID=str(self.prop.pk),
+        )
+        self.assertEqual(emehmon.status_code, 200, emehmon.content)
+        self.assertIn("year", emehmon.json()["data"])
+
+    def test_rich_booking_and_occupants(self):
+        token = self._login()
+        headers = {
+            "HTTP_AUTHORIZATION": f"Bearer {token}",
+            "HTTP_X_HOTEL_ID": str(self.prop.pk),
+            "content_type": "application/json",
+        }
+        room2 = Room.objects.create(
+            tenant=self.tenant, property=self.prop, room_type=self.rt, number="102"
+        )
+        existing = Guest.objects.create(
+            tenant=self.tenant, first_name="Nodira", last_name="Karimova", phone="99890"
+        )
+        create = self.client.post(
+            reverse("api:reservation_create"),
+            data=(
+                '{"room_id":%d,"guest_id":%d,"check_in":"%s","check_out":"%s",'
+                '"adults":2,"children":0}'
+                % (
+                    room2.pk,
+                    existing.pk,
+                    self.today.isoformat(),
+                    (self.today + timedelta(days=2)).isoformat(),
+                )
+            ),
+            **headers,
+        )
+        self.assertEqual(create.status_code, 201, create.content)
+        rid = create.json()["data"]["reservation_id"]
+
+        detail = self.client.get(
+            reverse("api:reservation_detail", args=[rid]),
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            HTTP_X_HOTEL_ID=str(self.prop.pk),
+        )
+        self.assertEqual(detail.status_code, 200, detail.content)
+        body = detail.json()["data"]
+        self.assertEqual(body["guest"]["id"], existing.pk)
+        self.assertEqual(body["occupants_expected"], 2)
+        self.assertGreaterEqual(body["occupants_missing"], 1)
+
+        sync = self.client.post(
+            reverse("api:reservation_occupants", args=[rid]),
+            data='{"occupants":[{"first_name":"Hamroh","last_name":"Test","kind":"adult"}]}',
+            **headers,
+        )
+        self.assertEqual(sync.status_code, 200, sync.content)
+        self.assertEqual(sync.json()["data"]["occupants_missing"], 0)
+        self.assertEqual(len(sync.json()["data"]["occupants"]), 2)
+
+    def test_fx_and_expense_reject(self):
+        token = self._login()
+        TenantMembership.objects.filter(user=self.user, tenant=self.tenant).update(
+            role=TenantMembership.Role.ACCOUNTANT
+        )
+        headers = {
+            "HTTP_AUTHORIZATION": f"Bearer {token}",
+            "HTTP_X_HOTEL_ID": str(self.prop.pk),
+            "content_type": "application/json",
+        }
+        fx = self.client.post(
+            reverse("api:fx_create"),
+            data='{"currency":"USD","rate":"12700","note":"test"}',
+            **headers,
+        )
+        self.assertEqual(fx.status_code, 201, fx.content)
+        fx_id = fx.json()["data"]["id"]
+        listed = self.client.get(
+            reverse("api:fx_list"),
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            HTTP_X_HOTEL_ID=str(self.prop.pk),
+        )
+        self.assertEqual(listed.status_code, 200, listed.content)
+        self.assertTrue(any(i["id"] == fx_id for i in listed.json()["data"]["items"]))
+
+        from finance.models import Expense, ExpenseCategory
+        from finance.services import approve_expense
+
+        cat = ExpenseCategory.objects.create(tenant=self.tenant, name="Office")
+        expense = Expense.objects.create(
+            tenant=self.tenant,
+            hotel=self.prop,
+            category=cat,
+            title="Paper",
+            amount=Decimal("50000"),
+            expense_date=self.today,
+        )
+        approve_expense(expense, self.user)
+        reject = self.client.post(
+            reverse("api:expense_reject", args=[expense.pk]),
+            data='{"reason":"dup"}',
+            **headers,
+        )
+        self.assertEqual(reject.status_code, 200, reject.content)
+        expense.refresh_from_db()
+        self.assertEqual(expense.status, Expense.Status.REJECTED)
+
+        deleted = self.client.post(
+            reverse("api:fx_delete", args=[fx_id]),
+            data="{}",
+            **headers,
+        )
+        self.assertEqual(deleted.status_code, 200, deleted.content)
+
+    def test_group_create_guest_rate_counts_notes(self):
+        import json
+
+        from bookings.models import Reservation, ReservationGroup
+
+        room2 = Room.objects.create(
+            tenant=self.tenant, property=self.prop, room_type=self.rt, number="102"
+        )
+        token = self._login()
+        headers = {
+            "HTTP_AUTHORIZATION": f"Bearer {token}",
+            "HTTP_X_HOTEL_ID": str(self.prop.pk),
+            "content_type": "application/json",
+        }
+        out = (self.today + timedelta(days=2)).isoformat()
+        payload = {
+            "name": "Tour A",
+            "check_in": self.today.isoformat(),
+            "check_out": out,
+            "notes": "Late arrival",
+            "rooms": [
+                {
+                    "guest_id": self.guest.pk,
+                    "room_id": self.room.pk,
+                    "nightly_rate": "150000",
+                    "adults": 2,
+                    "children": 1,
+                },
+                {
+                    "first_name": "Nodira",
+                    "last_name": "Aliyeva",
+                    "room_id": room2.pk,
+                    "adults": 1,
+                    "children": 0,
+                },
+            ],
+        }
+        resp = self.client.post(
+            reverse("api:group_create"),
+            data=json.dumps(payload),
+            **headers,
+        )
+        self.assertEqual(resp.status_code, 201, resp.content)
+        body = resp.json()["data"]
+        group = ReservationGroup.objects.get(pk=body["id"], tenant=self.tenant)
+        self.assertEqual(group.notes, "Late arrival")
+        self.assertEqual(group.reservations.count(), 2)
+        linked = Reservation.objects.get(group=group, guest=self.guest)
+        self.assertEqual(linked.room_id, self.room.pk)
+        self.assertEqual(linked.nightly_rate, Decimal("150000"))
+        self.assertEqual(linked.adults, 2)
+        self.assertEqual(linked.children, 1)
+        created = Reservation.objects.get(group=group, guest__first_name="Nodira")
+        self.assertEqual(created.guest.last_name, "Aliyeva")
+        self.assertEqual(created.room_id, room2.pk)
+        self.assertEqual(
+            Guest.objects.filter(tenant=self.tenant, first_name="Ali").count(), 1
+        )
+
+        before = Guest.objects.filter(tenant=self.tenant).count()
+        bad = self.client.post(
+            reverse("api:group_create"),
+            data=json.dumps(
+                {
+                    "name": "Broken",
+                    "check_in": self.today.isoformat(),
+                    "check_out": out,
+                    "rooms": [
+                        {"first_name": "Orphan", "room_id": self.room.pk},
+                        {"room_id": 999999},
+                    ],
+                }
+            ),
+            **headers,
+        )
+        self.assertEqual(bad.status_code, 404, bad.content)
+        self.assertEqual(Guest.objects.filter(tenant=self.tenant).count(), before)
+        self.assertFalse(
+            Guest.objects.filter(tenant=self.tenant, first_name="Orphan").exists()
+        )
+

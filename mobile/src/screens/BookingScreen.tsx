@@ -13,12 +13,31 @@ import {
 } from "react-native";
 
 import { ApiError } from "../api/client";
-import type { AvailableRoom } from "../api/types";
+import type { AvailableRoom, GuestSummary } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { ScreenHeader } from "../ui/ScreenHeader";
+import {
+  EmptyState,
+  FieldLabel,
+  FormCard,
+  PrimaryButton,
+  SearchField,
+  SegmentedTabs,
+} from "../ui/primitives";
+import { colors, fontDisplay, fontUi, radius, space, ui } from "../ui/theme";
+import {
+  CompanionEditor,
+  companionPayload,
+  companionsIncomplete,
+  companionSlots,
+  type CompanionDraft,
+} from "../ui/companions";
 
 type Props = {
   onBack: () => void;
   onCreated: (reservationId: number) => void;
+  initialRoomId?: number | null;
+  initialCheckIn?: string | null;
 };
 
 function isoToday(): string {
@@ -31,16 +50,54 @@ function isoPlus(days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function BookingScreen({ onBack, onCreated }: Props) {
-  const { createReservation, fetchAvailableRooms } = useAuth();
+export function BookingScreen({
+  onBack,
+  onCreated,
+  initialRoomId = null,
+  initialCheckIn = null,
+}: Props) {
+  const {
+    createReservation,
+    fetchAvailableRooms,
+    searchGuests,
+    fetchCompanies,
+    fetchReferrers,
+    fetchRatePlans,
+  } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
-  const [checkIn, setCheckIn] = useState(isoToday());
-  const [checkOut, setCheckOut] = useState(isoPlus(1));
+  const [checkIn, setCheckIn] = useState(initialCheckIn || isoToday());
+  const [checkOut, setCheckOut] = useState(() => {
+    if (initialCheckIn) {
+      const d = new Date(initialCheckIn + "T12:00:00");
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().slice(0, 10);
+    }
+    return isoPlus(1);
+  });
   const [adults, setAdults] = useState("1");
+  const [children, setChildren] = useState("0");
+  const [nightlyRate, setNightlyRate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [docNumber, setDocNumber] = useState("");
+  const [docType, setDocType] = useState<"passport" | "id_card">("passport");
+  const [issuedCountry, setIssuedCountry] = useState("UZ");
+  const [source, setSource] = useState("phone");
+  const [commission, setCommission] = useState("");
+  const [companions, setCompanions] = useState<CompanionDraft[]>([]);
+  const [guestId, setGuestId] = useState<number | null>(null);
+  const [guestQ, setGuestQ] = useState("");
+  const [guestHits, setGuestHits] = useState<GuestSummary[]>([]);
+  const [searchingGuests, setSearchingGuests] = useState(false);
+  const [companyId, setCompanyId] = useState<number | null>(null);
+  const [referrerId, setReferrerId] = useState<number | null>(null);
+  const [ratePlanId, setRatePlanId] = useState<number | null>(null);
+  const [companies, setCompanies] = useState<Record<string, unknown>[]>([]);
+  const [referrers, setReferrers] = useState<Record<string, unknown>[]>([]);
+  const [ratePlans, setRatePlans] = useState<Record<string, unknown>[]>([]);
   const [rooms, setRooms] = useState<AvailableRoom[]>([]);
-  const [roomId, setRoomId] = useState<number | null>(null);
+  const [roomId, setRoomId] = useState<number | null>(initialRoomId);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +113,62 @@ export function BookingScreen({ onBack, onCreated }: Props) {
     }
   }, [checkIn, checkOut]);
 
+  const guestLocked = guestId != null;
+
+  useEffect(() => {
+    const a = Math.max(1, parseInt(adults, 10) || 1);
+    const c = Math.max(0, parseInt(children, 10) || 0);
+    setCompanions((prev) => companionSlots(a, c, prev));
+  }, [adults, children]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [cos, refs, plans] = await Promise.all([
+          fetchCompanies().catch(() => []),
+          fetchReferrers().catch(() => []),
+          fetchRatePlans().catch(() => []),
+        ]);
+        if (!cancelled) {
+          setCompanies(cos);
+          setReferrers(refs);
+          setRatePlans(plans);
+        }
+      } catch {
+        /* ignore picker load errors */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchCompanies, fetchReferrers, fetchRatePlans]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const q = guestQ.trim();
+    if (!q || guestLocked) {
+      setGuestHits([]);
+      setSearchingGuests(false);
+      return;
+    }
+    setSearchingGuests(true);
+    const t = setTimeout(async () => {
+      try {
+        const rows = await searchGuests(q);
+        if (!cancelled) setGuestHits(rows);
+      } catch {
+        if (!cancelled) setGuestHits([]);
+      } finally {
+        if (!cancelled) setSearchingGuests(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [guestQ, guestLocked, searchGuests]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -70,9 +183,14 @@ export function BookingScreen({ onBack, onCreated }: Props) {
         const items = await fetchAvailableRooms(checkIn, checkOut);
         if (!cancelled) {
           setRooms(items);
-          setRoomId((prev) =>
-            prev && items.some((r) => r.id === prev) ? prev : items[0]?.id ?? null
-          );
+          setRoomId((prev) => {
+            if (initialRoomId && items.some((r) => r.id === initialRoomId)) {
+              return initialRoomId;
+            }
+            return prev && items.some((r) => r.id === prev)
+              ? prev
+              : items[0]?.id ?? null;
+          });
         }
       } catch (e) {
         if (!cancelled) {
@@ -87,11 +205,34 @@ export function BookingScreen({ onBack, onCreated }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [checkIn, checkOut, nights, fetchAvailableRooms]);
+  }, [checkIn, checkOut, nights, fetchAvailableRooms, initialRoomId]);
+
+  function pickGuest(g: GuestSummary) {
+    setGuestId(g.id);
+    setFirstName(g.first_name || g.name || "");
+    setLastName(g.last_name || "");
+    setPhone(g.phone || "");
+    setGuestQ("");
+    setGuestHits([]);
+  }
+
+  function clearGuest() {
+    setGuestId(null);
+    setFirstName("");
+    setLastName("");
+    setPhone("");
+    setGuestQ("");
+    setGuestHits([]);
+  }
 
   async function submit() {
     if (!firstName.trim() || !roomId || nights < 1) {
       setError("Ism, sanalar va xona kerak.");
+      return;
+    }
+    const missing = companionsIncomplete(companions);
+    if (missing) {
+      setError(missing);
       return;
     }
     setBusy(true);
@@ -105,6 +246,27 @@ export function BookingScreen({ onBack, onCreated }: Props) {
         check_in: checkIn,
         check_out: checkOut,
         adults: Math.max(1, parseInt(adults, 10) || 1),
+        children: Math.max(0, parseInt(children, 10) || 0),
+        source,
+        ...(guestId ? { guest_id: guestId } : {}),
+        ...(companyId ? { company_id: companyId } : {}),
+        ...(referrerId ? { referrer_id: referrerId } : {}),
+        ...(referrerId && commission.trim()
+          ? { commission_percent: commission.trim() }
+          : {}),
+        ...(ratePlanId ? { rate_plan_id: ratePlanId } : {}),
+        ...(nightlyRate.trim() ? { nightly_rate: nightlyRate.trim() } : {}),
+        ...(notes.trim() ? { notes: notes.trim() } : {}),
+        ...(docNumber.trim()
+          ? {
+              doc_number: docNumber.trim(),
+              doc_type: docType,
+              issued_country: issuedCountry.trim() || "UZ",
+            }
+          : {}),
+        ...(companions.length
+          ? { occupants: companionPayload(companions) }
+          : {}),
       });
       Alert.alert("Bron", result.code);
       onCreated(result.reservation_id);
@@ -117,170 +279,442 @@ export function BookingScreen({ onBack, onCreated }: Props) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+      style={ui.screen}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={styles.header}>
-        <Pressable onPress={onBack}>
-          <Text style={styles.back}>← Orqaga</Text>
-        </Pressable>
-        <Text style={styles.title}>Yangi bron</Text>
-        <Text style={styles.sub}>{nights > 0 ? `${nights} kecha` : "Sanalarni tekshiring"}</Text>
-      </View>
+      <ScreenHeader
+        eyebrow="Bron"
+        title="Yangi bron"
+        subtitle={nights > 0 ? `${nights} kecha` : "Sanalarni tekshiring"}
+        onBack={onBack}
+      />
 
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <Field label="Ism *" value={firstName} onChange={setFirstName} />
-        <Field label="Familiya" value={lastName} onChange={setLastName} />
-        <Field
-          label="Telefon"
-          value={phone}
-          onChange={setPhone}
-          keyboardType="phone-pad"
-        />
-        <Field
-          label="Kirish (YYYY-MM-DD)"
-          value={checkIn}
-          onChange={setCheckIn}
-          autoCapitalize="none"
-        />
-        <Field
-          label="Chiqish (YYYY-MM-DD)"
-          value={checkOut}
-          onChange={setCheckOut}
-          autoCapitalize="none"
-        />
-        <Field
-          label="Kattalar"
-          value={adults}
-          onChange={setAdults}
-          keyboardType="number-pad"
-        />
-
-        <Text style={styles.section}>Bo‘sh xonalar</Text>
-        {loadingRooms ? (
-          <ActivityIndicator color="#0e6b56" style={{ marginVertical: 12 }} />
-        ) : rooms.length === 0 ? (
-          <Text style={styles.empty}>Shu sanalarda bo‘sh xona yo‘q</Text>
-        ) : (
-          rooms.map((r) => (
-            <Pressable
-              key={r.id}
-              style={[styles.roomRow, roomId === r.id && styles.roomRowOn]}
-              onPress={() => setRoomId(r.id)}
-            >
-              <Text
-                style={[styles.roomNum, roomId === r.id && styles.roomTextOn]}
-              >
-                {r.number}
-              </Text>
-              <Text
-                style={[styles.roomMeta, roomId === r.id && styles.roomTextOn]}
-              >
-                {r.room_type || r.status}
-                {r.base_price ? ` · ${r.base_price}` : ""}
-              </Text>
-            </Pressable>
-          ))
-        )}
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <Pressable
-          style={[styles.btn, (busy || !roomId || !firstName.trim()) && styles.disabled]}
-          onPress={submit}
-          disabled={busy || !roomId || !firstName.trim()}
-        >
-          {busy ? (
-            <ActivityIndicator color="#fff" />
+      <ScrollView
+        contentContainerStyle={styles.body}
+        keyboardShouldPersistTaps="handled"
+      >
+        <FormCard>
+          <FieldLabel>Mehmon qidirish</FieldLabel>
+          {guestLocked ? (
+            <View style={styles.guestBanner}>
+              <Text style={styles.guestBannerText}>Mavjud mehmon</Text>
+              <Pressable onPress={clearGuest} hitSlop={8}>
+                <Text style={styles.clearLink}>Tozalash</Text>
+              </Pressable>
+            </View>
           ) : (
-            <Text style={styles.btnText}>Bron yaratish</Text>
+            <>
+              <SearchField
+                value={guestQ}
+                onChangeText={setGuestQ}
+                placeholder="Ism, telefon…"
+              />
+              {searchingGuests ? (
+                <ActivityIndicator
+                  color={colors.accent}
+                  style={{ marginVertical: 8 }}
+                />
+              ) : null}
+              {guestHits.map((g) => (
+                <Pressable
+                  key={g.id}
+                  style={styles.hitRow}
+                  onPress={() => pickGuest(g)}
+                >
+                  <Text style={styles.hitTitle}>{g.name}</Text>
+                  <Text style={styles.hitMeta}>{g.phone || "—"}</Text>
+                </Pressable>
+              ))}
+            </>
           )}
-        </Pressable>
+          <FieldLabel>Ism *</FieldLabel>
+          <TextInput
+            style={[ui.input, guestLocked && styles.inputLocked]}
+            value={firstName}
+            onChangeText={setFirstName}
+            autoCapitalize="words"
+            editable={!guestLocked}
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Familiya</FieldLabel>
+          <TextInput
+            style={[ui.input, guestLocked && styles.inputLocked]}
+            value={lastName}
+            onChangeText={setLastName}
+            autoCapitalize="words"
+            editable={!guestLocked}
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Telefon</FieldLabel>
+          <TextInput
+            style={[ui.input, guestLocked && styles.inputLocked]}
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+            editable={!guestLocked}
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Hujjat</FieldLabel>
+          <SegmentedTabs
+            tabs={[
+              { id: "passport", label: "Pasport" },
+              { id: "id_card", label: "ID" },
+            ]}
+            value={docType}
+            onChange={setDocType}
+          />
+          <FieldLabel>Pasport / ID</FieldLabel>
+          <TextInput
+            style={ui.input}
+            value={docNumber}
+            onChangeText={setDocNumber}
+            autoCapitalize="characters"
+            placeholder="AA 1234567"
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Berilgan mamlakat</FieldLabel>
+          <TextInput
+            style={ui.input}
+            value={issuedCountry}
+            onChangeText={setIssuedCountry}
+            autoCapitalize="characters"
+            placeholder="UZ"
+            placeholderTextColor={colors.faint}
+          />
+        </FormCard>
+
+        <FormCard>
+          <FieldLabel>Kirish (YYYY-MM-DD)</FieldLabel>
+          <TextInput
+            style={ui.input}
+            value={checkIn}
+            onChangeText={setCheckIn}
+            autoCapitalize="none"
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Chiqish (YYYY-MM-DD)</FieldLabel>
+          <TextInput
+            style={ui.input}
+            value={checkOut}
+            onChangeText={setCheckOut}
+            autoCapitalize="none"
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Kattalar</FieldLabel>
+          <TextInput
+            style={ui.input}
+            value={adults}
+            onChangeText={setAdults}
+            keyboardType="number-pad"
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Bolalar</FieldLabel>
+          <TextInput
+            style={ui.input}
+            value={children}
+            onChangeText={setChildren}
+            keyboardType="number-pad"
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Kecha narxi (ixtiyoriy)</FieldLabel>
+          <TextInput
+            style={ui.input}
+            value={nightlyRate}
+            onChangeText={setNightlyRate}
+            keyboardType="decimal-pad"
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Izoh</FieldLabel>
+          <TextInput
+            style={[ui.input, styles.notes]}
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            placeholderTextColor={colors.faint}
+          />
+          <FieldLabel>Manba</FieldLabel>
+          <SegmentedTabs
+            tabs={[
+              { id: "phone", label: "Telefon" },
+              { id: "website", label: "Sayt" },
+              { id: "other", label: "Boshqa" },
+            ]}
+            value={source}
+            onChange={setSource}
+          />
+          {companions.length > 0 ? (
+            <CompanionEditor rows={companions} onChange={setCompanions} />
+          ) : null}
+        </FormCard>
+
+        {companies.length > 0 ? (
+          <FormCard>
+            <Text style={styles.section}>Kompaniya</Text>
+            <View style={styles.chipWrap}>
+              <Pressable
+                style={[ui.chip, companyId == null && ui.chipOn]}
+                onPress={() => setCompanyId(null)}
+              >
+                <Text
+                  style={[
+                    ui.chipText,
+                    companyId == null && ui.chipTextOn,
+                  ]}
+                >
+                  Yo‘q
+                </Text>
+              </Pressable>
+              {companies.map((c) => {
+                const id = Number(c.id);
+                const on = companyId === id;
+                return (
+                  <Pressable
+                    key={id}
+                    style={[ui.chip, on && ui.chipOn]}
+                    onPress={() => setCompanyId(on ? null : id)}
+                  >
+                    <Text style={[ui.chipText, on && ui.chipTextOn]}>
+                      {String(c.name)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </FormCard>
+        ) : null}
+
+        {referrers.length > 0 ? (
+          <FormCard>
+            <Text style={styles.section}>Referrer</Text>
+            <View style={styles.chipWrap}>
+              <Pressable
+                style={[ui.chip, referrerId == null && ui.chipOn]}
+                onPress={() => {
+                  setReferrerId(null);
+                  setCommission("");
+                }}
+              >
+                <Text
+                  style={[
+                    ui.chipText,
+                    referrerId == null && ui.chipTextOn,
+                  ]}
+                >
+                  Yo‘q
+                </Text>
+              </Pressable>
+              {referrers.map((r) => {
+                const id = Number(r.id);
+                const on = referrerId === id;
+                return (
+                  <Pressable
+                    key={id}
+                    style={[ui.chip, on && ui.chipOn]}
+                    onPress={() => {
+                      if (on) {
+                        setReferrerId(null);
+                        setCommission("");
+                      } else {
+                        setReferrerId(id);
+                        setCommission(String(r.default_commission_percent ?? ""));
+                      }
+                    }}
+                  >
+                    <Text style={[ui.chipText, on && ui.chipTextOn]}>
+                      {String(r.name)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {referrerId != null ? (
+              <>
+                <FieldLabel>Komissiya %</FieldLabel>
+                <TextInput
+                  style={ui.input}
+                  value={commission}
+                  onChangeText={setCommission}
+                  keyboardType="decimal-pad"
+                  placeholder="10"
+                  placeholderTextColor={colors.faint}
+                />
+              </>
+            ) : null}
+          </FormCard>
+        ) : null}
+
+        {ratePlans.length > 0 ? (
+          <FormCard>
+            <Text style={styles.section}>Tarif rejasi</Text>
+            <View style={styles.chipWrap}>
+              <Pressable
+                style={[ui.chip, ratePlanId == null && ui.chipOn]}
+                onPress={() => setRatePlanId(null)}
+              >
+                <Text
+                  style={[
+                    ui.chipText,
+                    ratePlanId == null && ui.chipTextOn,
+                  ]}
+                >
+                  Yo‘q
+                </Text>
+              </Pressable>
+              {ratePlans.map((p) => {
+                const id = Number(p.id);
+                const on = ratePlanId === id;
+                return (
+                  <Pressable
+                    key={id}
+                    style={[ui.chip, on && ui.chipOn]}
+                    onPress={() => setRatePlanId(on ? null : id)}
+                  >
+                    <Text style={[ui.chipText, on && ui.chipTextOn]}>
+                      {String(p.name)}
+                      {p.price ? ` · ${String(p.price)}` : ""}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </FormCard>
+        ) : null}
+
+        <FormCard>
+          <Text style={styles.section}>Bo‘sh xonalar</Text>
+          {loadingRooms ? (
+            <ActivityIndicator
+              color={colors.accent}
+              style={{ marginVertical: 12 }}
+            />
+          ) : rooms.length === 0 ? (
+            <EmptyState
+              title="Bo‘sh xona yo‘q"
+              hint="Shu sanalarda bo‘sh xona topilmadi"
+            />
+          ) : (
+            rooms.map((r) => {
+              const on = roomId === r.id;
+              return (
+                <Pressable
+                  key={r.id}
+                  style={[styles.roomRow, on && styles.roomRowOn]}
+                  onPress={() => setRoomId(r.id)}
+                >
+                  <Text style={[styles.roomNum, on && styles.roomTextOn]}>
+                    {r.number}
+                  </Text>
+                  <Text style={[styles.roomMeta, on && styles.roomTextOn]}>
+                    {r.room_type || r.status}
+                    {r.base_price ? ` · ${r.base_price}` : ""}
+                  </Text>
+                </Pressable>
+              );
+            })
+          )}
+        </FormCard>
+
+        {error ? <Text style={ui.error}>{error}</Text> : null}
+
+        <PrimaryButton
+          label="Bron yaratish"
+          onPress={submit}
+          loading={busy}
+          disabled={busy || !roomId || !firstName.trim()}
+          tone="success"
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  keyboardType,
-  autoCapitalize,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  keyboardType?: "default" | "phone-pad" | "number-pad";
-  autoCapitalize?: "none" | "characters" | "words";
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChange}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize || "words"}
-        placeholderTextColor="#a89f94"
-      />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#eef0f3" },
-  header: {
-    backgroundColor: "#12151a",
-    paddingTop: 56,
-    paddingBottom: 18,
-    paddingHorizontal: 18,
-  },
-  back: { color: "#e8a86a", fontWeight: "600", marginBottom: 10 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  sub: { color: "rgba(245,239,230,0.75)", marginTop: 4 },
-  body: { padding: 18, paddingBottom: 40 },
-  field: { marginBottom: 12 },
-  label: { fontSize: 12, fontWeight: "600", color: "#7a7168", marginBottom: 6 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#d9cfc3",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: "#12151a",
-    backgroundColor: "#fff",
+  body: {
+    padding: space.lg,
+    paddingBottom: 40,
   },
   section: {
-    marginTop: 8,
-    marginBottom: 8,
+    marginBottom: space.sm,
     fontWeight: "700",
-    color: "#12151a",
+    color: colors.ink,
     fontSize: 15,
+    fontFamily: fontUi,
   },
-  empty: { color: "#7a7168", marginBottom: 12 },
-  roomRow: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#d9cfc3",
-    padding: 12,
-    marginBottom: 8,
+  chipWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: space.sm,
   },
-  roomRowOn: { backgroundColor: "#12151a", borderColor: "#12151a" },
-  roomNum: { fontSize: 18, fontWeight: "700", color: "#12151a" },
-  roomMeta: { marginTop: 2, color: "#7a7168", fontSize: 13 },
-  roomTextOn: { color: "#fff" },
-  error: { color: "#9f2f28", marginBottom: 10 },
-  btn: {
-    marginTop: 8,
-    backgroundColor: "#0e6b56",
-    borderRadius: 12,
-    paddingVertical: 16,
+  guestBanner: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.accentFog,
+    borderRadius: radius.sm,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    marginBottom: space.sm,
   },
-  btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  disabled: { opacity: 0.7 },
+  guestBannerText: {
+    fontFamily: fontUi,
+    fontWeight: "600",
+    color: colors.accentDeep,
+    fontSize: 13,
+  },
+  clearLink: {
+    fontFamily: fontUi,
+    fontWeight: "700",
+    color: colors.copper,
+    fontSize: 13,
+  },
+  hitRow: {
+    paddingVertical: space.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.line,
+  },
+  hitTitle: {
+    fontFamily: fontUi,
+    fontWeight: "600",
+    color: colors.ink,
+    fontSize: 14,
+  },
+  hitMeta: {
+    fontFamily: fontUi,
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  inputLocked: {
+    opacity: 0.65,
+    backgroundColor: colors.paperDeep,
+  },
+  notes: {
+    minHeight: 72,
+    textAlignVertical: "top",
+  },
+  roomRow: {
+    backgroundColor: colors.paper,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    padding: space.md,
+    marginBottom: space.sm,
+  },
+  roomRowOn: {
+    backgroundColor: colors.night,
+    borderColor: colors.night,
+  },
+  roomNum: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.ink,
+    fontFamily: fontDisplay,
+  },
+  roomMeta: {
+    marginTop: 2,
+    color: colors.muted,
+    fontSize: 13,
+    fontFamily: fontUi,
+  },
+  roomTextOn: { color: colors.white },
 });
