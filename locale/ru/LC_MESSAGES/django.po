@@ -7292,6 +7292,14 @@ msgstr "По этой брони есть продажа минибара. Сн�
 msgid "Bu bronda xizmat buyurtmasi bor. Avval uni bekor qiling."
 msgstr "По этой брони есть заказ услуги. Сначала отмените его."
 
+#: finance/profit.py
+msgid "%(n)s ta bron"
+msgstr "%(n)s броней"
+
+#: finance/profit.py
+msgid "%(n)s ta bron · %(pct)s%%"
+msgstr "%(n)s броней · %(pct)s%%"
+
 #, fuzzy
 #~ msgid "Taqsimlash"
 #~ msgstr "К распределению"

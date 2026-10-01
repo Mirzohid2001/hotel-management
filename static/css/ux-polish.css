@@ -1986,6 +1986,13 @@ body.auth .auth-hero-content {
   color: var(--accent, #9a3f14);
   font-size: 1.05rem;
 }
+.profit-receipt-line.is-detail {
+  padding-left: 2.1rem;
+  background: color-mix(in srgb, var(--surface, #fff) 94%, #9a3f14 6%);
+}
+.profit-receipt-line.is-detail .profit-receipt-label {
+  font-size: 0.88rem;
+}
 .profit-receipt-line.is-warn .profit-receipt-amt {
   color: #9a3412;
 }

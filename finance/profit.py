@@ -108,6 +108,20 @@ def build_profit_receipt(ledger: dict) -> dict:
         _receipt_line("−", _("Rasxod (joriy)"), pnl.get("expenses_total") or ZERO),
         _receipt_line("−", _("Mehnat (yalpi)"), pnl.get("labor_total") or ZERO),
         _receipt_line("−", _("Yo‘naltiruvchi komissiya"), pnl.get("commission") or ZERO, note=_("Kirish sanasi bo‘yicha; to‘lov Sofni o‘chirmaydi")),
+    ]
+    for agent in pnl.get("commission_rows") or []:
+        if agent.get("percent") is not None:
+            agent_note = _("%(n)s ta bron · %(pct)s%%") % {
+                "n": agent["count"],
+                "pct": _q(agent["percent"]),
+            }
+        else:
+            agent_note = _("%(n)s ta bron") % {"n": agent["count"]}
+        sof_lines.append(
+            _receipt_line("·", agent["name"], agent.get("amount") or ZERO, tone="detail", note=agent_note)
+        )
+    sof_lines.extend(
+        [
         _receipt_line("−", _("Ombor tannarx"), pnl.get("inventory_cost") or ZERO),
         _receipt_line("−", _("E-mehmon farq"), pnl.get("emehmon_shortfall") or ZERO),
         _receipt_line(
@@ -117,7 +131,8 @@ def build_profit_receipt(ledger: dict) -> dict:
             tone="total",
             note=_("Ulushlar shu summadan hisoblanadi"),
         ),
-    ]
+        ]
+    )
     sections.append(
         {
             "key": "sof",

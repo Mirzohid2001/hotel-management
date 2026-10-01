@@ -222,6 +222,19 @@ class AccountingReportsTests(TestCase):
         )
         self.assertEqual(on_out, Decimal("0"))
         self.assertGreater(on_in, Decimal("0"))
+        from reports.accounting import cash_pnl_for_range, commission_breakdown_in_range
+
+        rows = commission_breakdown_in_range(
+            self.tenant, self.today - timedelta(days=1), self.today - timedelta(days=1)
+        )
+        self.assertEqual([row["name"] for row in rows], ["Agent2"])
+        self.assertEqual(rows[0]["amount"], on_in)
+        self.assertEqual(rows[0]["count"], 1)
+        pnl = cash_pnl_for_range(
+            self.tenant, self.today - timedelta(days=1), self.today - timedelta(days=1)
+        )
+        self.assertEqual(pnl["commission"], on_in)
+        self.assertEqual(pnl["commission_rows"][0]["name"], "Agent2")
 
     def test_emehmon_pass_through_pnl(self):
         """E-mehmon tushum emas; faqat qoplanmagan farq rasxod."""

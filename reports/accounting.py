@@ -233,14 +233,12 @@ def advances_in_range(tenant, start: date, end: date) -> Decimal:
     )
 
 
-def commission_in_range(tenant, start: date, end: date, *, hotel=None) -> Decimal:
+def commission_breakdown_in_range(tenant, start: date, end: date, *, hotel=None) -> list[dict]:
     """
-    Yo‘naltiruvchi komissiyasi (Sof/P&L) — faqat CHECKED_OUT bronlar.
+    Sof/P&L komissiyasi agent bo‘yicha.
 
-    Sana: check_in (kirish). Mehmondan tushum odatda shu kunga tushadi;
-    check_out bo‘yicha olinsa, tushum bir kunda / komissiya keyingi kunda
-    qolib, «0 qilib qayta»dan keyin soxta −komissiya kuni chiqadi.
-    Agent hisoboti (bayonnoma) hali check_out bo‘yicha.
+    Faqat CHECKED_OUT bronlar, sana — check_in. Agent bayonnomasi esa
+    check_out oyi bo‘yicha, shu ro‘yxat bilan bir xil bo‘lmasligi mumkin.
     """
     from bookings.commission import reservation_commission_amount
     from bookings.models import Reservation
@@ -253,15 +251,56 @@ def commission_in_range(tenant, start: date, end: date, *, hotel=None) -> Decima
             check_in__gte=start,
             check_in__lte=end,
         )
-        .select_related("folio")
+        .select_related("folio", "referrer")
         .prefetch_related("folio__charges")
+        .order_by("referrer__name", "id")
     )
     if hotel is not None:
         qs = qs.filter(hotel=hotel)
-    total = Decimal("0")
+
+    buckets: dict[int, dict] = {}
     for res in qs:
-        total += reservation_commission_amount(res)
-    return total
+        amount = reservation_commission_amount(res)
+        if amount <= 0:
+            continue
+        bucket = buckets.get(res.referrer_id)
+        if bucket is None:
+            bucket = {
+                "referrer_id": res.referrer_id,
+                "name": res.referrer.name,
+                "amount": Decimal("0"),
+                "count": 0,
+                "percents": set(),
+            }
+            buckets[res.referrer_id] = bucket
+        bucket["amount"] += amount
+        bucket["count"] += 1
+        if res.commission_percent is not None:
+            bucket["percents"].add(res.commission_percent)
+
+    rows = []
+    for bucket in buckets.values():
+        percents = bucket.pop("percents")
+        bucket["amount"] = bucket["amount"].quantize(Decimal("0.01"))
+        bucket["percent"] = next(iter(percents)) if len(percents) == 1 else None
+        rows.append(bucket)
+    rows.sort(key=lambda row: (-row["amount"], row["name"]))
+    return rows
+
+
+def commission_in_range(tenant, start: date, end: date, *, hotel=None) -> Decimal:
+    """
+    Yo‘naltiruvchi komissiyasi (Sof/P&L) — faqat CHECKED_OUT bronlar.
+
+    Sana: check_in (kirish). Mehmondan tushum odatda shu kunga tushadi;
+    check_out bo‘yicha olinsa, tushum bir kunda / komissiya keyingi kunda
+    qolib, «0 qilib qayta»dan keyin soxta −komissiya kuni chiqadi.
+    Agent hisoboti (bayonnoma) hali check_out bo‘yicha.
+    """
+    return sum(
+        (row["amount"] for row in commission_breakdown_in_range(tenant, start, end, hotel=hotel)),
+        Decimal("0"),
+    )
 
 
 def commission_in_month(tenant, year: int, month: int, *, hotel=None) -> Decimal:
@@ -340,11 +379,13 @@ def cash_pnl_for_range(tenant, start: date, end: date, *, hotel=None) -> dict:
     from bookings.emehmon import emehmon_shortfall_for_range
 
     rev = cash_revenue_in_range(tenant, start, end, hotel=hotel)
+    commission_rows = commission_breakdown_in_range(tenant, start, end, hotel=hotel)
+    commission_total = sum((row["amount"] for row in commission_rows), Decimal("0"))
     costs = _operating_bundle(
         expenses=expenses_in_range(tenant, start, end, hotel=hotel),
         payroll=payroll_in_range(tenant, start, end),
         advances=advances_in_range(tenant, start, end),
-        commission=commission_in_range(tenant, start, end, hotel=hotel),
+        commission=commission_total,
         inventory=inventory_cost_in_range(tenant, start, end, hotel=hotel),
         emehmon_shortfall=emehmon_shortfall_for_range(
             tenant, start, end, hotel=hotel
@@ -360,6 +401,7 @@ def cash_pnl_for_range(tenant, start: date, end: date, *, hotel=None) -> dict:
         **costs,
         "reinvestment": reinvestment,
         "net": rev["total"] - costs["operating_costs"],
+        "commission_rows": commission_rows,
     }
 
 
