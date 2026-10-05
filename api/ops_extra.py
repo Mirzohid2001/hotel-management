@@ -176,7 +176,7 @@ def inventory_create(request):
         return json_error("Select a hotel (X-Hotel-Id).", status=400)
     data = parse_json(request)
     name = (data.get("name") or "").strip()
-    sku = (data.get("sku") or "").strip().lower()
+    sku = (data.get("sku") or "").strip()
     if not name or not sku:
         return json_error("name and sku required.")
     unit = (data.get("unit") or StockItem.Unit.DONA).strip()

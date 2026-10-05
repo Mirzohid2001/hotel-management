@@ -121,8 +121,8 @@ class MinibarItemQuickForm(forms.Form):
         required=False,
         label=_("Qoldiq"),
     )
-    sku = forms.SlugField(
-        max_length=40,
+    sku = forms.CharField(
+        max_length=80,
         required=False,
         label=_("SKU"),
         help_text=_("Bo‘sh qoldirilsa avtomatik yaratiladi."),

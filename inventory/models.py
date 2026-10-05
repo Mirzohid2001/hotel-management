@@ -37,7 +37,7 @@ class StockItem(TenantOwnedModel):
         blank=True,
     )
     name = models.CharField(max_length=200)
-    sku = models.SlugField(max_length=40)
+    sku = models.CharField(max_length=80, verbose_name=_("SKU"))
     unit = models.CharField(
         max_length=32,
         choices=Unit.choices,

@@ -34,7 +34,7 @@ def _active_hotel(request):
 
 
 def _unique_sku(tenant, hotel, base: str) -> str:
-    base = (slugify(base) or "item")[:32]
+    base = (slugify(base) or "item")[:64]
     sku = base
     n = 2
     qs = StockItem.objects.filter(tenant=tenant, sku=sku)
@@ -42,7 +42,7 @@ def _unique_sku(tenant, hotel, base: str) -> str:
         qs = qs.filter(hotel=hotel)
     while qs.exists():
         suffix = f"-{n}"
-        sku = f"{base[: 40 - len(suffix)]}{suffix}"
+        sku = f"{base[: 80 - len(suffix)]}{suffix}"
         n += 1
         qs = StockItem.objects.filter(tenant=tenant, sku=sku)
         if hotel is not None:

@@ -135,3 +135,24 @@ class MinibarQuickTests(TestCase):
         body = resp.content.decode()
         self.assertIn(f'value="{item.pk}" selected', body)
         self.assertIn('id="id_item"', body)
+
+    def test_sku_allows_free_text(self):
+        url = reverse("inventory:create")
+        resp = self.client.post(
+            url,
+            {
+                "name": "Odeyalo",
+                "sku": "Odeyalo-1,5*2,1",
+                "unit": "dona",
+                "quantity_on_hand": "3",
+                "reorder_level": "1",
+                "unit_cost": "100000",
+                "sell_price": "150000",
+                "currency": "UZS",
+                "expiry_alert_days": "7",
+                "is_active": "on",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        item = StockItem.objects.get(tenant=self.tenant, name="Odeyalo")
+        self.assertEqual(item.sku, "Odeyalo-1,5*2,1")
