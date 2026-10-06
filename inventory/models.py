@@ -64,6 +64,12 @@ class StockItem(TenantOwnedModel):
         verbose_name=_("Ogohlantirish (kun)"),
         help_text=_("Muddatdan shuncha kun oldin «yaqin» deb ogohlantiriladi."),
     )
+    photo = models.ImageField(
+        _("Rasm"),
+        upload_to="stock-photos/%Y/%m/",
+        blank=True,
+        help_text=_("Ixtiyoriy. JPG, PNG yoki WEBP, 2 MB gacha."),
+    )
     is_minibar = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 

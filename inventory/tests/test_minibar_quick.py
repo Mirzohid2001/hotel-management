@@ -156,6 +156,40 @@ class MinibarQuickTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         item = StockItem.objects.get(tenant=self.tenant, name="Odeyalo")
         self.assertEqual(item.sku, "Odeyalo-1,5*2,1")
+        self.assertFalse(item.photo)
+
+    def test_stock_create_with_optional_photo(self):
+        import io
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+
+        buf = io.BytesIO()
+        Image.new("RGB", (8, 8), color=(180, 90, 40)).save(buf, format="PNG")
+        url = reverse("inventory:create")
+        resp = self.client.post(
+            url,
+            {
+                "name": "Yostiq",
+                "sku": "Yostiq-50x70",
+                "unit": "dona",
+                "quantity_on_hand": "2",
+                "reorder_level": "1",
+                "unit_cost": "50000",
+                "sell_price": "80000",
+                "currency": "UZS",
+                "expiry_alert_days": "7",
+                "is_active": "on",
+                "photo": SimpleUploadedFile(
+                    "yostiq.png", buf.getvalue(), content_type="image/png"
+                ),
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        item = StockItem.objects.get(tenant=self.tenant, name="Yostiq")
+        self.assertTrue(item.photo)
+        listing = self.client.get(reverse("inventory:list"))
+        self.assertContains(listing, item.photo.url)
 
     def test_stock_list_print(self):
         url = reverse("inventory:list_print")

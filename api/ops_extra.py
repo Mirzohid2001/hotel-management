@@ -72,6 +72,7 @@ def _stock_row(item: StockItem, *, low_ids=None) -> dict:
         "expiry_status": item.expiry_status(),
         "is_minibar": item.is_minibar,
         "is_active": item.is_active,
+        "photo_url": item.photo.url if item.photo else "",
         "is_low": item.pk in low_ids
         or (
             item.is_active

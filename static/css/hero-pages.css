@@ -2886,8 +2886,20 @@ a.cal-new.shax-walkin {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.page-inventory .expense-summary-card .btn {
-  margin-top: 0.2rem;
+.page-inventory .stock-row-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.page-inventory .stock-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 10px;
+  flex-shrink: 0;
+  border: 1px solid var(--line-soft);
+  background: #fff;
 }
 
 .booking-list-page .guest-summary {

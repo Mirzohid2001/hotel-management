@@ -1,11 +1,22 @@
 from decimal import Decimal
 
 from django import forms
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from django.utils.translation import gettext_lazy as _
 
 from bookings.models import Reservation
 
 from .models import StockItem, StockMovement
+
+_PHOTO_MAX_BYTES = 2 * 1024 * 1024
+_PHOTO_EXTENSIONS = ["jpg", "jpeg", "png", "webp"]
+
+
+def _validate_stock_photo(photo):
+    if photo and getattr(photo, "size", 0) > _PHOTO_MAX_BYTES:
+        raise ValidationError(_("Rasm 2 MB dan katta bo‘lmasin."))
+    return photo
 
 
 class StockItemForm(forms.ModelForm):
@@ -14,6 +25,7 @@ class StockItemForm(forms.ModelForm):
         fields = (
             "name",
             "sku",
+            "photo",
             "unit",
             "quantity_on_hand",
             "reorder_level",
@@ -28,6 +40,7 @@ class StockItemForm(forms.ModelForm):
         labels = {
             "name": _("Nomi"),
             "sku": _("SKU"),
+            "photo": _("Rasm"),
             "unit": _("Birlik"),
             "quantity_on_hand": _("Qoldiq"),
             "reorder_level": _("Minimal qoldiq"),
@@ -40,14 +53,28 @@ class StockItemForm(forms.ModelForm):
             "is_active": _("Faol"),
         }
         help_texts = {
+            "photo": _("Ixtiyoriy. JPG, PNG yoki WEBP, 2 MB gacha."),
             "expiry_date": _("Masalan: sut, sharbat. Bo‘sh = muddat yo‘q."),
             "expiry_alert_days": _("Standart 7 kun oldin ogohlantiradi."),
         }
         widgets = {
             "unit": forms.Select,
+            "photo": forms.ClearableFileInput(
+                attrs={"accept": "image/jpeg,image/png,image/webp"}
+            ),
             "expiry_date": forms.DateInput(attrs={"type": "date"}),
             "expiry_alert_days": forms.NumberInput(attrs={"min": 0, "max": 365}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["photo"].required = False
+        self.fields["photo"].validators.append(
+            FileExtensionValidator(allowed_extensions=_PHOTO_EXTENSIONS)
+        )
+
+    def clean_photo(self):
+        return _validate_stock_photo(self.cleaned_data.get("photo"))
 
 
 class StockAdjustForm(forms.Form):
@@ -127,6 +154,18 @@ class MinibarItemQuickForm(forms.Form):
         label=_("SKU"),
         help_text=_("Bo‘sh qoldirilsa avtomatik yaratiladi."),
     )
+    photo = forms.ImageField(
+        required=False,
+        label=_("Rasm"),
+        help_text=_("Ixtiyoriy. JPG, PNG yoki WEBP, 2 MB gacha."),
+        validators=[FileExtensionValidator(allowed_extensions=_PHOTO_EXTENSIONS)],
+        widget=forms.ClearableFileInput(
+            attrs={"accept": "image/jpeg,image/png,image/webp"}
+        ),
+    )
+
+    def clean_photo(self):
+        return _validate_stock_photo(self.cleaned_data.get("photo"))
 
 
 class MinibarSaleForm(forms.Form):

@@ -139,7 +139,7 @@ def stock_create(request):
     if hotel is None:
         messages.error(request, _("Ombor uchun avval filial tanlang."))
         return redirect("inventory:list")
-    form = StockItemForm(request.POST or None)
+    form = StockItemForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
         obj = form.save(commit=False)
         obj.tenant = request.tenant
@@ -163,7 +163,7 @@ def stock_edit(request, pk):
     if hotel is not None and item.hotel_id and item.hotel_id != hotel.pk:
         messages.error(request, _("Bu mahsulot boshqa filial omboriga tegishli."))
         return redirect("inventory:list")
-    form = StockItemForm(request.POST or None, instance=item)
+    form = StockItemForm(request.POST or None, request.FILES or None, instance=item)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, _("Yangilandi."))
@@ -258,7 +258,7 @@ def minibar_item_quick(request):
         return redirect("inventory:list")
     select_id = request.GET.get("select_id") or request.POST.get("select_id") or "id_item"
     field_name = request.GET.get("field_name") or request.POST.get("field_name") or "item"
-    form = MinibarItemQuickForm(request.POST or None)
+    form = MinibarItemQuickForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
         sku = (form.cleaned_data.get("sku") or "").strip() or _unique_sku(
             request.tenant, hotel, form.cleaned_data["name"]
@@ -276,6 +276,7 @@ def minibar_item_quick(request):
                 sku=sku,
                 quantity_on_hand=qty,
                 sell_price=form.cleaned_data["sell_price"],
+                photo=form.cleaned_data.get("photo") or "",
                 is_minibar=True,
                 is_active=True,
             )

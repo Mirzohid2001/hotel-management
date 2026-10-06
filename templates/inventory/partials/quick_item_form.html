@@ -8,6 +8,8 @@
       </button>
     </div>
     <form class="stack-form quick-add-form"
+          enctype="multipart/form-data"
+          hx-encoding="multipart/form-data"
           hx-post="{% url 'inventory:quick_item' %}"
           hx-target="#modal-root" hx-select="unset"
           hx-swap="innerHTML">

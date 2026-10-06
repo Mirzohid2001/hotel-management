@@ -7308,6 +7308,18 @@ msgstr "Отчёт"
 msgid "PDF hisobot"
 msgstr "PDF отчёт"
 
+#: inventory/models.py inventory/forms.py
+msgid "Rasm"
+msgstr "Фото"
+
+#: inventory/models.py inventory/forms.py
+msgid "Ixtiyoriy. JPG, PNG yoki WEBP, 2 MB gacha."
+msgstr "Необязательно. JPG, PNG или WEBP, до 2 МБ."
+
+#: inventory/forms.py
+msgid "Rasm 2 MB dan katta bo‘lmasin."
+msgstr "Фото не больше 2 МБ."
+
 #: templates/inventory/stock_list_print.html
 msgid "Ombor — PDF hisobot"
 msgstr "Склад — PDF отчёт"

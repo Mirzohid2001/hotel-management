@@ -73,7 +73,11 @@
   <ul class="list entity-list">
     {% for i in items %}
     <li class="guest-chip entity-row">
-      <span>
+      <span class="stock-row-main">
+        {% if i.photo %}
+        <img class="stock-thumb" src="{{ i.photo.url }}" alt="">
+        {% endif %}
+        <span>
         <span class="entity-row-main">
           <strong class="entity-title">{{ i.name }}</strong>
           {% if i.pk in expired_ids %}<span class="badge badge-blacklist">{% trans "Muddati o‘tgan" %}</span>{% endif %}
@@ -94,6 +98,7 @@
             {% endif %}
           {% endif %}
           {% endif %}
+        </span>
         </span>
       </span>
       <span class="expense-actions row-actions">
