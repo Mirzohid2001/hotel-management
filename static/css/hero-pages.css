@@ -2892,6 +2892,11 @@ a.cal-new.shax-walkin {
   gap: 0.75rem;
   min-width: 0;
 }
+.page-inventory .stock-thumbs {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
 .page-inventory .stock-thumb {
   width: 48px;
   height: 48px;
@@ -2900,6 +2905,31 @@ a.cal-new.shax-walkin {
   flex-shrink: 0;
   border: 1px solid var(--line-soft);
   background: #fff;
+}
+.stock-photo-gallery {
+  margin: 0.5rem 0 1rem;
+}
+.stock-photo-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0 0;
+}
+.stock-photo-list li {
+  width: 92px;
+  text-align: center;
+  font-size: 0.78rem;
+}
+.stock-photo-list img {
+  width: 92px;
+  height: 92px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line-soft);
+  display: block;
+  margin-bottom: 0.3rem;
 }
 
 .booking-list-page .guest-summary {

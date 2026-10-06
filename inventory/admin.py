@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from .models import MinibarSale, StockItem, StockMovement
+from .models import MinibarSale, StockItem, StockItemPhoto, StockMovement
+
+
+class StockItemPhotoInline(admin.TabularInline):
+    model = StockItemPhoto
+    extra = 0
 
 
 @admin.register(StockItem)
@@ -16,6 +21,7 @@ class StockItemAdmin(admin.ModelAdmin):
     )
     list_filter = ("is_minibar", "tenant", "expiry_date")
     search_fields = ("name", "sku")
+    inlines = [StockItemPhotoInline]
 
 
 @admin.register(StockMovement)

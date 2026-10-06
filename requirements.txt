@@ -6,6 +6,7 @@ django-htmx>=1.29
 # DB / images / PDF
 psycopg2-binary>=2.9
 Pillow>=10.0
+pillow-heif>=0.16
 reportlab>=4.0
 
 # Production

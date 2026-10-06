@@ -7317,6 +7317,34 @@ msgid "Ixtiyoriy. JPG, PNG yoki WEBP, 2 MB gacha."
 msgstr "Необязательно. JPG, PNG или WEBP, до 2 МБ."
 
 #: inventory/forms.py
+msgid "Rasmlar"
+msgstr "Фото"
+
+#: inventory/forms.py
+msgid "Ixtiyoriy. Bir nechta rasm: JPG, PNG, WEBP yoki iPhone HEIC, har biri 8 MB gacha."
+msgstr "Необязательно. Несколько фото: JPG, PNG, WEBP или iPhone HEIC, каждое до 8 МБ."
+
+#: inventory/forms.py
+msgid "Bir mahsulotga %(n)s tadan ko‘p rasm yuklanmaydi."
+msgstr "Не больше %(n)s фото на товар."
+
+#: inventory/images.py
+msgid "Rasm 8 MB dan katta bo‘lmasin."
+msgstr "Фото не больше 8 МБ."
+
+#: inventory/images.py
+msgid "Rasm formati: JPG, PNG, WEBP yoki HEIC."
+msgstr "Формат: JPG, PNG, WEBP или HEIC."
+
+#: inventory/images.py
+msgid "Rasm ochilmadi. JPG, PNG, WEBP yoki iPhone HEIC yuboring."
+msgstr "Не удалось открыть файл. Загрузите JPG, PNG, WEBP или iPhone HEIC."
+
+#: templates/inventory/partials/stock_existing_photos.html
+msgid "Yuklangan rasmlar"
+msgstr "Загруженные фото"
+
+#: inventory/forms.py
 msgid "Rasm 2 MB dan katta bo‘lmasin."
 msgstr "Фото не больше 2 МБ."
 

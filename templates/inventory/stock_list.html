@@ -74,7 +74,15 @@
     {% for i in items %}
     <li class="guest-chip entity-row">
       <span class="stock-row-main">
-        {% if i.photo %}
+        {% if i.photos.all %}
+        <span class="stock-thumbs">
+          {% for p in i.photos.all %}
+          {% if forloop.counter <= 3 %}
+          <img class="stock-thumb" src="{{ p.image.url }}" alt="">
+          {% endif %}
+          {% endfor %}
+        </span>
+        {% elif i.photo %}
         <img class="stock-thumb" src="{{ i.photo.url }}" alt="">
         {% endif %}
         <span>

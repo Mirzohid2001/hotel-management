@@ -8,6 +8,9 @@
     {% include "includes/form_fields.html" with form=form %}
   </div>
   {% block form_extra %}{% endblock %}
+  {% if form_after_fields %}
+  {% include form_after_fields %}
+  {% endif %}
   <div class="form-actions">
     <button type="submit" class="btn">{{ submit_label|default:_("Saqlash") }}</button>
     {% if cancel_url %}

@@ -1,0 +1,17 @@
+{% load i18n %}
+{% if item and item.photos.all %}
+<div class="stock-photo-gallery">
+  <p class="eyebrow">{% trans "Yuklangan rasmlar" %}</p>
+  <ul class="stock-photo-list">
+    {% for p in item.photos.all %}
+    <li>
+      <img src="{{ p.image.url }}" alt="">
+      <label>
+        <input type="checkbox" name="remove_photo" value="{{ p.pk }}">
+        {% trans "O‘chirish" %}
+      </label>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}

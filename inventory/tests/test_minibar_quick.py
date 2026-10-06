@@ -164,8 +164,13 @@ class MinibarQuickTests(TestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         from PIL import Image
 
-        buf = io.BytesIO()
-        Image.new("RGB", (8, 8), color=(180, 90, 40)).save(buf, format="PNG")
+        from inventory.models import StockItemPhoto
+
+        def png_file(name, color):
+            buf = io.BytesIO()
+            Image.new("RGB", (8, 8), color=color).save(buf, format="PNG")
+            return SimpleUploadedFile(name, buf.getvalue(), content_type="image/png")
+
         url = reverse("inventory:create")
         resp = self.client.post(
             url,
@@ -180,16 +185,42 @@ class MinibarQuickTests(TestCase):
                 "currency": "UZS",
                 "expiry_alert_days": "7",
                 "is_active": "on",
-                "photo": SimpleUploadedFile(
-                    "yostiq.png", buf.getvalue(), content_type="image/png"
-                ),
+                "photos": [
+                    png_file("yostiq.png", (180, 90, 40)),
+                    png_file("yostiq-2.png", (40, 90, 180)),
+                ],
             },
         )
         self.assertEqual(resp.status_code, 302)
         item = StockItem.objects.get(tenant=self.tenant, name="Yostiq")
+        self.assertEqual(StockItemPhoto.objects.filter(item=item).count(), 2)
         self.assertTrue(item.photo)
         listing = self.client.get(reverse("inventory:list"))
-        self.assertContains(listing, item.photo.url)
+        self.assertContains(listing, item.photos.first().image.url)
+
+    def test_heic_photo_is_converted(self):
+        import io
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+
+        from inventory.images import normalize_stock_image
+
+        try:
+            import pillow_heif
+        except ImportError:
+            self.skipTest("pillow-heif yo‘q")
+        pillow_heif.register_heif_opener()
+        buf = io.BytesIO()
+        Image.new("RGB", (8, 8), color=(10, 20, 30)).save(buf, format="PNG")
+        buf.seek(0)
+        png = Image.open(buf)
+        heif = pillow_heif.from_pillow(png)
+        out = io.BytesIO()
+        heif.save(out, format="HEIF")
+        upload = SimpleUploadedFile("phone.heic", out.getvalue(), content_type="image/heic")
+        converted = normalize_stock_image(upload)
+        self.assertTrue(converted.name.endswith(".jpg"))
 
     def test_stock_list_print(self):
         url = reverse("inventory:list_print")

@@ -20,7 +20,7 @@ from .forms import (
     StockAdjustForm,
     StockItemForm,
 )
-from .models import StockItem
+from .models import StockItem, StockItemPhoto
 from .services import (
     adjust_stock,
     expired_stock_items,
@@ -63,7 +63,7 @@ def _stock_list_context(request) -> dict:
     hotel = _active_hotel(request)
     q = (request.GET.get("q") or "").strip()
     flag = (request.GET.get("flag") or "").strip()
-    items_qs = StockItem.objects.filter(tenant=request.tenant).select_related("hotel")
+    items_qs = StockItem.objects.filter(tenant=request.tenant).select_related("hotel").prefetch_related("photos")
     if hotel is not None:
         items_qs = items_qs.filter(hotel=hotel)
     if q:
@@ -108,6 +108,34 @@ def _stock_list_context(request) -> dict:
     }
 
 
+def _refresh_cover_photo(item: StockItem) -> None:
+    first = item.photos.order_by("pk").first()
+    item.photo = first.image if first else ""
+    item.save(update_fields=["photo"])
+
+
+def _attach_stock_photos(item: StockItem, files) -> None:
+    from .images import _PHOTO_MAX_COUNT
+
+    existing = item.photos.count()
+    for upload in files or []:
+        if existing >= _PHOTO_MAX_COUNT:
+            break
+        if not upload:
+            continue
+        StockItemPhoto.objects.create(tenant=item.tenant, item=item, image=upload)
+        existing += 1
+    _refresh_cover_photo(item)
+
+
+def _remove_stock_photos(item: StockItem, ids) -> None:
+    ids = [pk for pk in ids if str(pk).isdigit()]
+    if not ids:
+        return
+    StockItemPhoto.objects.filter(item=item, pk__in=ids).delete()
+    _refresh_cover_photo(item)
+
+
 @role_required(*INVENTORY)
 @feature_required("inventory")
 def stock_list(request):
@@ -145,6 +173,7 @@ def stock_create(request):
         obj.tenant = request.tenant
         obj.hotel = hotel
         obj.save()
+        _attach_stock_photos(obj, form.cleaned_data.get("photos"))
         messages.success(request, _("Mahsulot qo‘shildi."))
         return redirect("inventory:list")
     return render(
@@ -159,13 +188,17 @@ def stock_create(request):
 @require_http_methods(["GET", "POST"])
 def stock_edit(request, pk):
     hotel = _active_hotel(request)
-    item = get_object_or_404(StockItem, pk=pk, tenant=request.tenant)
+    item = get_object_or_404(
+        StockItem.objects.prefetch_related("photos"), pk=pk, tenant=request.tenant
+    )
     if hotel is not None and item.hotel_id and item.hotel_id != hotel.pk:
         messages.error(request, _("Bu mahsulot boshqa filial omboriga tegishli."))
         return redirect("inventory:list")
     form = StockItemForm(request.POST or None, request.FILES or None, instance=item)
     if request.method == "POST" and form.is_valid():
         form.save()
+        _remove_stock_photos(item, request.POST.getlist("remove_photo"))
+        _attach_stock_photos(item, form.cleaned_data.get("photos"))
         messages.success(request, _("Yangilandi."))
         return redirect("inventory:list")
     return render(
@@ -276,10 +309,10 @@ def minibar_item_quick(request):
                 sku=sku,
                 quantity_on_hand=qty,
                 sell_price=form.cleaned_data["sell_price"],
-                photo=form.cleaned_data.get("photo") or "",
                 is_minibar=True,
                 is_active=True,
             )
+            _attach_stock_photos(item, form.cleaned_data.get("photos"))
             qs = StockItem.objects.filter(
                 tenant=request.tenant, hotel=hotel, is_active=True, is_minibar=True
             ).order_by("name")

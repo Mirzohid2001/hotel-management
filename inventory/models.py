@@ -68,7 +68,7 @@ class StockItem(TenantOwnedModel):
         _("Rasm"),
         upload_to="stock-photos/%Y/%m/",
         blank=True,
-        help_text=_("Ixtiyoriy. JPG, PNG yoki WEBP, 2 MB gacha."),
+        help_text=_("Ixtiyoriy. Birinchi rasm ro‘yxatda ko‘rinadi."),
     )
     is_minibar = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -99,6 +99,21 @@ class StockItem(TenantOwnedModel):
         if not self.expiry_date:
             return None
         return (self.expiry_date - timezone.localdate()).days
+
+
+class StockItemPhoto(TenantOwnedModel):
+    item = models.ForeignKey(
+        StockItem, on_delete=models.CASCADE, related_name="photos"
+    )
+    image = models.ImageField(upload_to="stock-photos/%Y/%m/", verbose_name=_("Rasm"))
+
+    class Meta:
+        ordering = ["pk"]
+        verbose_name = _("Tovar rasmi")
+        verbose_name_plural = _("Tovar rasmlari")
+
+    def __str__(self) -> str:
+        return f"{self.item_id}:{self.pk}"
 
 
 class StockMovement(TenantOwnedModel):

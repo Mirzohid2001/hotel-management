@@ -73,6 +73,8 @@ def _stock_row(item: StockItem, *, low_ids=None) -> dict:
         "is_minibar": item.is_minibar,
         "is_active": item.is_active,
         "photo_url": item.photo.url if item.photo else "",
+        "photo_urls": [p.image.url for p in item.photos.all()]
+        or ([item.photo.url] if item.photo else []),
         "is_low": item.pk in low_ids
         or (
             item.is_active
@@ -84,7 +86,7 @@ def _stock_row(item: StockItem, *, low_ids=None) -> dict:
 
 def _hotel_stock_qs(request):
     hotel = getattr(request, "active_property", None)
-    qs = StockItem.objects.filter(tenant=request.tenant)
+    qs = StockItem.objects.filter(tenant=request.tenant).prefetch_related("photos")
     if hotel is not None:
         qs = qs.filter(hotel=hotel)
     return qs, hotel
