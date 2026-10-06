@@ -156,3 +156,20 @@ class MinibarQuickTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         item = StockItem.objects.get(tenant=self.tenant, name="Odeyalo")
         self.assertEqual(item.sku, "Odeyalo-1,5*2,1")
+
+    def test_stock_list_print(self):
+        url = reverse("inventory:list_print")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "PDF hisobot")
+        self.assertContains(resp, "Suv")
+        self.assertContains(resp, "water-q")
+        self.assertContains(resp, "Chop etish")
+        listing = self.client.get(reverse("inventory:list"))
+        self.assertContains(listing, "PDF hisobot")
+        self.assertContains(listing, url)
+
+        filtered = self.client.get(url, {"flag": "minibar"})
+        self.assertEqual(filtered.status_code, 200)
+        self.assertContains(filtered, "Suv")
+        self.assertContains(filtered, "Minibar")

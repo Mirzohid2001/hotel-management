@@ -54,6 +54,12 @@
     <span class="expense-summary-lbl">{% trans "Muddati o‘tgan" %}</span>
     <strong class="expense-summary-val">{{ expired_count }}</strong>
   </div>
+  <div class="expense-summary-card">
+    <span class="expense-summary-lbl">{% trans "Hisobot" %}</span>
+    <a class="btn btn-sm" href="{% url 'inventory:list_print' %}{% if chek_query %}?{{ chek_query }}{% endif %}" target="_blank" rel="noopener">
+      {% trans "PDF hisobot" %}
+    </a>
+  </div>
 </div>
 
 <section class="section-panel expense-list-panel">

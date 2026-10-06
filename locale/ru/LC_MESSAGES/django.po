@@ -7300,6 +7300,30 @@ msgstr "%(n)s броней"
 msgid "%(n)s ta bron · %(pct)s%%"
 msgstr "%(n)s броней · %(pct)s%%"
 
+#: templates/finance/expense_list.html templates/inventory/stock_list.html
+msgid "Hisobot"
+msgstr "Отчёт"
+
+#: templates/inventory/stock_list.html templates/inventory/stock_list_print.html
+msgid "PDF hisobot"
+msgstr "PDF отчёт"
+
+#: templates/inventory/stock_list_print.html
+msgid "Ombor — PDF hisobot"
+msgstr "Склад — PDF отчёт"
+
+#: templates/inventory/stock_list_print.html
+msgid "ta mahsulot"
+msgstr "товаров"
+
+#: templates/inventory/stock_list_print.html
+msgid "Filtr bo‘yicha mahsulot yo‘q."
+msgstr "По фильтру товаров нет."
+
+#: templates/inventory/stock_list_print.html
+msgid "Min"
+msgstr "Мин"
+
 #, fuzzy
 #~ msgid "Taqsimlash"
 #~ msgstr "К распределению"

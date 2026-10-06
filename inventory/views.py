@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
@@ -28,9 +29,17 @@ from .services import (
     sell_minibar,
 )
 
-
 def _active_hotel(request):
     return getattr(request, "active_property", None)
+
+
+def _flag_label(flag: str) -> str:
+    return {
+        "low": _("Kam qolgan"),
+        "soon": _("Muddat yaqin"),
+        "expired": _("Muddati o‘tgan"),
+        "minibar": _("Minibar"),
+    }.get(flag, "")
 
 
 def _unique_sku(tenant, hotel, base: str) -> str:
@@ -50,9 +59,7 @@ def _unique_sku(tenant, hotel, base: str) -> str:
     return sku
 
 
-@role_required(*INVENTORY)
-@feature_required("inventory")
-def stock_list(request):
+def _stock_list_context(request) -> dict:
     hotel = _active_hotel(request)
     q = (request.GET.get("q") or "").strip()
     flag = (request.GET.get("flag") or "").strip()
@@ -84,21 +91,42 @@ def stock_list(request):
         return (rank, item.expiry_date or date.max, item.name.lower())
 
     items.sort(key=sort_key)
+    return {
+        "items": items,
+        "hotel": hotel,
+        "q": q,
+        "flag": flag,
+        "flag_label": _flag_label(flag) if flag else "",
+        "total_count": items_qs.count() if not flag and not q else len(items),
+        "low_ids": low_ids,
+        "low_count": len(low),
+        "expired_ids": expired_ids,
+        "soon_ids": soon_ids,
+        "expired_count": len(expired),
+        "soon_count": len(soon),
+        "chek_query": request.GET.urlencode(),
+    }
+
+
+@role_required(*INVENTORY)
+@feature_required("inventory")
+def stock_list(request):
+    return render(request, "inventory/stock_list.html", _stock_list_context(request))
+
+
+@role_required(*INVENTORY)
+@feature_required("inventory")
+def stock_list_print(request):
+    """Filtrlangan ombor — PDF/chop hisobot."""
+    ctx = _stock_list_context(request)
     return render(
         request,
-        "inventory/stock_list.html",
+        "inventory/stock_list_print.html",
         {
-            "items": items,
-            "hotel": hotel,
-            "q": q,
-            "flag": flag,
-            "total_count": items_qs.count() if not flag and not q else len(items),
-            "low_ids": low_ids,
-            "low_count": len(low),
-            "expired_ids": expired_ids,
-            "soon_ids": soon_ids,
-            "expired_count": len(expired),
-            "soon_count": len(soon),
+            **ctx,
+            "tenant": request.tenant,
+            "printed_at": timezone.now(),
+            "printed_by": request.user.get_full_name() or request.user.get_username(),
         },
     )
 

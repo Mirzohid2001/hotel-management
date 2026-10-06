@@ -1,0 +1,207 @@
+{% load money_fmt i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'uz' }}">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "Ombor — PDF hisobot" %}</title>
+  <style>
+    :root {
+      --brand: #c04a00;
+      --ink: #1a1410;
+      --muted: #7a7168;
+      --line: #ddd4c8;
+      --warn: #9a3412;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      max-width: 860px;
+      margin: 1.5rem auto;
+      padding: 0 1rem 2.5rem;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    h1 { font-size: 1.3rem; color: var(--brand); margin: 0 0 0.2rem; }
+    .muted { color: var(--muted); }
+    .head {
+      border-bottom: 2px solid var(--brand);
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .meta { margin: 0.15rem 0; font-size: 0.95rem; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      margin: 0 0 1rem;
+    }
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.45rem 0.55rem;
+    }
+    .stat .lbl { display: block; font-size: 0.75rem; color: var(--muted); }
+    .stat .val { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .stat.is-warn .val { color: var(--warn); }
+    .actions { margin: 0 0 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button, .actions a {
+      background: var(--brand);
+      color: #fff;
+      border: 0;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: none;
+    }
+    .actions a.ghost {
+      background: transparent;
+      color: var(--brand);
+      border: 1px solid var(--brand);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      font-variant-numeric: tabular-nums;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.4rem 0.3rem;
+      border-bottom: 1px dashed var(--line);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; font-size: 0.78rem; }
+    td.num, th.num { text-align: right; white-space: nowrap; }
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      color: var(--warn);
+      margin-right: 0.25rem;
+    }
+    .empty { margin: 1.5rem 0; color: var(--muted); }
+    .signs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 2.25rem;
+    }
+    .sign {
+      border-top: 1px solid var(--line);
+      padding-top: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .sign .role { font-weight: 700; margin-bottom: 1.5rem; }
+    @media print {
+      .actions { display: none !important; }
+      body { margin: 0; max-width: none; padding: 0; }
+      .stats { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button type="button" onclick="window.print()">{% trans "Chop etish" %}</button>
+    <a class="ghost" href="{% url 'inventory:list' %}{% if chek_query %}?{{ chek_query }}{% endif %}">{% trans "Orqaga" %}</a>
+  </div>
+
+  <header class="head">
+    <h1>{% trans "Ombor — PDF hisobot" %}</h1>
+    <p class="meta">
+      <strong>{{ tenant.name }}</strong>
+      {% if hotel %} · {{ hotel.display_label|default:hotel.name }}{% endif %}
+    </p>
+    <p class="meta">
+      {{ items|length }} {% trans "ta mahsulot" %}
+      {% if q %} · {% trans "Qidiruv" %}: «{{ q }}»{% endif %}
+      {% if flag_label %} · {% trans "Belgi" %}: {{ flag_label }}{% endif %}
+    </p>
+    <p class="meta muted">
+      {% trans "Chop etilgan" %}: {{ printed_at|date:"d.m.Y H:i" }}
+      {% if printed_by %}· {{ printed_by }}{% endif %}
+    </p>
+  </header>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="lbl">{% trans "Jami" %}</span>
+      <span class="val">{{ total_count }}</span>
+    </div>
+    <div class="stat {% if low_count %}is-warn{% endif %}">
+      <span class="lbl">{% trans "Kam" %}</span>
+      <span class="val">{{ low_count }}</span>
+    </div>
+    <div class="stat {% if soon_count %}is-warn{% endif %}">
+      <span class="lbl">{% trans "Muddat yaqin" %}</span>
+      <span class="val">{{ soon_count }}</span>
+    </div>
+    <div class="stat {% if expired_count %}is-warn{% endif %}">
+      <span class="lbl">{% trans "Muddati o‘tgan" %}</span>
+      <span class="val">{{ expired_count }}</span>
+    </div>
+  </div>
+
+  {% if items %}
+  <table>
+    <thead>
+      <tr>
+        <th>{% trans "Nomi" %}</th>
+        <th>{% trans "SKU" %}</th>
+        <th class="num">{% trans "Qoldiq" %}</th>
+        <th class="num">{% trans "Min" %}</th>
+        <th>{% trans "Muddat" %}</th>
+        <th class="num">{% trans "Tannarx" %}</th>
+        <th class="num">{% trans "Sotish narxi" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in items %}
+      <tr>
+        <td>
+          <strong>{{ i.name }}</strong>
+          {% if i.pk in expired_ids %}<span class="badge">{% trans "Muddati o‘tgan" %}</span>{% endif %}
+          {% if i.pk in soon_ids %}<span class="badge">{% trans "Muddat yaqin" %}</span>{% endif %}
+          {% if i.pk in low_ids %}<span class="badge">{% trans "Kam" %}</span>{% endif %}
+          {% if i.is_minibar %}<span class="badge">{% trans "minibar" %}</span>{% endif %}
+        </td>
+        <td>{{ i.sku }}</td>
+        <td class="num">{{ i.quantity_on_hand }} {{ i.get_unit_display }}</td>
+        <td class="num">{% if i.reorder_level %}{{ i.reorder_level }}{% else %}—{% endif %}</td>
+        <td>
+          {% if i.expiry_date %}
+            {{ i.expiry_date|date:"d.m.Y" }}
+            {% if i.days_until_expiry is not None %}
+              <span class="muted" style="display:block;font-size:0.75rem">
+                {% if i.days_until_expiry < 0 %}
+                  {{ i.days_until_expiry|stringformat:"d" }} {% trans "kun o‘tdi" %}
+                {% else %}
+                  {{ i.days_until_expiry }} {% trans "kun" %}
+                {% endif %}
+              </span>
+            {% endif %}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td class="num">{{ i.unit_cost|money }} {{ i.currency }}</td>
+        <td class="num">{{ i.sell_price|money }} {{ i.currency }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">{% trans "Filtr bo‘yicha mahsulot yo‘q." %}</p>
+  {% endif %}
+
+  <div class="signs">
+    <div class="sign">
+      <div class="role">{% trans "Hisobchi" %}</div>
+      <div>________________</div>
+    </div>
+    <div class="sign">
+      <div class="role">{% trans "Rahbar" %}</div>
+      <div>________________</div>
+    </div>
+  </div>
+</body>
+</html>
