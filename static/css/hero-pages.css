@@ -2886,20 +2886,22 @@ a.cal-new.shax-walkin {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.page-inventory .stock-row-main {
+.stock-row-main {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   min-width: 0;
 }
-.page-inventory .stock-thumbs {
+.stock-thumbs {
   display: flex;
   gap: 0.3rem;
   flex-shrink: 0;
 }
-.page-inventory .stock-thumb {
+.stock-thumb {
   width: 48px;
   height: 48px;
+  max-width: 48px;
+  max-height: 48px;
   object-fit: cover;
   border-radius: 10px;
   flex-shrink: 0;

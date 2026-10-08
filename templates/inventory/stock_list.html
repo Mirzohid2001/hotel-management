@@ -3,7 +3,7 @@
 {% block title %}{% trans "Inventar" %}{% endblock %}
 {% block body_class %}page-inventory{% endblock %}
 {% block content %}
-<div class="expense-page">
+<div class="expense-page page-inventory">
 {% url 'inventory:create' as create_url %}
 {% url 'inventory:minibar' as minibar_url %}
 {% include "includes/page_header.html" with title=_("Inventar") eyebrow=_("Operatsiya") subtitle=_("Ombor, minibar va muddat nazorati.") primary_url=create_url primary_label=_("Yangi") secondary_url=minibar_url secondary_label=_("Xona bar") %}
@@ -78,12 +78,12 @@
         <span class="stock-thumbs">
           {% for p in i.photos.all %}
           {% if forloop.counter <= 3 %}
-          <img class="stock-thumb" src="{{ p.image.url }}" alt="">
+          <img class="stock-thumb" src="{{ p.image.url }}" alt="" width="48" height="48">
           {% endif %}
           {% endfor %}
         </span>
         {% elif i.photo %}
-        <img class="stock-thumb" src="{{ i.photo.url }}" alt="">
+        <img class="stock-thumb" src="{{ i.photo.url }}" alt="" width="48" height="48">
         {% endif %}
         <span>
         <span class="entity-row-main">
