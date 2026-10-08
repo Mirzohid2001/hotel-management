@@ -78,12 +78,16 @@
         <span class="stock-thumbs">
           {% for p in i.photos.all %}
           {% if forloop.counter <= 3 %}
-          <img class="stock-thumb" src="{{ p.image.url }}" alt="" width="48" height="48">
+          <button type="button" class="stock-photo-open" data-photo-preview="{{ p.image.url }}" aria-label="{% trans 'Rasmni kattalashtirish' %}">
+            <img class="stock-thumb" src="{{ p.image.url }}" alt="" width="48" height="48">
+          </button>
           {% endif %}
           {% endfor %}
         </span>
         {% elif i.photo %}
-        <img class="stock-thumb" src="{{ i.photo.url }}" alt="" width="48" height="48">
+        <button type="button" class="stock-photo-open" data-photo-preview="{{ i.photo.url }}" aria-label="{% trans 'Rasmni kattalashtirish' %}">
+          <img class="stock-thumb" src="{{ i.photo.url }}" alt="" width="48" height="48">
+        </button>
         {% endif %}
         <span>
         <span class="entity-row-main">

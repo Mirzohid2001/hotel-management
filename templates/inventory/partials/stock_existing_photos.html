@@ -5,7 +5,9 @@
   <ul class="stock-photo-list">
     {% for p in item.photos.all %}
     <li>
-      <img src="{{ p.image.url }}" alt="">
+      <button type="button" class="stock-photo-open" data-photo-preview="{{ p.image.url }}" aria-label="{% trans 'Rasmni kattalashtirish' %}">
+        <img src="{{ p.image.url }}" alt="" width="92" height="92">
+      </button>
       <label>
         <input type="checkbox" name="remove_photo" value="{{ p.pk }}">
         {% trans "O‘chirish" %}

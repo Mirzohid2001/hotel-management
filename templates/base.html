@@ -10,13 +10,13 @@
   <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=m17">
-  <link rel="stylesheet" href="{% static 'css/premium.css' %}?v=m17">
-  <link rel="stylesheet" href="{% static 'css/hero-pages.css' %}?v=m17">
-  <link rel="stylesheet" href="{% static 'css/components.css' %}?v=m17">
-  <link rel="stylesheet" href="{% static 'css/ux-polish.css' %}?v=m17">
-  <link rel="stylesheet" href="{% static 'css/calendar-shaxmatka.css' %}?v=m17">
-  <link rel="stylesheet" href="{% static 'css/adaptive.css' %}?v=m17">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=m18">
+  <link rel="stylesheet" href="{% static 'css/premium.css' %}?v=m18">
+  <link rel="stylesheet" href="{% static 'css/hero-pages.css' %}?v=m18">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}?v=m18">
+  <link rel="stylesheet" href="{% static 'css/ux-polish.css' %}?v=m18">
+  <link rel="stylesheet" href="{% static 'css/calendar-shaxmatka.css' %}?v=m18">
+  <link rel="stylesheet" href="{% static 'css/adaptive.css' %}?v=m18">
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
   {% if user.is_authenticated and current_tenant %}
   <script src="{% static 'js/searchable-select.js' %}?v=m12" defer></script>
@@ -245,6 +245,12 @@
     </main>
   </div>
   <div id="modal-root"></div>
+  <div id="photo-preview" class="photo-preview-overlay" hidden role="presentation">
+    <div class="photo-preview-dialog" role="dialog" aria-modal="true" aria-label="{% trans 'Rasm' %}">
+      <button type="button" class="photo-preview-close" id="photo-preview-close" aria-label="{% trans 'Yopish' %}">&times;</button>
+      <img id="photo-preview-img" src="" alt="">
+    </div>
+  </div>
   {% else %}
   <main class="auth-main">
     {% block auth_content %}{% endblock %}
@@ -252,6 +258,38 @@
   {% endif %}
   <script>
   (function () {
+    var preview = document.getElementById("photo-preview");
+    var previewImg = document.getElementById("photo-preview-img");
+    var previewClose = document.getElementById("photo-preview-close");
+    function closePhotoPreview() {
+      if (!preview) return;
+      preview.hidden = true;
+      if (previewImg) previewImg.removeAttribute("src");
+      document.body.classList.remove("photo-preview-open");
+    }
+    function openPhotoPreview(src) {
+      if (!preview || !previewImg || !src) return;
+      previewImg.src = src;
+      preview.hidden = false;
+      document.body.classList.add("photo-preview-open");
+      if (previewClose) previewClose.focus();
+    }
+    document.addEventListener("click", function (e) {
+      var openBtn = e.target.closest("[data-photo-preview]");
+      if (openBtn) {
+        e.preventDefault();
+        openPhotoPreview(openBtn.getAttribute("data-photo-preview"));
+        return;
+      }
+      if (!preview || preview.hidden) return;
+      if (e.target === preview || e.target === previewClose || e.target.closest("#photo-preview-close")) {
+        closePhotoPreview();
+      }
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closePhotoPreview();
+    });
+
     var shell = document.getElementById("app-shell");
     var toggle = document.getElementById("nav-toggle");
     var closeBtn = document.getElementById("nav-close");

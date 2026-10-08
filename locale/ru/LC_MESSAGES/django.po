@@ -7312,6 +7312,9 @@ msgstr "PDF отчёт"
 msgid "Rasm"
 msgstr "Фото"
 
+msgid "Rasmni kattalashtirish"
+msgstr "Увеличить фото"
+
 #: inventory/models.py inventory/forms.py
 msgid "Ixtiyoriy. JPG, PNG yoki WEBP, 2 MB gacha."
 msgstr "Необязательно. JPG, PNG или WEBP, до 2 МБ."
