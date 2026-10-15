@@ -511,7 +511,8 @@ def check_out_reservation(reservation: Reservation, user) -> Stay:
 
     with transaction.atomic():
         # Ba'zi eski/import bronlarda Stay yo'q bo'lishi mumkin — chiqishda qayta yaratamiz.
-        stay, _ = Stay.objects.get_or_create(
+        # Diqqat: created ni "_" ga yozmang — gettext `_` ni soya qilib chiqishni sindiradi.
+        stay, _stay_created = Stay.objects.get_or_create(
             reservation=reservation,
             defaults={
                 "tenant": reservation.tenant,
