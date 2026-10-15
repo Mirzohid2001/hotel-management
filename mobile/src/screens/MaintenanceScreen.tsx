@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 import { ApiError } from "../api/client";
+import { sharePdfBase64 } from "../utils/sharePdf";
 import type { MaintenanceTicket } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import {
@@ -40,6 +41,11 @@ export function MaintenanceScreen({ onBack }: Props) {
     assignMaintenance,
     cancelMaintenance,
     spendMaintenance,
+    fetchMaintenanceSpends,
+    voidMaintenanceSpend,
+    deleteMaintenanceSpend,
+    printMaintenanceSpend,
+    printMaintenanceStatement,
     fetchBoard,
     fetchHkStaff,
     me,
@@ -61,6 +67,16 @@ export function MaintenanceScreen({ onBack }: Props) {
   const [assignFor, setAssignFor] = useState<number | null>(null);
   const [actionItem, setActionItem] = useState<MaintenanceTicket | null>(null);
   const [staff, setStaff] = useState<{ id: number; label: string }[]>([]);
+  const [spends, setSpends] = useState<
+    {
+      id: number;
+      title: string;
+      amount: string;
+      currency: string;
+      status: string;
+      expense_date: string;
+    }[]
+  >([]);
 
   const canWrite =
     me?.permissions?.maintenance === true ||
@@ -76,6 +92,10 @@ export function MaintenanceScreen({ onBack }: Props) {
       else setLoading(true);
       try {
         setItems(await fetchMaintenance());
+        if (me?.role === "admin") {
+          const s = await fetchMaintenanceSpends();
+          setSpends(s.items || []);
+        }
       } catch (e) {
         setError(e instanceof ApiError ? e.message : "Yuklash xatosi");
       } finally {
@@ -83,7 +103,7 @@ export function MaintenanceScreen({ onBack }: Props) {
         setRefreshing(false);
       }
     },
-    [fetchMaintenance]
+    [fetchMaintenance, fetchMaintenanceSpends, me?.role]
   );
 
   useEffect(() => {
@@ -371,6 +391,113 @@ export function MaintenanceScreen({ onBack }: Props) {
               <Text style={ui.chipText}>Bekor</Text>
             </Pressable>
           </FormCard>
+        </View>
+      ) : null}
+
+      {me?.role === "admin" ? (
+        <View style={{ paddingHorizontal: space.lg, paddingTop: space.md }}>
+          <PrimaryButton
+            label="Oylik bayonnoma (PDF)"
+            tone="ghost"
+            loading={busy}
+            onPress={async () => {
+              setBusy(true);
+              try {
+                const pdf = await printMaintenanceStatement();
+                await sharePdfBase64(pdf.pdf_base64, pdf.filename);
+              } catch (e) {
+                Alert.alert(
+                  "Xato",
+                  e instanceof ApiError ? e.message : "Xato"
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          />
+        </View>
+      ) : null}
+
+      {me?.role === "admin" && spends.length > 0 ? (
+        <View style={{ paddingHorizontal: space.lg, paddingTop: space.md }}>
+          <Text style={ui.section}>Ta’mir xarajatlari</Text>
+          {spends.map((s) => (
+            <ListCard
+              key={s.id}
+              title={`${s.title} · ${s.amount} ${s.currency}`}
+              meta={`${s.expense_date} · ${s.status}`}
+            >
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                <Pressable
+                  style={ui.chip}
+                  onPress={async () => {
+                    try {
+                      const pdf = await printMaintenanceSpend(s.id);
+                      await sharePdfBase64(pdf.pdf_base64, pdf.filename);
+                    } catch (e) {
+                      Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
+                    }
+                  }}
+                >
+                  <Text style={ui.chipText}>Chop</Text>
+                </Pressable>
+                {s.status === "paid" ? (
+                  <Pressable
+                    style={ui.chip}
+                    onPress={() => {
+                      Alert.alert("Bekor", "To‘langan xarajat hisobdan chiqsinmi?", [
+                        { text: "Yo‘q", style: "cancel" },
+                        {
+                          text: "Bekor",
+                          style: "destructive",
+                          onPress: async () => {
+                            try {
+                              await voidMaintenanceSpend(s.id);
+                              await load(true);
+                            } catch (e) {
+                              Alert.alert(
+                                "Xato",
+                                e instanceof ApiError ? e.message : "Xato"
+                              );
+                            }
+                          },
+                        },
+                      ]);
+                    }}
+                  >
+                    <Text style={ui.chipText}>Bekor</Text>
+                  </Pressable>
+                ) : null}
+                {s.status === "draft" || s.status === "rejected" ? (
+                  <Pressable
+                    style={ui.chip}
+                    onPress={() => {
+                      Alert.alert("O‘chirish", "Xarajat o‘chirilsinmi?", [
+                        { text: "Yo‘q", style: "cancel" },
+                        {
+                          text: "O‘chirish",
+                          style: "destructive",
+                          onPress: async () => {
+                            try {
+                              await deleteMaintenanceSpend(s.id);
+                              await load(true);
+                            } catch (e) {
+                              Alert.alert(
+                                "Xato",
+                                e instanceof ApiError ? e.message : "Xato"
+                              );
+                            }
+                          },
+                        },
+                      ]);
+                    }}
+                  >
+                    <Text style={ui.chipText}>O‘chirish</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </ListCard>
+          ))}
         </View>
       ) : null}
 

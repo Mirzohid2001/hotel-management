@@ -377,14 +377,7 @@ def folio_emehmon(request, reservation_id):
     form = PaymentForm(request.POST, tenant=request.tenant)
     if form.is_valid():
         try:
-            from folio.services import default_emehmon_fee, emehmon_unit_rate
-
             amount = form.cleaned_data["amount"]
-            unit = emehmon_unit_rate(reservation.hotel_id)
-            computed = default_emehmon_fee(reservation)
-            # Forma birlik tarifini (9000) yuborsa — to‘liq mehmon×kecha.
-            if unit > 0 and amount == unit and computed > unit:
-                amount = computed
             collect_emehmon_fee(
                 reservation,
                 request.user,
@@ -392,6 +385,9 @@ def folio_emehmon(request, reservation_id):
                 method=form.cleaned_data["method"],
                 note=form.cleaned_data.get("note") or "",
                 currency=form.cleaned_data.get("currency"),
+                citizen_type=request.POST.get("emehmon_citizen")
+                or request.POST.get("citizen_type")
+                or "",
             )
             messages.success(request, _("E-mehmon to‘lovi qabul qilindi."))
             return redirect("folio:detail", reservation_id=reservation.pk)

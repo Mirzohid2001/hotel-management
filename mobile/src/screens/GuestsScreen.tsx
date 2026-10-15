@@ -56,8 +56,15 @@ type GuestDetail = {
 };
 
 export function GuestsScreen({ onBack, onOpenReservation }: Props) {
-  const { searchGuests, createGuest, fetchGuest, updateGuest, addGuestDocument } =
-    useAuth();
+  const {
+    searchGuests,
+    createGuest,
+    fetchGuest,
+    updateGuest,
+    addGuestDocument,
+    deleteGuest,
+    me,
+  } = useAuth();
   const [q, setQ] = useState("");
   const [items, setItems] = useState<GuestSummary[]>([]);
   const [loading, setLoading] = useState(false);
@@ -298,6 +305,44 @@ export function GuestsScreen({ onBack, onOpenReservation }: Props) {
                 onPress={saveGuest}
                 loading={detailBusy}
               />
+              {["admin", "receptionist"].includes(me?.role || "") ? (
+                <PrimaryButton
+                  label="Mehmonni o‘chirish"
+                  tone="danger"
+                  loading={detailBusy}
+                  onPress={() => {
+                    if (!selectedId) return;
+                    Alert.alert(
+                      "O‘chirish",
+                      "Bron tarixi bo‘lsa o‘chmaydi. Kartochkani o‘chirasizmi?",
+                      [
+                        { text: "Yo‘q", style: "cancel" },
+                        {
+                          text: "O‘chirish",
+                          style: "destructive",
+                          onPress: async () => {
+                            setDetailBusy(true);
+                            try {
+                              await deleteGuest(selectedId);
+                              setSelectedId(null);
+                              setDetail(null);
+                              const rows = await searchGuests(q.trim());
+                              setItems(rows);
+                            } catch (e) {
+                              Alert.alert(
+                                "Xato",
+                                e instanceof ApiError ? e.message : "Xato"
+                              );
+                            } finally {
+                              setDetailBusy(false);
+                            }
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                />
+              ) : null}
             </FormCard>
 
             <FormCard>

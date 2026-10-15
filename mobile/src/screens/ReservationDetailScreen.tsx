@@ -18,6 +18,7 @@ import type {
   ServiceItem,
 } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import {
   FieldLabel,
@@ -88,6 +89,7 @@ export function ReservationDetailScreen({
     extendStay,
     cancelReservation,
     markNoShow,
+    purgeReservation,
     saveNotes,
     postDeposit,
     postRefund,
@@ -107,6 +109,7 @@ export function ReservationDetailScreen({
     fetchReferrers,
     me,
   } = useAuth();
+  const { tr } = useI18n();
   const [data, setData] = useState<ReservationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -144,6 +147,9 @@ export function ReservationDetailScreen({
   const [occDocNumber, setOccDocNumber] = useState("");
   const [occIssuedCountry, setOccIssuedCountry] = useState("UZ");
   const [emehmonAmount, setEmehmonAmount] = useState("");
+  const [emehmonCitizen, setEmehmonCitizen] = useState<"uz" | "foreign" | "">(
+    ""
+  );
   const [emehmonMethod, setEmehmonMethod] =
     useState<(typeof PAY_METHODS)[number]["id"]>("cash");
   const [collectEmehmon, setCollectEmehmon] = useState(true);
@@ -191,11 +197,22 @@ export function ReservationDetailScreen({
     allow_no_docs?: boolean;
   }) {
     if (!force && panel !== "checkin") {
-      setEmehmonAmount(data?.emehmon_default || "");
+      setEmehmonAmount("");
+      setEmehmonCitizen("");
       setEmehmonMethod("cash");
       setCollectEmehmon(true);
       setPanel("checkin");
       return;
+    }
+    if (collectEmehmon) {
+      if (!emehmonCitizen) {
+        setError("Fuqarolikni tanlang (O‘zbekiston yoki chet el).");
+        return;
+      }
+      if (!emehmonAmount.trim() || Number(emehmonAmount) <= 0) {
+        setError("E-mehmon summasini yozing.");
+        return;
+      }
     }
     setBusy(true);
     setError(null);
@@ -208,6 +225,7 @@ export function ReservationDetailScreen({
         emehmon_amount: collectEmehmon
           ? emehmonAmount.trim() || undefined
           : undefined,
+        emehmon_citizen: collectEmehmon ? emehmonCitizen : undefined,
       });
       setPanel("none");
       await load();
@@ -457,6 +475,33 @@ export function ReservationDetailScreen({
         },
       },
     ]);
+  }
+
+  function doPurge() {
+    Alert.alert(
+      "O‘chirish",
+      "Bron, hisob varaqasi va to‘lovlar o‘chadi. Mehmon kartochkasi va xona qoladi.",
+      [
+        { text: "Yo‘q", style: "cancel" },
+        {
+          text: "O‘chirish",
+          style: "destructive",
+          onPress: async () => {
+            setBusy(true);
+            setError(null);
+            try {
+              await purgeReservation(reservationId);
+              onChanged();
+              onBack();
+            } catch (e) {
+              setError(e instanceof ApiError ? e.message : "O‘chirish xatosi");
+            } finally {
+              setBusy(false);
+            }
+          },
+        },
+      ]
+    );
   }
 
   function doNoShow() {
@@ -801,9 +846,18 @@ export function ReservationDetailScreen({
 
   async function doEmehmon() {
     if (panel !== "emehmon") {
-      setEmehmonAmount(data?.emehmon_default || "");
+      setEmehmonAmount("");
+      setEmehmonCitizen("");
       setEmehmonMethod("cash");
       setPanel("emehmon");
+      return;
+    }
+    if (!emehmonCitizen) {
+      setError("Fuqarolikni tanlang (O‘zbekiston yoki chet el).");
+      return;
+    }
+    if (!emehmonAmount.trim() || Number(emehmonAmount) <= 0) {
+      setError("E-mehmon summasini yozing.");
       return;
     }
     setBusy(true);
@@ -812,6 +866,7 @@ export function ReservationDetailScreen({
       const r = await postEmehmon(reservationId, {
         method: emehmonMethod,
         amount: emehmonAmount.trim() || undefined,
+        emehmon_citizen: emehmonCitizen,
       });
       setPanel("none");
       await load();
@@ -1049,8 +1104,8 @@ export function ReservationDetailScreen({
         <FormCard>
           <Text style={styles.ledgerTitle}>Xonadagi mehmonlar</Text>
           <Text style={styles.occHint}>
-            Asosiy + hamrohlar. Har bir kishi: ism va pasport/ID. E-mehmon =
-            tarif × kecha × mehmonlar soni.
+            Asosiy + hamrohlar. Har bir kishi: ism va pasport/ID. E-mehmon
+            summasi fuqarolik bo‘yicha qo‘lda yoziladi.
           </Text>
           {(data.occupants || []).length === 0 ? (
             <Text style={styles.emptySvc}>Hali mehmonlar yozilmagan</Text>
@@ -1115,14 +1170,13 @@ export function ReservationDetailScreen({
                 : ""}
             </Text>
           ) : null}
-          {data.emehmon_unit ? (
+          {data.emehmon_paid ? (
+            <Text style={styles.occHint}>E-mehmon · olingan</Text>
+          ) : (
             <Text style={styles.occHint}>
-              E-mehmon tarif: {data.emehmon_unit} × {data.nights ?? "?"} kecha ×{" "}
-              {data.emehmon_guests ?? data.adults + (data.children || 0)} kishi
-              {data.emehmon_default ? ` = ${data.emehmon_default}` : ""}
-              {data.emehmon_paid ? " · olingan" : ""}
+              E-mehmon: fuqarolik + summa qo‘lda yoziladi
             </Text>
-          ) : null}
+          )}
           {canStay &&
           !["cancelled", "checked_out", "no_show"].includes(data.status) ? (
             <View style={styles.occForm}>
@@ -1377,7 +1431,7 @@ export function ReservationDetailScreen({
                 onPress={doExtend}
                 disabled={busy}
               >
-                <Text style={styles.miniText}>+1 kecha</Text>
+                <Text style={styles.miniText}>{tr("+1 kecha")}</Text>
               </Pressable>
             ) : null}
             {showTransfer ? (
@@ -1386,7 +1440,7 @@ export function ReservationDetailScreen({
                 onPress={openTransfer}
                 disabled={busy}
               >
-                <Text style={styles.miniText}>Xona almashtirish</Text>
+                <Text style={styles.miniText}>{tr("Xona almashtirish")}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -1400,7 +1454,7 @@ export function ReservationDetailScreen({
                 onPress={doCancel}
                 disabled={busy}
               >
-                <Text style={styles.miniText}>Bekor qilish</Text>
+                <Text style={styles.miniText}>{tr("Bekor qilish")}</Text>
               </Pressable>
             ) : null}
             {showNoShow ? (
@@ -1409,7 +1463,7 @@ export function ReservationDetailScreen({
                 onPress={doNoShow}
                 disabled={busy}
               >
-                <Text style={styles.miniText}>Kelmagan</Text>
+                <Text style={styles.miniText}>{tr("Kelmagan")}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -1423,7 +1477,7 @@ export function ReservationDetailScreen({
                 onPress={() => setPanel(panel === "pay" ? "none" : "pay")}
                 disabled={busy}
               >
-                <Text style={styles.miniText}>To‘lov</Text>
+                <Text style={styles.miniText}>{tr("To‘lov")}</Text>
               </Pressable>
             ) : null}
             {showMoney ? (
@@ -1434,7 +1488,7 @@ export function ReservationDetailScreen({
                 }
                 disabled={busy}
               >
-                <Text style={styles.miniText}>Depozit</Text>
+                <Text style={styles.miniText}>{tr("Depozit")}</Text>
               </Pressable>
             ) : null}
             {showMoney ? (
@@ -1443,21 +1497,16 @@ export function ReservationDetailScreen({
                 onPress={() => setPanel(panel === "charge" ? "none" : "charge")}
                 disabled={busy}
               >
-                <Text style={styles.miniText}>Yozuv</Text>
+                <Text style={styles.miniText}>{tr("Yozuv")}</Text>
               </Pressable>
             ) : null}
-          </View>
-        ) : null}
-
-        {showMoney || showService || showMinibar ? (
-          <View style={styles.actionRow}>
             {showMoney ? (
               <Pressable
                 style={[styles.miniBtn, styles.miniRefund]}
                 onPress={doRefund}
                 disabled={busy}
               >
-                <Text style={styles.miniText}>Sdachi</Text>
+                <Text style={styles.miniText}>{tr("Sdachi")}</Text>
               </Pressable>
             ) : null}
             {showService ? (
@@ -1466,7 +1515,7 @@ export function ReservationDetailScreen({
                 onPress={openServices}
                 disabled={busy}
               >
-                <Text style={styles.miniText}>Xizmat</Text>
+                <Text style={styles.miniText}>{tr("Xizmat")}</Text>
               </Pressable>
             ) : null}
             {showMinibar ? (
@@ -1475,7 +1524,7 @@ export function ReservationDetailScreen({
                 onPress={openMinibar}
                 disabled={busy}
               >
-                <Text style={styles.miniText}>Minibar</Text>
+                <Text style={styles.miniText}>{tr("Minibar")}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -1520,7 +1569,7 @@ export function ReservationDetailScreen({
               }}
               disabled={busy}
             >
-              <Text style={styles.miniText}>O‘zgartirish</Text>
+              <Text style={styles.miniText}>{tr("O‘zgartirish")}</Text>
             </Pressable>
           ) : null}
           {showMoney && data?.folio?.id ? (
@@ -1529,19 +1578,20 @@ export function ReservationDetailScreen({
               onPress={doReceipt}
               disabled={busy}
             >
-              <Text style={styles.miniText}>Chek</Text>
+              <Text style={styles.miniText}>{tr("Chek")}</Text>
             </Pressable>
           ) : null}
           {showMoney && !data?.emehmon_paid ? (
             <Pressable
               style={[styles.miniBtn, styles.miniCharge]}
               onPress={() => {
-                setEmehmonAmount(data?.emehmon_default || "");
+                setEmehmonAmount("");
+                setEmehmonCitizen("");
                 setPanel(panel === "emehmon" ? "none" : "emehmon");
               }}
               disabled={busy}
             >
-              <Text style={styles.miniText}>E-mehmon</Text>
+              <Text style={styles.miniText}>{tr("E-mehmon")}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -1553,31 +1603,40 @@ export function ReservationDetailScreen({
               onPress={doToCompany}
               disabled={busy}
             >
-              <Text style={styles.miniText}>Kompaniyaga</Text>
+              <Text style={styles.miniText}>{tr("Kompaniyaga")}</Text>
             </Pressable>
             <Pressable
               style={[styles.miniBtn, styles.miniCancel]}
               onPress={doCloseFolio}
               disabled={busy}
             >
-              <Text style={styles.miniText}>Folio yopish</Text>
+              <Text style={styles.miniText}>{tr("Folio yopish")}</Text>
             </Pressable>
             <Pressable
               style={[styles.miniBtn, styles.miniPay]}
               onPress={() => setPanel(panel === "split" ? "none" : "split")}
               disabled={busy}
             >
-              <Text style={styles.miniText}>Bo‘lish</Text>
+              <Text style={styles.miniText}>{tr("Bo‘lish")}</Text>
             </Pressable>
           </View>
+        ) : null}
+
+        {me?.role === "admin" ? (
+          <Pressable
+            style={styles.purgeBtn}
+            onPress={doPurge}
+            disabled={busy}
+          >
+            <Text style={styles.purgeText}>{tr("O‘chirish")}</Text>
+          </Pressable>
         ) : null}
 
         {panel === "checkin" ? (
           <View style={styles.payBox}>
             <Text style={styles.payTitle}>Kirish · E-mehmon</Text>
             <Text style={styles.occHint}>
-              {data?.emehmon_unit || "0"} × {data?.nights ?? "?"} kecha ×{" "}
-              {data?.emehmon_guests ?? "?"} kishi
+              Fiks tarif yo‘q — fuqarolik + summani o‘zingiz yozing.
             </Text>
             <Pressable
               style={[ui.chip, collectEmehmon && ui.chipOn, { marginBottom: 8 }]}
@@ -1591,13 +1650,42 @@ export function ReservationDetailScreen({
             </Pressable>
             {collectEmehmon ? (
               <>
+                <FieldLabel>Fuqarolik</FieldLabel>
+                <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
+                  <Pressable
+                    style={[ui.chip, emehmonCitizen === "uz" && ui.chipOn]}
+                    onPress={() => setEmehmonCitizen("uz")}
+                  >
+                    <Text
+                      style={[
+                        ui.chipText,
+                        emehmonCitizen === "uz" && ui.chipTextOn,
+                      ]}
+                    >
+                      O‘zbekiston
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[ui.chip, emehmonCitizen === "foreign" && ui.chipOn]}
+                    onPress={() => setEmehmonCitizen("foreign")}
+                  >
+                    <Text
+                      style={[
+                        ui.chipText,
+                        emehmonCitizen === "foreign" && ui.chipTextOn,
+                      ]}
+                    >
+                      Chet el
+                    </Text>
+                  </Pressable>
+                </View>
                 <FieldLabel>Summa</FieldLabel>
                 <TextInput
                   style={styles.payInput}
                   value={emehmonAmount}
                   onChangeText={setEmehmonAmount}
                   keyboardType="decimal-pad"
-                  placeholder={data?.emehmon_default || "0"}
+                  placeholder="Summani yozing"
                   placeholderTextColor={colors.faint}
                 />
                 <FieldLabel>To‘lov usuli</FieldLabel>
@@ -1634,16 +1722,44 @@ export function ReservationDetailScreen({
           <View style={styles.payBox}>
             <Text style={styles.payTitle}>E-mehmon to‘lovi</Text>
             <Text style={styles.occHint}>
-              Tarif {data?.emehmon_unit || "—"} ·{" "}
-              {data?.nights ?? "?"} kecha · {data?.emehmon_guests ?? "?"} kishi
+              Fiks tarif yo‘q — fuqarolik + summani o‘zingiz yozing.
             </Text>
+            <FieldLabel>Fuqarolik</FieldLabel>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
+              <Pressable
+                style={[ui.chip, emehmonCitizen === "uz" && ui.chipOn]}
+                onPress={() => setEmehmonCitizen("uz")}
+              >
+                <Text
+                  style={[
+                    ui.chipText,
+                    emehmonCitizen === "uz" && ui.chipTextOn,
+                  ]}
+                >
+                  O‘zbekiston
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[ui.chip, emehmonCitizen === "foreign" && ui.chipOn]}
+                onPress={() => setEmehmonCitizen("foreign")}
+              >
+                <Text
+                  style={[
+                    ui.chipText,
+                    emehmonCitizen === "foreign" && ui.chipTextOn,
+                  ]}
+                >
+                  Chet el
+                </Text>
+              </Pressable>
+            </View>
             <FieldLabel>Summa</FieldLabel>
             <TextInput
               style={styles.payInput}
               value={emehmonAmount}
               onChangeText={setEmehmonAmount}
               keyboardType="decimal-pad"
-              placeholder={data?.emehmon_default || "0"}
+              placeholder="Summani yozing"
               placeholderTextColor={colors.faint}
             />
             <FieldLabel>To‘lov usuli</FieldLabel>
@@ -2002,9 +2118,10 @@ export function ReservationDetailScreen({
 }
 
 function Row({ label, value }: { label: string; value: string }) {
+  const { tr } = useI18n();
   return (
     <View style={styles.row}>
-      <Text style={styles.rowLbl}>{label}</Text>
+      <Text style={styles.rowLbl}>{tr(label)}</Text>
       <Text style={styles.rowVal}>{value}</Text>
     </View>
   );
@@ -2143,12 +2260,22 @@ const styles = StyleSheet.create({
   },
   actionOut: { backgroundColor: colors.night },
   actionText: { color: colors.white, fontWeight: "700", fontSize: 16 },
-  actionRow: { flexDirection: "row", gap: 8, marginTop: 16 },
+  actionRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
   miniBtn: {
-    flex: 1,
-    paddingVertical: 14,
+    flexGrow: 1,
+    flexBasis: "31%",
+    minWidth: "31%",
+    minHeight: 48,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: radius.md,
     alignItems: "center",
+    justifyContent: "center",
   },
   miniPay: { backgroundColor: colors.accent },
   miniDeposit: { backgroundColor: colors.accent },
@@ -2160,7 +2287,28 @@ const styles = StyleSheet.create({
   miniTransfer: { backgroundColor: colors.night },
   miniCancel: { backgroundColor: colors.danger },
   miniNoShow: { backgroundColor: colors.muted },
-  miniText: { color: colors.white, fontWeight: "700", fontSize: 14 },
+  miniText: {
+    color: colors.white,
+    fontWeight: "700",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  purgeBtn: {
+    marginTop: 16,
+    minHeight: 46,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.danger,
+    backgroundColor: colors.dangerSoft,
+  },
+  purgeText: {
+    color: colors.danger,
+    fontWeight: "700",
+    fontSize: 14,
+    fontFamily: fontUi,
+  },
   disabled: { opacity: 0.7 },
   backBtn: {
     marginTop: 16,

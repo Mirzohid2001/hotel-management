@@ -19,7 +19,8 @@ type RequestOptions = {
   body?: unknown;
   token?: string | null;
   tenantId?: number | null;
-  hotelId?: number | null;
+  hotelId?: number | "all" | null;
+  form?: FormData;
 };
 
 export async function apiRequest<T>(
@@ -36,7 +37,9 @@ export async function apiRequest<T>(
   if (options.tenantId) {
     headers["X-Tenant-Id"] = String(options.tenantId);
   }
-  if (options.hotelId) {
+  if (options.hotelId === "all") {
+    headers["X-Hotel-Id"] = "all";
+  } else if (options.hotelId) {
     headers["X-Hotel-Id"] = String(options.hotelId);
   }
 
@@ -53,6 +56,33 @@ export async function apiRequest<T>(
     throw new ApiError(`Bad response (${res.status})`, res.status);
   }
 
+  if (!res.ok || !json.ok) {
+    const msg = "error" in json ? json.error : `HTTP ${res.status}`;
+    throw new ApiError(msg, res.status);
+  }
+  return json.data;
+}
+
+export async function apiUpload<T>(
+  path: string,
+  options: RequestOptions & { form: FormData }
+): Promise<T> {
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (options.token) headers.Authorization = `Bearer ${options.token}`;
+  if (options.tenantId) headers["X-Tenant-Id"] = String(options.tenantId);
+  if (options.hotelId === "all") headers["X-Hotel-Id"] = "all";
+  else if (options.hotelId) headers["X-Hotel-Id"] = String(options.hotelId);
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers,
+    body: options.form,
+  });
+  let json: ApiOk<T> | ApiErr;
+  try {
+    json = await res.json();
+  } catch {
+    throw new ApiError(`Bad response (${res.status})`, res.status);
+  }
   if (!res.ok || !json.ok) {
     const msg = "error" in json ? json.error : `HTTP ${res.status}`;
     throw new ApiError(msg, res.status);

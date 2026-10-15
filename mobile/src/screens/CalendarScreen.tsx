@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -22,13 +23,17 @@ type Props = {
   onQuickBook?: (roomId: number, date: string) => void;
 };
 
-const DAY_W = 44;
-const ROOM_LABEL_W = 64;
-const BAR_H = 36;
+const ROOM_LABEL_W = 88;
+const BAR_H = 38;
 const STATUS_BG: Record<string, string> = {
   checked_in: colors.success,
   confirmed: colors.accent,
   inquiry: colors.muted,
+};
+const STATUS_LABEL: Record<string, string> = {
+  checked_in: "Joylangan",
+  confirmed: "Tasdiq",
+  inquiry: "So‘rov",
 };
 
 function shiftIso(iso: string, days: number): string {
@@ -60,15 +65,17 @@ export function CalendarScreen({
   onOpenReservation,
   onQuickBook,
 }: Props) {
-  const { fetchCalendar } = useAuth();
+  const { fetchCalendar, hotelId, extendStay, transferRoom } = useAuth();
   const [data, setData] = useState<CalendarData | null>(null);
   const [start, setStart] = useState(() => new Date().toISOString().slice(0, 10));
-  const [days, setDays] = useState<14 | 30>(14);
+  const [days, setDays] = useState<7 | 14 | 30>(14);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const todayIso = new Date().toISOString().slice(0, 10);
+  const dayW = days === 7 ? 52 : days === 14 ? 44 : 36;
 
   const load = useCallback(
     async (isRefresh = false) => {
@@ -91,6 +98,98 @@ export function CalendarScreen({
     load();
   }, [load]);
 
+  const vacantByDate = useMemo(() => {
+    const map = new Map<string, { id: number; number: string }[]>();
+    if (!data) return map;
+    for (const row of data.rows) {
+      for (const seg of row.segments) {
+        if (seg.kind !== "empty" || !seg.date) continue;
+        const list = map.get(seg.date) || [];
+        list.push({ id: row.room.id, number: row.room.number });
+        map.set(seg.date, list);
+      }
+    }
+    return map;
+  }, [data]);
+
+  function onStayActions(
+    seg: Extract<CalendarData["rows"][number]["segments"][number], { kind: "stay" }>,
+    currentRoomId: number
+  ) {
+    const title = seg.reservation.guest || seg.reservation.code || "Bron";
+    const dayKey = seg.start_day || data?.days[0] || todayIso;
+    Alert.alert(String(title), "Harakat tanlang", [
+      { text: "Bekor", style: "cancel" },
+      {
+        text: "Ochish",
+        onPress: () => onOpenReservation(seg.reservation.id),
+      },
+      {
+        text: "+1 kecha",
+        onPress: async () => {
+          setBusy(true);
+          try {
+            await extendStay(seg.reservation.id, 1);
+            await load(true);
+            Alert.alert("OK", "1 kecha qo‘shildi");
+          } catch (e) {
+            Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
+          } finally {
+            setBusy(false);
+          }
+        },
+      },
+      {
+        text: "Boshqa xona",
+        onPress: () => {
+          const targets = (vacantByDate.get(dayKey) || []).filter(
+            (r) => r.id !== currentRoomId
+          );
+          if (!targets.length) {
+            Alert.alert("Taqvim", "Shu kunda bo‘sh xona yo‘q");
+            return;
+          }
+          Alert.alert(
+            "Xonaga o‘tkazish",
+            "Bo‘sh xonani tanlang",
+            [
+              { text: "Bekor", style: "cancel" },
+              ...targets.slice(0, 6).map((r) => ({
+                text: r.number,
+                onPress: async () => {
+                  setBusy(true);
+                  try {
+                    await transferRoom(seg.reservation.id, r.id, {
+                      reason: "Taqvimdan o‘tkazish",
+                    });
+                    await load(true);
+                    Alert.alert("OK", `${r.number} ga o‘tkazildi`);
+                  } catch (e) {
+                    Alert.alert(
+                      "Xato",
+                      e instanceof ApiError ? e.message : "Xato"
+                    );
+                  } finally {
+                    setBusy(false);
+                  }
+                },
+              })),
+            ],
+            { cancelable: true }
+          );
+        },
+      },
+      {
+        text: "Info",
+        onPress: () =>
+          Alert.alert(
+            String(title),
+            `Holat: ${STATUS_LABEL[seg.status] || seg.status}\nDavomiylik: ${seg.colspan} kun\n${seg.reservation.check_in} → ${seg.reservation.check_out}`
+          ),
+      },
+    ]);
+  }
+
   return (
     <View style={ui.screen}>
       <ScreenHeader
@@ -99,15 +198,16 @@ export function CalendarScreen({
         subtitle={
           data
             ? `${data.stats.rooms} xona · ${data.stats.stays} band`
-            : `${days} kunlik ko‘rinish`
+            : `${days} kunlik shaxmatka`
         }
         onBack={onBack}
       >
         <View style={{ marginBottom: space.sm }}>
           <SegmentedTabs
-            value={String(days) as "14" | "30"}
-            onChange={(v) => setDays(Number(v) as 14 | 30)}
+            value={String(days) as "7" | "14" | "30"}
+            onChange={(v) => setDays(Number(v) as 7 | 14 | 30)}
             tabs={[
+              { id: "7", label: "7 kun" },
               { id: "14", label: "14 kun" },
               { id: "30", label: "1 oy" },
             ]}
@@ -147,9 +247,23 @@ export function CalendarScreen({
             <Text style={styles.dateBtnText}>›</Text>
           </Pressable>
         </View>
+        <View style={styles.legend}>
+          {Object.entries(STATUS_LABEL).map(([id, label]) => (
+            <View key={id} style={styles.legendItem}>
+              <View
+                style={[styles.legendDot, { backgroundColor: STATUS_BG[id] }]}
+              />
+              <Text style={styles.legendText}>{label}</Text>
+            </View>
+          ))}
+          <Text style={styles.legendHint}>Uzoq bosish: +kecha / o‘tkazish</Text>
+        </View>
       </ScreenHeader>
 
       {error ? <Text style={[ui.error, styles.pad]}>{error}</Text> : null}
+      {busy ? (
+        <ActivityIndicator color={colors.accent} style={{ marginTop: 8 }} />
+      ) : null}
       {loading && !data ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={colors.accent} />
       ) : data ? (
@@ -190,7 +304,11 @@ export function CalendarScreen({
                     return (
                       <View
                         key={d}
-                        style={[styles.dayCell, isToday && styles.dayCellToday]}
+                        style={[
+                          styles.dayCell,
+                          { width: dayW },
+                          isToday && styles.dayCellToday,
+                        ]}
                       >
                         <Text
                           style={[
@@ -208,6 +326,11 @@ export function CalendarScreen({
                   <View key={row.room.id} style={styles.roomRow}>
                     <View style={styles.roomLabel}>
                       <Text style={styles.roomNum}>{row.room.number}</Text>
+                      {hotelId === "all" && row.room.hotel_name ? (
+                        <Text style={styles.roomType} numberOfLines={1}>
+                          {row.room.hotel_name}
+                        </Text>
+                      ) : null}
                       {row.room.room_type ? (
                         <Text style={styles.roomType} numberOfLines={1}>
                           {row.room.room_type}
@@ -221,7 +344,7 @@ export function CalendarScreen({
                             key={`e-${i}`}
                             style={({ pressed }) => [
                               styles.empty,
-                              { width: DAY_W * seg.colspan },
+                              { width: dayW * seg.colspan },
                               pressed && styles.emptyPressed,
                               !onQuickBook && styles.emptyDisabled,
                             ]}
@@ -245,17 +368,25 @@ export function CalendarScreen({
                           style={({ pressed }) => [
                             styles.stay,
                             {
-                              width: DAY_W * seg.colspan - 3,
+                              width: dayW * seg.colspan - 3,
                               backgroundColor:
                                 STATUS_BG[seg.status] || colors.warn,
                             },
                             pressed && { opacity: 0.88 },
                           ]}
                           onPress={() => onOpenReservation(seg.reservation.id)}
+                          onLongPress={() => onStayActions(seg, row.room.id)}
+                          delayLongPress={280}
                         >
                           <Text style={styles.stayText} numberOfLines={1}>
                             {seg.reservation.guest || seg.reservation.code}
                           </Text>
+                          {seg.colspan >= 2 ? (
+                            <Text style={styles.stayMeta} numberOfLines={1}>
+                              {STATUS_LABEL[seg.status] || seg.status} ·{" "}
+                              {seg.colspan}k
+                            </Text>
+                          ) : null}
                         </Pressable>
                       );
                     })}
@@ -311,6 +442,27 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: "700",
   },
+  legend: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: space.md,
+    alignItems: "center",
+  },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: {
+    color: "rgba(255,255,255,0.75)",
+    fontSize: 11,
+    fontWeight: "600",
+    fontFamily: fontUi,
+  },
+  legendHint: {
+    color: "rgba(255,255,255,0.45)",
+    fontSize: 10,
+    fontFamily: fontUi,
+    marginLeft: "auto",
+  },
   pad: { padding: space.lg },
   grid: { padding: space.lg, paddingBottom: 48 },
   dayRow: { flexDirection: "row", marginBottom: 8, alignItems: "center" },
@@ -339,7 +491,6 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   dayCell: {
-    width: DAY_W,
     alignItems: "center",
     paddingVertical: 4,
     borderRadius: 8,
@@ -393,5 +544,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     fontFamily: fontUi,
+  },
+  stayMeta: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 9,
+    fontWeight: "600",
+    fontFamily: fontUi,
+    marginTop: 1,
   },
 });

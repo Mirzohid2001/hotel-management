@@ -29,19 +29,22 @@ def _hotel_emehmon_unit(hotel) -> Decimal:
 
 def _add_emehmon_payment_fields(form, *, hotel=None, nights=1, guests=1):
     """Walk-in / zayezd formalariga E-mehmon to‘lov maydonlari."""
-    from folio.services import calc_emehmon_fee
+    from folio.services import EMEHMON_CITIZEN_CHOICES
 
-    unit = _hotel_emehmon_unit(hotel)
-    default_fee = calc_emehmon_fee(unit, nights=nights, guests=guests)
     form.fields["collect_emehmon"] = forms.BooleanField(
         required=False,
         initial=True,
         label=_("E-mehmon komissiyasini olish"),
         help_text=_(
-            "Standart: yoqilgan. Hisob = %(u)s so‘m × kechalar × mehmonlar. "
-            "O‘chirsangiz — bu mehmondan E-mehmon olinmaydi."
-        )
-        % {"u": unit if unit > 0 else Decimal("9000")},
+            "Standart: yoqilgan. Summani o‘zingiz yozing "
+            "(O‘zbekiston / chet el). O‘chirsangiz — olinmaydi."
+        ),
+    )
+    form.fields["emehmon_citizen"] = forms.ChoiceField(
+        required=False,
+        choices=[("", _("— tanlang —"))] + list(EMEHMON_CITIZEN_CHOICES),
+        label=_("Fuqarolik"),
+        help_text=_("O‘zbekiston yoki chet el — summani shunga qarab yozing."),
     )
     form.fields["emehmon_amount"] = forms.DecimalField(
         required=False,
@@ -49,12 +52,12 @@ def _add_emehmon_payment_fields(form, *, hotel=None, nights=1, guests=1):
         max_digits=14,
         decimal_places=2,
         label=_("E-mehmon summasi"),
-        initial=default_fee if default_fee > 0 else None,
+        initial=None,
         widget=forms.NumberInput(
             attrs={
                 "step": "0.01",
                 "min": "0",
-                "data-emehmon-unit": str(unit),
+                "placeholder": _("Summani yozing"),
             }
         ),
     )
@@ -68,38 +71,32 @@ def _add_emehmon_payment_fields(form, *, hotel=None, nights=1, guests=1):
         initial="cash",
         label=_("E-mehmon to‘lov usuli"),
     )
-    form.emehmon_unit = unit
-    form.emehmon_default = default_fee
+    form.emehmon_unit = Decimal("0")
+    form.emehmon_default = Decimal("0")
 
 
 def _fill_emehmon_amount(form, cleaned, *, nights, guests):
-    """Bo‘sh yoki birlik tarif yuborilsa — kecha × mehmon × tarif."""
-    from folio.services import calc_emehmon_fee
-
+    """Olish belgilansa — summa majburiy (fiks tarif yo‘q)."""
     if not cleaned.get("collect_emehmon"):
         return cleaned
     amount = cleaned.get("emehmon_amount")
-    unit = getattr(form, "emehmon_unit", Decimal("0"))
-    computed = calc_emehmon_fee(unit, nights=nights, guests=guests)
     if amount is None or amount <= 0:
-        if computed <= 0:
-            form.add_error(
-                "emehmon_amount",
-                _("E-mehmon to‘lovini olish uchun summa kiriting."),
-            )
-        else:
-            cleaned["emehmon_amount"] = computed
-    elif unit > 0 and amount == unit and computed > unit:
-        # Forma hali 1×9000 qoldirgan — to‘liq hisob.
-        cleaned["emehmon_amount"] = computed
+        form.add_error(
+            "emehmon_amount",
+            _("E-mehmon to‘lovini olish uchun summa kiriting."),
+        )
+    citizen = (cleaned.get("emehmon_citizen") or "").strip()
+    if not citizen:
+        form.add_error(
+            "emehmon_citizen",
+            _("Fuqarolikni tanlang (O‘zbekiston yoki chet el)."),
+        )
     return cleaned
 
 
 def _hotel_emehmon_default(hotel) -> Decimal:
-    """Orqaga moslik — endi 1 kecha × 1 mehmon."""
-    from folio.services import calc_emehmon_fee
-
-    return calc_emehmon_fee(_hotel_emehmon_unit(hotel), nights=1, guests=1)
+    """Legacy — endi default bo‘sh."""
+    return Decimal("0")
 
 
 class BookingReferrerForm(forms.ModelForm):

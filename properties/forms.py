@@ -38,7 +38,7 @@ class PropertySettingsForm(forms.ModelForm):
             "tax_percent": _("Soliq %"),
             "early_checkin_fee": _("Erta kirish to‘lovi"),
             "late_checkout_fee": _("Kech chiqish to‘lovi"),
-            "emehmon_fee": _("E-mehmon (1 mehmon / 1 kecha)"),
+            "emehmon_fee": _("E-mehmon (eski, ishlatilmaydi)"),
             "cancel_fee_percent": _("Bekor qilish %"),
             "no_show_fee_percent": _("Kelmagan % (ishlatilmaydi)"),
             "checkin_time": _("Kirish vaqti"),
@@ -47,8 +47,8 @@ class PropertySettingsForm(forms.ModelForm):
         }
         help_texts = {
             "emehmon_fee": _(
-                "E-mehmonga beriladigan komissiya: har bir mehmonning har bir kechasi uchun "
-                "(odatda 9000 so‘m). Jami = tarif × kechalar × mehmonlar."
+                "Ishlatilmaydi. E-mehmon summasi zayezdda qo‘lda yoziladi "
+                "(O‘zbekiston / chet el fuqarosi)."
             ),
             "no_show_fee_percent": _(
                 "Kelmaganda jarima yozilmaydi — to‘lov avtomatik qaytariladi. Bu maydon saqlanadi, lekin hisobga ta’sir qilmaydi."

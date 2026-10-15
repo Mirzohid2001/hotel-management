@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { useI18n } from "../i18n";
 import { colors, fontUi, radius, space, type } from "./theme";
 
 type Props = {
@@ -21,6 +22,7 @@ export function ScreenHeader({
   right,
   children,
 }: Props) {
+  const { tr } = useI18n();
   return (
     <View style={styles.wrap}>
       <View style={styles.glow} />
@@ -31,7 +33,7 @@ export function ScreenHeader({
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
         >
           <Text style={styles.backChevron}>‹</Text>
-          <Text style={styles.backText}>Orqaga</Text>
+          <Text style={styles.backText}>{tr("Orqaga")}</Text>
         </Pressable>
       ) : null}
       <View style={styles.top}>
@@ -40,13 +42,13 @@ export function ScreenHeader({
           onPress={onTitlePress}
           disabled={!onTitlePress}
         >
-          {eyebrow ? <Text style={type.eyebrow}>{eyebrow}</Text> : null}
+          {eyebrow ? <Text style={type.eyebrow}>{tr(eyebrow)}</Text> : null}
           <Text style={styles.title} numberOfLines={2}>
-            {title}
+            {tr(title)}
           </Text>
           {subtitle ? (
             <Text style={styles.sub} numberOfLines={2}>
-              {subtitle}
+              {tr(subtitle)}
             </Text>
           ) : null}
         </Pressable>
@@ -100,7 +102,7 @@ const styles = StyleSheet.create({
   top: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: space.md,
   },
   copy: { flex: 1, minWidth: 0, paddingRight: 4 },

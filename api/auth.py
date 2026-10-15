@@ -80,8 +80,10 @@ def api_login_required(view):
         from properties.active import resolve_active_property
 
         # Optional hotel scope via header (same idea as web active property)
-        hotel_id = request.META.get("HTTP_X_HOTEL_ID") or request.GET.get("hotel_id")
-        if hotel_id:
+        hotel_id = (request.META.get("HTTP_X_HOTEL_ID") or request.GET.get("hotel_id") or "").strip()
+        if hotel_id in {"all", "0"}:
+            request.active_property = None
+        elif hotel_id:
             from properties.models import Property
 
             hotel = Property.objects.filter(

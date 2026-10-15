@@ -35,10 +35,13 @@ export function HrScreen({ onBack }: Props) {
     payEmployee,
     advanceEmployee,
     createEmployee,
+    updateEmployee,
     fetchPayroll,
     generatePayroll,
     finalizePayroll,
     payAllPayroll,
+    fetchPayrollItems,
+    updatePayrollItem,
     fetchHrAdvances,
     settleHrAdvance,
   } = useAuth();
@@ -47,7 +50,7 @@ export function HrScreen({ onBack }: Props) {
   const [advances, setAdvances] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Record<string, unknown> | null>(null);
-  const [mode, setMode] = useState<"pay" | "advance">("pay");
+  const [mode, setMode] = useState<"pay" | "advance" | "edit">("pay");
   const [amount, setAmount] = useState("");
   const [days, setDays] = useState("1");
   const [busy, setBusy] = useState(false);
@@ -55,7 +58,23 @@ export function HrScreen({ onBack }: Props) {
   const [fullName, setFullName] = useState("");
   const [salary, setSalary] = useState("");
   const [salaryType, setSalaryType] = useState<"monthly" | "daily">("monthly");
+  const [position, setPosition] = useState("");
+  const [phone, setPhone] = useState("");
+  const [empActive, setEmpActive] = useState(true);
   const [payroll, setPayroll] = useState<Record<string, unknown> | null>(null);
+  const [payItems, setPayItems] = useState<
+    {
+      id: number;
+      employee: string;
+      bonus: string;
+      deduction: string;
+      net_amount: string;
+      paid: boolean;
+    }[]
+  >([]);
+  const [editItem, setEditItem] = useState<number | null>(null);
+  const [bonus, setBonus] = useState("");
+  const [deduction, setDeduction] = useState("");
 
   const loadEmployees = useCallback(async () => {
     setLoading(true);
@@ -66,12 +85,16 @@ export function HrScreen({ onBack }: Props) {
       ]);
       setItems(emps);
       setPayroll(pay);
+      const year = Number(pay?.year || 0) || undefined;
+      const month = Number(pay?.month || 0) || undefined;
+      const lines = await fetchPayrollItems(year, month).catch(() => null);
+      setPayItems(lines?.items || []);
     } catch (e) {
       Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
     } finally {
       setLoading(false);
     }
-  }, [fetchEmployees, fetchPayroll]);
+  }, [fetchEmployees, fetchPayroll, fetchPayrollItems]);
 
   const loadAdvances = useCallback(async () => {
     setLoading(true);
@@ -97,11 +120,49 @@ export function HrScreen({ onBack }: Props) {
         full_name: fullName.trim(),
         salary_type: salaryType,
         base_salary: salary || "0",
+        position: position.trim(),
+        phone: phone.trim(),
       });
       setCreating(false);
       setFullName("");
       setSalary("");
+      setPosition("");
+      setPhone("");
       await loadEmployees();
+    } catch (e) {
+      Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function openEdit(item: Record<string, unknown>) {
+    setSelected(item);
+    setMode("edit");
+    setFullName(String(item.full_name || ""));
+    setSalary(String(item.base_salary || ""));
+    setSalaryType(item.is_daily ? "daily" : "monthly");
+    setPosition(String(item.position || ""));
+    setPhone(String(item.phone || ""));
+    setEmpActive(item.is_active !== false);
+  }
+
+  async function onSaveEdit() {
+    if (!selected?.id || !fullName.trim()) return;
+    setBusy(true);
+    try {
+      await updateEmployee(Number(selected.id), {
+        full_name: fullName.trim(),
+        salary_type: salaryType,
+        base_salary: salary || "0",
+        position: position.trim(),
+        phone: phone.trim(),
+        is_active: empActive,
+      });
+      setSelected(null);
+      setMode("pay");
+      await loadEmployees();
+      Alert.alert("HR", "Xodim yangilandi");
     } catch (e) {
       Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
     } finally {
@@ -238,6 +299,23 @@ export function HrScreen({ onBack }: Props) {
               value={fullName}
               onChangeText={setFullName}
             />
+            <FieldLabel>Lavozim</FieldLabel>
+            <TextInput
+              style={ui.input}
+              placeholder="Resepsiya"
+              placeholderTextColor={colors.faint}
+              value={position}
+              onChangeText={setPosition}
+            />
+            <FieldLabel>Telefon</FieldLabel>
+            <TextInput
+              style={ui.input}
+              placeholder="+998…"
+              placeholderTextColor={colors.faint}
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+            />
             <FieldLabel>Stavka</FieldLabel>
             <TextInput
               style={ui.input}
@@ -311,6 +389,75 @@ export function HrScreen({ onBack }: Props) {
               onPress={onPayrollPayAll}
             />
           </View>
+          {payItems.length > 0 ? (
+            <View style={{ marginTop: space.md, gap: space.sm }}>
+              <Text style={ui.section}>Bonus / ushlama</Text>
+              {payItems.map((row) => (
+                <FormCard key={row.id}>
+                  <Text style={ui.rowTitle}>{row.employee}</Text>
+                  <Text style={ui.rowMeta}>
+                    Bonus {row.bonus} · ushlama {row.deduction} · jami {row.net_amount}
+                    {row.paid ? " · to‘langan" : ""}
+                  </Text>
+                  {!row.paid ? (
+                    editItem === row.id ? (
+                      <>
+                        <FieldLabel>Bonus</FieldLabel>
+                        <TextInput
+                          style={ui.input}
+                          value={bonus}
+                          onChangeText={setBonus}
+                          keyboardType="decimal-pad"
+                          placeholderTextColor={colors.faint}
+                        />
+                        <FieldLabel>Ushlama</FieldLabel>
+                        <TextInput
+                          style={ui.input}
+                          value={deduction}
+                          onChangeText={setDeduction}
+                          keyboardType="decimal-pad"
+                          placeholderTextColor={colors.faint}
+                        />
+                        <PrimaryButton
+                          label="Saqlash"
+                          loading={busy}
+                          onPress={async () => {
+                            setBusy(true);
+                            try {
+                              await updatePayrollItem(row.id, {
+                                bonus: bonus.trim() || "0",
+                                deduction: deduction.trim() || "0",
+                              });
+                              setEditItem(null);
+                              await loadEmployees();
+                            } catch (e) {
+                              Alert.alert(
+                                "Xato",
+                                e instanceof ApiError ? e.message : "Xato"
+                              );
+                            } finally {
+                              setBusy(false);
+                            }
+                          }}
+                        />
+                      </>
+                    ) : (
+                      <Pressable
+                        style={[ui.chip, { marginTop: 8, alignSelf: "flex-start" }]}
+                        onPress={() => {
+                          setEditItem(row.id);
+                          setBonus(row.bonus);
+                          setDeduction(row.deduction);
+                        }}
+                      >
+                        <Text style={ui.chipText}>Tahrirlash</Text>
+                      </Pressable>
+                    )
+                  ) : null}
+                </FormCard>
+              ))}
+            </View>
+          ) : null}
         </View>
       ) : null}
 
@@ -344,7 +491,87 @@ export function HrScreen({ onBack }: Props) {
                   Avans
                 </Text>
               </Pressable>
+              <Pressable
+                style={[ui.chip, mode === "edit" && ui.chipOn]}
+                onPress={() => openEdit(selected)}
+              >
+                <Text
+                  style={[ui.chipText, mode === "edit" && ui.chipTextOn]}
+                >
+                  Tahrirlash
+                </Text>
+              </Pressable>
             </View>
+            {mode === "edit" ? (
+              <>
+                <FieldLabel>To‘liq ism</FieldLabel>
+                <TextInput
+                  style={ui.input}
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholderTextColor={colors.faint}
+                />
+                <FieldLabel>Lavozim</FieldLabel>
+                <TextInput
+                  style={ui.input}
+                  value={position}
+                  onChangeText={setPosition}
+                  placeholderTextColor={colors.faint}
+                />
+                <FieldLabel>Telefon</FieldLabel>
+                <TextInput
+                  style={ui.input}
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  placeholderTextColor={colors.faint}
+                />
+                <FieldLabel>Stavka</FieldLabel>
+                <TextInput
+                  style={ui.input}
+                  value={salary}
+                  onChangeText={setSalary}
+                  keyboardType="decimal-pad"
+                  placeholderTextColor={colors.faint}
+                />
+                <View style={styles.flags}>
+                  <Pressable
+                    style={[ui.chip, salaryType === "monthly" && ui.chipOn]}
+                    onPress={() => setSalaryType("monthly")}
+                  >
+                    <Text
+                      style={[
+                        ui.chipText,
+                        salaryType === "monthly" && ui.chipTextOn,
+                      ]}
+                    >
+                      Oylik
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[ui.chip, salaryType === "daily" && ui.chipOn]}
+                    onPress={() => setSalaryType("daily")}
+                  >
+                    <Text
+                      style={[
+                        ui.chipText,
+                        salaryType === "daily" && ui.chipTextOn,
+                      ]}
+                    >
+                      Kunlik
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[ui.chip, empActive && ui.chipOn]}
+                    onPress={() => setEmpActive((v) => !v)}
+                  >
+                    <Text style={[ui.chipText, empActive && ui.chipTextOn]}>
+                      {empActive ? "Faol" : "Nofaol"}
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : null}
             {mode === "pay" && selected.is_daily ? (
               <>
                 <FieldLabel>Kunlar</FieldLabel>
@@ -372,13 +599,25 @@ export function HrScreen({ onBack }: Props) {
               </>
             ) : null}
             <View style={styles.rowBtns}>
-              <Pressable style={ui.copperBtn} onPress={() => setSelected(null)}>
+              <Pressable
+                style={ui.copperBtn}
+                onPress={() => {
+                  setSelected(null);
+                  setMode("pay");
+                }}
+              >
                 <Text style={ui.copperBtnText}>Bekor</Text>
               </Pressable>
               <View style={{ flex: 1 }}>
                 <PrimaryButton
-                  label={mode === "pay" ? "To‘lash" : "Avans berish"}
-                  onPress={onSubmit}
+                  label={
+                    mode === "edit"
+                      ? "Saqlash"
+                      : mode === "pay"
+                        ? "To‘lash"
+                        : "Avans berish"
+                  }
+                  onPress={mode === "edit" ? onSaveEdit : onSubmit}
                   loading={busy}
                 />
               </View>

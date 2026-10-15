@@ -11,6 +11,7 @@ import {
 
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { MiniBarChart, MiniStatusBars } from "../ui/MiniCharts";
 import { FormCard, StatsStrip } from "../ui/primitives";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { colors, fontDisplay, fontUi, space, type, ui } from "../ui/theme";
@@ -78,6 +79,30 @@ export function DashboardScreen({
   const stats = (flash.stats || {}) as Record<string, unknown>;
   const kpis = (data?.kpis || {}) as Record<string, unknown>;
   const insights = (data?.insights || {}) as Record<string, unknown>;
+  const charts = (data?.charts || {}) as Record<string, unknown>;
+  const revenueTrend = (charts.revenueTrend || {}) as {
+    labels?: string[];
+    revenue?: number[];
+    occupancy?: number[];
+  };
+  const roomStatus = (charts.roomStatus || {}) as {
+    labels?: string[];
+    values?: number[];
+  };
+  const occPoints = (revenueTrend.labels || []).map((label, i) => ({
+    label,
+    value: Number(revenueTrend.occupancy?.[i] ?? 0),
+    highlight: i === (revenueTrend.labels?.length || 0) - 1,
+  }));
+  const revPoints = (revenueTrend.labels || []).map((label, i) => ({
+    label,
+    value: Number(revenueTrend.revenue?.[i] ?? 0),
+    highlight: i === (revenueTrend.labels?.length || 0) - 1,
+  }));
+  const statusItems = (roomStatus.labels || []).map((label, i) => ({
+    label,
+    value: Number(roomStatus.values?.[i] ?? 0),
+  }));
 
   const chips = [
     onOpenBoard && { label: "Doska", hint: "Xonalar", onPress: onOpenBoard },
@@ -171,6 +196,25 @@ export function DashboardScreen({
               {String(kpis.expenses_pending ?? "—")}
             </Text>
           </FormCard>
+
+          {occPoints.length > 0 ? (
+            <MiniBarChart
+              title="7 kun OCC %"
+              points={occPoints}
+              suffix="%"
+              color={colors.accentSoft}
+            />
+          ) : null}
+          {revPoints.length > 0 ? (
+            <MiniBarChart
+              title="7 kun daromad"
+              points={revPoints}
+              color={colors.accent}
+            />
+          ) : null}
+          {statusItems.length > 0 ? (
+            <MiniStatusBars title="Xona holati" items={statusItems} />
+          ) : null}
 
           <View style={styles.chipGrid}>
             {chips.map((c) => (

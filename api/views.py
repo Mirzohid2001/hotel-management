@@ -275,6 +275,7 @@ def _reservation_summary(reservation: Reservation) -> dict:
             "number": reservation.room.number if reservation.room_id else "",
         },
         "hotel_id": reservation.hotel_id,
+        "hotel_name": reservation.hotel.name if reservation.hotel_id else "",
     }
 
 
@@ -402,11 +403,10 @@ def _folio_payload(folio_obj) -> dict | None:
 @require_GET
 def reservation_detail(request, pk):
     from folio.services import (
-        default_emehmon_fee,
+        EMEHMON_CITIZEN_CHOICES,
         emehmon_already_posted,
         emehmon_guest_count,
         emehmon_nights_count,
-        emehmon_unit_rate,
     )
 
     reservation = _get_reservation(request, pk)
@@ -418,10 +418,8 @@ def reservation_detail(request, pk):
         folio_obj = None
     named = list(occupants_qs(reservation))
     missing_a, missing_c = occupant_missing_slots(reservation)
-    unit = emehmon_unit_rate(reservation.hotel_id)
     nights = emehmon_nights_count(getattr(reservation, "nights", None))
     guests = emehmon_guest_count(reservation.adults, reservation.children)
-    emehmon_default = default_emehmon_fee(reservation)
     emehmon_paid = bool(folio_obj and emehmon_already_posted(folio_obj))
     return json_ok(
         {
@@ -434,10 +432,14 @@ def reservation_detail(request, pk):
             "adults": reservation.adults,
             "children": reservation.children,
             "emehmon_required": bool(getattr(reservation, "emehmon_required", False)),
-            "emehmon_unit": str(unit),
-            "emehmon_default": str(emehmon_default),
+            "emehmon_unit": "0",
+            "emehmon_default": "0",
             "emehmon_guests": guests,
             "emehmon_paid": emehmon_paid,
+            "emehmon_citizen_choices": [
+                {"value": value, "label": str(label)}
+                for value, label in EMEHMON_CITIZEN_CHOICES
+            ],
             "guest": {
                 "id": reservation.guest_id,
                 "name": str(reservation.guest) if reservation.guest_id else "",
@@ -501,7 +503,7 @@ def reservation_check_in(request, pk):
         if collect_emehmon:
             from decimal import Decimal, InvalidOperation
 
-            from folio.services import collect_emehmon_fee, default_emehmon_fee
+            from folio.services import collect_emehmon_fee
 
             if not reservation.emehmon_required:
                 reservation.emehmon_required = True
@@ -513,14 +515,22 @@ def reservation_check_in(request, pk):
                     amount = Decimal(str(raw_amount).replace(",", "."))
                 except (InvalidOperation, TypeError, ValueError):
                     return json_error("Invalid emehmon_amount.")
-            else:
-                amount = default_emehmon_fee(reservation)
+            if amount is None or amount <= 0:
+                return json_error("emehmon_amount required when collect_emehmon is true.")
+            citizen = (
+                data.get("emehmon_citizen") or data.get("citizen_type") or ""
+            )
+            if not str(citizen).strip():
+                return json_error(
+                    "emehmon_citizen required (uz or foreign) when collect_emehmon is true."
+                )
             try:
                 collect_emehmon_fee(
                     reservation,
                     request.user,
                     amount=amount,
                     method=data.get("emehmon_method") or "cash",
+                    citizen_type=citizen,
                 )
                 emehmon_note = "collected"
             except ValidationError as exc:
@@ -656,7 +666,7 @@ def walk_in(request):
         reservation.refresh_from_db()
         emehmon_note = None
         if collect_emehmon:
-            from folio.services import collect_emehmon_fee, default_emehmon_fee
+            from folio.services import collect_emehmon_fee
 
             amount = None
             raw_amount = data.get("emehmon_amount")
@@ -665,14 +675,22 @@ def walk_in(request):
                     amount = Decimal(str(raw_amount).replace(",", "."))
                 except (InvalidOperation, TypeError, ValueError):
                     return json_error("Invalid emehmon_amount.")
-            else:
-                amount = default_emehmon_fee(reservation)
+            if amount is None or amount <= 0:
+                return json_error("emehmon_amount required when collect_emehmon is true.")
+            citizen = (
+                data.get("emehmon_citizen") or data.get("citizen_type") or ""
+            )
+            if not str(citizen).strip():
+                return json_error(
+                    "emehmon_citizen required (uz or foreign) when collect_emehmon is true."
+                )
             try:
                 collect_emehmon_fee(
                     reservation,
                     request.user,
                     amount=amount,
                     method=data.get("emehmon_method") or "cash",
+                    citizen_type=citizen,
                 )
                 emehmon_note = "collected"
             except ValidationError as exc:

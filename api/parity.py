@@ -309,6 +309,16 @@ def reservation_emehmon(request, pk):
             amount = Decimal(str(data["amount"]).replace(",", "."))
         except (InvalidOperation, TypeError, ValueError):
             return json_error("Invalid amount.")
+    if amount is None or amount <= 0:
+        return json_error("amount required.")
+    citizen = (
+        data.get("emehmon_citizen")
+        or data.get("citizen_type")
+        or data.get("citizen")
+        or ""
+    )
+    if not str(citizen).strip():
+        return json_error("emehmon_citizen required (uz or foreign).")
     try:
         charge, payment = collect_emehmon_fee(
             reservation,
@@ -316,6 +326,7 @@ def reservation_emehmon(request, pk):
             amount=amount,
             method=method,
             note=(data.get("note") or "").strip(),
+            citizen_type=citizen,
         )
         return json_ok(
             {
@@ -800,17 +811,19 @@ def expenses(request):
 def expenses_meta(request):
     from finance.models import Expense, ExpenseCategory, Vendor
 
+    include_inactive = (request.GET.get("all") or "") in {"1", "true", "yes"}
+    cat_qs = ExpenseCategory.objects.filter(tenant=request.tenant)
+    vendor_qs = Vendor.objects.filter(tenant=request.tenant)
+    if not include_inactive:
+        cat_qs = cat_qs.filter(is_active=True)
+        vendor_qs = vendor_qs.filter(is_active=True)
     cats = [
-        {"id": c.pk, "name": c.name}
-        for c in ExpenseCategory.objects.filter(
-            tenant=request.tenant, is_active=True
-        ).order_by("name")
+        {"id": c.pk, "name": c.name, "is_active": c.is_active}
+        for c in cat_qs.order_by("name")
     ]
     vendors = [
-        {"id": v.pk, "name": v.name}
-        for v in Vendor.objects.filter(tenant=request.tenant, is_active=True).order_by(
-            "name"
-        )
+        {"id": v.pk, "name": v.name, "is_active": v.is_active}
+        for v in vendor_qs.order_by("name")
     ]
     return json_ok(
         {
@@ -886,6 +899,84 @@ def expense_create(request):
     )
     expense.save()
     return json_ok(_expense_row(expense), status=201)
+
+
+@api_login_required
+@api_role_required(*FINANCE, TenantMembership.Role.MANAGER)
+@require_POST
+def expense_update(request, pk):
+    """Edit draft/approved (unpaid) expense fields — same rules as web expense_edit."""
+    from finance.models import Expense, ExpenseCategory, Vendor
+    from finance.services import assert_expense_editable
+
+    hotel = getattr(request, "active_property", None)
+    qs = Expense.objects.filter(pk=pk, tenant=request.tenant)
+    if hotel is not None:
+        qs = qs.filter(Q(hotel=hotel) | Q(hotel__isnull=True))
+    expense = qs.select_related("category", "vendor").first()
+    if expense is None:
+        return json_error("Expense not found.", status=404)
+    try:
+        assert_expense_editable(expense)
+    except ValidationError as exc:
+        return _err(exc)
+
+    data = parse_json(request)
+    try:
+        if "title" in data:
+            title = (data.get("title") or "").strip()
+            if not title:
+                return json_error("title required.")
+            expense.title = title
+        if "amount" in data and data["amount"] not in (None, ""):
+            amount = Decimal(str(data["amount"]).replace(",", "."))
+            if amount <= 0:
+                return json_error("amount must be > 0.")
+            expense.amount = amount
+        if "category_id" in data:
+            cat = ExpenseCategory.objects.filter(
+                pk=data.get("category_id"), tenant=request.tenant, is_active=True
+            ).first()
+            if cat is None:
+                return json_error("category_id required / not found.")
+            expense.category = cat
+        if "vendor_id" in data:
+            if data.get("vendor_id") in (None, "", 0, "0"):
+                expense.vendor = None
+            else:
+                vendor = Vendor.objects.filter(
+                    pk=data["vendor_id"], tenant=request.tenant, is_active=True
+                ).first()
+                if vendor is None:
+                    return json_error("Vendor not found.", status=404)
+                expense.vendor = vendor
+        if "expense_date" in data and data["expense_date"]:
+            try:
+                expense.expense_date = date.fromisoformat(
+                    str(data["expense_date"]).strip()
+                )
+            except ValueError:
+                return json_error("Invalid expense_date.")
+        if "payment_method" in data:
+            method = (data.get("payment_method") or "").strip()
+            if method not in dict(Expense.PaymentMethod.choices):
+                return json_error("Invalid payment_method.")
+            expense.payment_method = method
+        if "funding" in data:
+            funding = (data.get("funding") or "").strip()
+            if funding not in dict(Expense.Funding.choices):
+                return json_error("Invalid funding.")
+            expense.funding = funding
+        if "notes" in data:
+            expense.notes = (data.get("notes") or "").strip()
+        if "currency" in data and data["currency"]:
+            expense.currency = str(data["currency"]).strip().upper()
+        expense.save()
+        return json_ok(_expense_row(expense))
+    except (InvalidOperation, TypeError, ValueError):
+        return json_error("Invalid amount.")
+    except ValidationError as exc:
+        return _err(exc)
 
 
 @api_login_required

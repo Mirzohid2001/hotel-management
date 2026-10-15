@@ -530,7 +530,7 @@ def guest_create(request):
 def housekeeping_board(request):
     hotel = getattr(request, "active_property", None)
     rooms = Room.objects.filter(tenant=request.tenant, is_active=True).select_related(
-        "room_type"
+        "room_type", "property"
     )
     if hotel is not None:
         rooms = rooms.filter(property=hotel)
@@ -838,6 +838,7 @@ def calendar(request):
                     "number": room.number,
                     "status": room.status,
                     "room_type": room.room_type.name if room.room_type_id else "",
+                    "hotel_name": room.property.name if room.property_id else "",
                 },
                 "segments": segments,
             }

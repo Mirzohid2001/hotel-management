@@ -65,7 +65,7 @@
   </div>
 
   <p class="muted" style="margin:0.5rem 0 1rem">
-    {% trans "Zayezdda olingan E-mehmon folio va kassaga yoziladi (o‘tkinchi — tushum emas). Bayonnoma bo‘yicha E-mehmonga topshiriladi. Farq > 0 — belgilangan, lekin olinmagan; P&L da rasxod." %}
+    {% trans "Zayezdda olingan E-mehmon folio va kassaga yoziladi (o‘tkinchi — tushum emas). Summa fiks emas — xo‘jayin qo‘lda yozadi. Kerak = olingan." %}
   </p>
 
   <section class="section-panel">
@@ -75,6 +75,7 @@
           <tr>
             <th>{% trans "Mehmon" %}</th>
             <th>{% trans "Sanalar" %}</th>
+            <th>{% trans "Fuqarolik" %}</th>
             <th>{% trans "Mehmon" %}</th>
             <th>{% trans "Oy kechalari" %}</th>
             <th>{% trans "Mehmon-kecha" %}</th>
@@ -91,16 +92,15 @@
               <span class="muted">· {{ row.hotel_name }}</span>
             </td>
             <td>{{ row.check_in|date:"d.m" }} → {{ row.check_out|date:"d.m" }}</td>
+            <td>{% if row.citizen_label %}{{ row.citizen_label }}{% else %}—{% endif %}</td>
             <td>{{ row.guests }}</td>
             <td>{{ row.nights_in_month }}</td>
             <td>{{ row.guest_nights }}</td>
             <td class="money">{{ row.expected|money }}</td>
             <td class="money">{{ row.collected|money }}</td>
             <td>
-              {% if row.posted and row.gap <= 0 %}
+              {% if row.posted %}
               <span class="badge">{% trans "Olingan" %}</span>
-              {% elif row.posted and row.gap > 0 %}
-              <span class="badge badge-warn">{% trans "Kam" %}</span>
               {% else %}
               <span class="badge badge-warn">{% trans "Yo‘q" %}</span>
               {% endif %}
@@ -108,7 +108,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="8" class="muted empty-row">{% trans "Bu oyda yashash yo‘q." %}</td>
+            <td colspan="9" class="muted empty-row">{% trans "Bu oyda yashash yo‘q." %}</td>
           </tr>
           {% endfor %}
         </tbody>

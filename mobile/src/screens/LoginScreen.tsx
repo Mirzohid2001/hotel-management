@@ -12,10 +12,12 @@ import {
 
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n";
 import { colors, fontDisplay, fontUi, radius, space, type } from "../ui/theme";
 
 export function LoginScreen() {
   const { login } = useAuth();
+  const { t, lang, setLang } = useI18n();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -45,11 +47,19 @@ export function LoginScreen() {
       </View>
 
       <View style={styles.sheet}>
-        <Text style={type.eyebrowInk}>Kirish</Text>
-        <Text style={styles.sheetTitle}>Hisobingizga kiring</Text>
-        <Text style={styles.sheetHint}>Web bilan bir xil login</Text>
+        <Text style={type.eyebrowInk}>{t("loginEyebrow")}</Text>
+        <Text style={styles.sheetTitle}>{t("loginTitle")}</Text>
+        <Text style={styles.sheetHint}>{t("loginHint")}</Text>
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+          <Pressable onPress={() => setLang("uz")}>
+            <Text style={styles.label}>{lang === "uz" ? "● " : ""}{t("langUz")}</Text>
+          </Pressable>
+          <Pressable onPress={() => setLang("ru")}>
+            <Text style={styles.label}>{lang === "ru" ? "● " : ""}{t("langRu")}</Text>
+          </Pressable>
+        </View>
 
-        <Text style={styles.label}>Login</Text>
+        <Text style={styles.label}>{t("loginUser")}</Text>
         <TextInput
           style={styles.input}
           autoCapitalize="none"
@@ -60,7 +70,7 @@ export function LoginScreen() {
           placeholderTextColor={colors.faint}
         />
 
-        <Text style={styles.label}>Parol</Text>
+        <Text style={styles.label}>{t("loginPass")}</Text>
         <TextInput
           style={styles.input}
           secureTextEntry
@@ -80,7 +90,7 @@ export function LoginScreen() {
           {busy ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.btnText}>Davom etish</Text>
+            <Text style={styles.btnText}>{t("loginBtn")}</Text>
           )}
         </Pressable>
       </View>

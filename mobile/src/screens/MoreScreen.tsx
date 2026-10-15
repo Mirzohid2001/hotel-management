@@ -1,7 +1,8 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "../auth/AuthContext";
-import { MenuRow, MenuSection } from "../ui/primitives";
+import { useI18n } from "../i18n";
+import { MenuGrid } from "../ui/primitives";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { colors, fontUi, radius, space, ui } from "../ui/theme";
 
@@ -10,6 +11,7 @@ type Props = {
   onOpenInquiries: () => void;
   onOpenCash: () => void;
   onNewBooking: () => void;
+  onOpenWalkIn: () => void;
   onOpenFlash: () => void;
   onOpenMaintenance: () => void;
   onOpenCompanies: () => void;
@@ -41,6 +43,7 @@ export function MoreScreen({
   onOpenInquiries,
   onOpenCash,
   onNewBooking,
+  onOpenWalkIn,
   onOpenFlash,
   onOpenMaintenance,
   onOpenCompanies,
@@ -67,6 +70,7 @@ export function MoreScreen({
   onOpenProfile,
 }: Props) {
   const { me, logout } = useAuth();
+  const { t, tr } = useI18n();
   const canFront =
     me?.permissions?.front_office === true ||
     ["admin", "receptionist"].includes(me?.role || "");
@@ -105,6 +109,12 @@ export function MoreScreen({
       hint: "Oldindan bron yaratish",
       mark: "＋",
       onPress: onNewBooking,
+    },
+    canFront && {
+      title: "Darhol joylash",
+      hint: "Bo‘sh xonani tanlab walk-in",
+      mark: "→",
+      onPress: onOpenWalkIn,
     },
     canFront && {
       title: "Bronlar",
@@ -302,7 +312,7 @@ export function MoreScreen({
   return (
     <View style={ui.screen}>
       <ScreenHeader
-        eyebrow="Yana"
+        eyebrow={t("tabMore")}
         title={me?.user.full_name || "Profil"}
         subtitle={`${me?.hotel?.name || me?.tenant.name || ""} · ${me?.role || ""}`}
         onTitlePress={onOpenProfile}
@@ -311,59 +321,25 @@ export function MoreScreen({
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
       >
-        {frontItems.length ? (
-          <MenuSection title="Front desk">
-            {frontItems.map((item, i) => (
-              <MenuRow
-                key={item.title}
-                {...item}
-                last={i === frontItems.length - 1}
-              />
-            ))}
-          </MenuSection>
-        ) : null}
-
-        {opsItems.length ? (
-          <MenuSection title="Operatsiya">
-            {opsItems.map((item, i) => (
-              <MenuRow
-                key={item.title}
-                {...item}
-                last={i === opsItems.length - 1}
-              />
-            ))}
-          </MenuSection>
-        ) : null}
-
-        {financeItems.length ? (
-          <MenuSection title="Moliya">
-            {financeItems.map((item, i) => (
-              <MenuRow
-                key={item.title}
-                {...item}
-                last={i === financeItems.length - 1}
-              />
-            ))}
-          </MenuSection>
-        ) : null}
-
-        {adminItems.length ? (
-          <MenuSection title="Boshqaruv">
-            {adminItems.map((item, i) => (
-              <MenuRow
-                key={item.title}
-                {...item}
-                last={i === adminItems.length - 1}
-              />
-            ))}
-          </MenuSection>
-        ) : null}
+        {[
+          ["Front desk", frontItems],
+          ["Operatsiya", opsItems],
+          ["Moliya", financeItems],
+          ["Boshqaruv", adminItems],
+        ].map(([title, items]) =>
+          (items as typeof frontItems).length ? (
+            <View key={String(title)} style={styles.block}>
+              <Text style={styles.blockTitle}>{tr(String(title))}</Text>
+              <MenuGrid items={items as typeof frontItems} />
+            </View>
+          ) : null
+        )}
 
         <Pressable
           style={({ pressed }) => [styles.logout, pressed && { opacity: 0.88 }]}
           onPress={logout}
         >
-          <Text style={styles.logoutText}>Chiqish</Text>
+          <Text style={styles.logoutText}>{t("logout")}</Text>
         </Pressable>
       </ScrollView>
     </View>
@@ -373,8 +349,19 @@ export function MoreScreen({
 const styles = StyleSheet.create({
   body: {
     paddingHorizontal: space.lg,
-    paddingTop: space.sm,
-    paddingBottom: 120,
+    paddingTop: space.md,
+    paddingBottom: 36,
+  },
+  block: { marginTop: space.lg },
+  blockTitle: {
+    fontFamily: fontUi,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: colors.muted,
+    marginBottom: space.sm,
+    marginLeft: 2,
   },
   logout: {
     marginTop: space.xxl,

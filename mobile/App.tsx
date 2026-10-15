@@ -10,6 +10,7 @@ import {
 
 import type { BoardTile } from "./src/api/types";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
+import { I18nProvider, useI18n } from "./src/i18n";
 import { BoardScreen } from "./src/screens/BoardScreen";
 import { BookingScreen } from "./src/screens/BookingScreen";
 import { CalendarScreen } from "./src/screens/CalendarScreen";
@@ -85,16 +86,17 @@ type BookingDraft = {
   checkIn?: string | null;
 };
 
-const TABS: { id: Tab; icon: string; label: string }[] = [
-  { id: "board", icon: "▦", label: "Doska" },
-  { id: "today", icon: "◎", label: "Bugun" },
-  { id: "calendar", icon: "▤", label: "Taqvim" },
-  { id: "housekeeping", icon: "◇", label: "Toza" },
-  { id: "more", icon: "⋯", label: "Yana" },
+const TAB_DEFS: { id: Tab; icon: string; key: "tabBoard" | "tabToday" | "tabCalendar" | "tabHk" | "tabMore" }[] = [
+  { id: "board", icon: "▦", key: "tabBoard" },
+  { id: "today", icon: "◎", key: "tabToday" },
+  { id: "calendar", icon: "▤", key: "tabCalendar" },
+  { id: "housekeeping", icon: "◇", key: "tabHk" },
+  { id: "more", icon: "⋯", key: "tabMore" },
 ];
 
 function Root() {
   const { ready, token } = useAuth();
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("board");
   const [reservationId, setReservationId] = useState<number | null>(null);
   const [walkInRoom, setWalkInRoom] = useState<WalkInRoom | null>(null);
@@ -396,6 +398,7 @@ function Root() {
               setBookingDraft({});
               setOverlay("booking");
             }}
+            onOpenWalkIn={() => setTab("board")}
             onOpenFlash={() => setOverlay("flash")}
             onOpenMaintenance={() => setOverlay("maintenance")}
             onOpenCompanies={() => setOverlay("companies")}
@@ -424,7 +427,7 @@ function Root() {
         )}
       </View>
       <View style={styles.tabBar}>
-        {TABS.map(({ id, icon, label }) => {
+        {TAB_DEFS.map(({ id, icon, key }) => {
           const on = tab === id;
           return (
             <Pressable
@@ -437,7 +440,7 @@ function Root() {
               onPress={() => setTab(id)}
             >
               <Text style={[styles.tabIcon, on && styles.tabIconOn]}>{icon}</Text>
-              <Text style={[styles.tabText, on && styles.tabTextOn]}>{label}</Text>
+              <Text style={[styles.tabText, on && styles.tabTextOn]}>{t(key)}</Text>
             </Pressable>
           );
         })}
@@ -449,10 +452,12 @@ function Root() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <StatusBar style="light" />
-        <Root />
-      </AuthProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <StatusBar style="light" />
+          <Root />
+        </AuthProvider>
+      </I18nProvider>
     </ErrorBoundary>
   );
 }
@@ -469,8 +474,8 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
     backgroundColor: colors.night,
-    paddingBottom: 20,
-    paddingTop: 10,
+    paddingBottom: 28,
+    paddingTop: 8,
     paddingHorizontal: 8,
     gap: 4,
     borderTopWidth: StyleSheet.hairlineWidth,

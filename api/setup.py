@@ -4,10 +4,12 @@ from datetime import date, time
 from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError
+from django.db.models.deletion import ProtectedError
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from core.roles import PROPERTY_ADMIN
 from properties.models import Floor, PropertySettings, RatePlan, Room, RoomType, SeasonRate
+from properties.services import prune_to_standard_room_types, seed_standard_room_types
 from services.models import ServiceItem
 from tenants.models import TenantMembership
 
@@ -633,3 +635,121 @@ def room_update(request, pk):
             "floor_id": room.floor_id,
         }
     )
+
+
+def _hotel_or_400(request):
+    hotel = getattr(request, "active_property", None)
+    if hotel is None:
+        return None, json_error("Select a hotel (X-Hotel-Id).", status=400)
+    return hotel, None
+
+
+@api_login_required
+@api_role_required(*PROPERTY_ADMIN, TenantMembership.Role.MANAGER)
+@require_POST
+def room_types_seed(request):
+    """Seed Double/Twin/Triple for active hotel — same as web room_types_seed."""
+    hotel, err = _hotel_or_400(request)
+    if err:
+        return err
+    data = parse_json(request)
+    base_price = None
+    if data.get("base_price") not in (None, ""):
+        try:
+            base_price = _dec(data["base_price"], "base_price")
+        except ValidationError as exc:
+            return _err(exc)
+        if base_price < 0:
+            return json_error("Asosiy narx manfiy bo‘lishi mumkin emas.")
+    with_rates = bool(data.get("with_rates"))
+    result = seed_standard_room_types(
+        tenant=request.tenant,
+        prop=hotel,
+        base_price=base_price,
+        with_rate_plans=with_rates,
+    )
+    pruned = prune_to_standard_room_types(prop=hotel)
+    return json_ok(
+        {
+            "created_types": [t.code for t in result.get("created_types") or []],
+            "base_price": str(result.get("base_price") or ""),
+            "deactivated": pruned.get("deactivated") or [],
+            "remapped_rooms": pruned.get("remapped_rooms") or 0,
+        }
+    )
+
+
+@api_login_required
+@api_role_required(*PROPERTY_ADMIN, TenantMembership.Role.MANAGER)
+@require_POST
+def room_delete(request, pk):
+    hotel, err = _hotel_or_400(request)
+    if err:
+        return err
+    room = Room.objects.filter(pk=pk, tenant=request.tenant, property=hotel).first()
+    if room is None:
+        return json_error("Room not found.", status=404)
+    number = room.number
+    try:
+        room.delete()
+    except ProtectedError:
+        return json_error("Xona bronlarda ishlatilgan — o‘chirib bo‘lmaydi.", status=400)
+    return json_ok({"deleted": True, "number": number})
+
+
+@api_login_required
+@api_role_required(*PROPERTY_ADMIN, TenantMembership.Role.MANAGER)
+@require_POST
+def room_type_delete(request, pk):
+    hotel, err = _hotel_or_400(request)
+    if err:
+        return err
+    rt = RoomType.objects.filter(pk=pk, tenant=request.tenant, property=hotel).first()
+    if rt is None:
+        return json_error("Room type not found.", status=404)
+    room_count = rt.rooms.count()
+    if room_count:
+        return json_error(
+            f"Avval shu turga biriktirilgan {room_count} ta xonani boshqa turga "
+            "o‘tkazing yoki o‘chiring.",
+            status=400,
+        )
+    code = rt.code
+    try:
+        rt.delete()
+    except ProtectedError:
+        return json_error("Bu tur bronlarda ishlatilgan — o‘chirib bo‘lmaydi.", status=400)
+    return json_ok({"deleted": True, "code": code})
+
+
+@api_login_required
+@api_role_required(*PROPERTY_ADMIN, TenantMembership.Role.MANAGER)
+@require_POST
+def floor_delete(request, pk):
+    hotel, err = _hotel_or_400(request)
+    if err:
+        return err
+    floor = Floor.objects.filter(pk=pk, tenant=request.tenant, property=hotel).first()
+    if floor is None:
+        return json_error("Floor not found.", status=404)
+    number = floor.number
+    floor.delete()
+    return json_ok({"deleted": True, "number": number})
+
+
+@api_login_required
+@api_role_required(*PROPERTY_ADMIN, TenantMembership.Role.MANAGER)
+@require_POST
+def rate_plan_delete(request, pk):
+    hotel, err = _hotel_or_400(request)
+    if err:
+        return err
+    rp = RatePlan.objects.filter(pk=pk, tenant=request.tenant, property=hotel).first()
+    if rp is None:
+        return json_error("Rate plan not found.", status=404)
+    code = rp.code
+    try:
+        rp.delete()
+    except ProtectedError:
+        return json_error("Tarif bronlarda ishlatilgan — o‘chirib bo‘lmaydi.", status=400)
+    return json_ok({"deleted": True, "code": code})

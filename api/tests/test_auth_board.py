@@ -726,6 +726,17 @@ class ApiAuthBoardTests(TestCase):
         eid = created.json()["data"]["id"]
         self.assertEqual(created.json()["data"]["status"], "draft")
 
+        updated = self.client.post(
+            reverse("api:expense_update", kwargs={"pk": eid}),
+            data='{"title":"Paper A4","amount":"55000"}',
+            **headers,
+        )
+        self.assertEqual(updated.status_code, 200, updated.content)
+        self.assertEqual(updated.json()["data"]["title"], "Paper A4")
+        self.assertEqual(
+            Decimal(updated.json()["data"]["amount"]), Decimal("55000")
+        )
+
         approved = self.client.post(
             reverse("api:expense_approve", kwargs={"pk": eid}),
             data="{}",
@@ -741,6 +752,13 @@ class ApiAuthBoardTests(TestCase):
         )
         self.assertEqual(paid.status_code, 200, paid.content)
         self.assertEqual(paid.json()["data"]["status"], "paid")
+
+        blocked = self.client.post(
+            reverse("api:expense_update", kwargs={"pk": eid}),
+            data='{"title":"Nope"}',
+            **headers,
+        )
+        self.assertEqual(blocked.status_code, 400, blocked.content)
 
     def test_phase2_inventory_hr_setup_maintenance(self):
         from maintenance.models import MaintenanceTicket

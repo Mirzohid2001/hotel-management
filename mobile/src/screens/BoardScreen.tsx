@@ -15,6 +15,7 @@ import {
 import { ApiError } from "../api/client";
 import type { BoardTile } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { EmptyState } from "../ui/primitives";
 import {
@@ -43,10 +44,10 @@ function shiftDate(iso: string, delta: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function formatDayLabel(iso: string): string {
+function formatDayLabel(iso: string, lang: "uz" | "ru" = "uz"): string {
   try {
     const d = new Date(iso + "T12:00:00");
-    return d.toLocaleDateString("uz-UZ", {
+    return d.toLocaleDateString(lang === "ru" ? "ru-RU" : "uz-UZ", {
       weekday: "short",
       day: "numeric",
       month: "short",
@@ -61,12 +62,17 @@ function Tile({
   onPress,
   onLongPress,
   wide,
+  showHotel,
+  onDelete,
 }: {
   item: BoardTile;
   onPress?: () => void;
   onLongPress?: () => void;
   wide?: boolean;
+  showHotel?: boolean;
+  onDelete?: () => void;
 }) {
+  const { tr } = useI18n();
   const palette =
     roomState[item.state as keyof typeof roomState] || roomState.vacant;
   const guest = item.reservation?.guest?.name;
@@ -89,11 +95,16 @@ function Tile({
           </Text>
           <View style={[styles.pill, { backgroundColor: palette.pillBg }]}>
             <Text style={[styles.pillText, { color: palette.pillFg }]}>
-              {STATE_LABEL[item.state] || item.state}
+              {tr(STATE_LABEL[item.state] || item.state)}
             </Text>
           </View>
         </View>
 
+        {showHotel && item.room.hotel_name ? (
+          <Text style={[styles.type, { color: palette.fg }]} numberOfLines={1}>
+            {item.room.hotel_name}
+          </Text>
+        ) : null}
         {showType ? (
           <Text style={[styles.type, { color: palette.fg }]} numberOfLines={1}>
             {roomType}
@@ -117,6 +128,17 @@ function Tile({
                   {item.folio?.balance ? ` · ${item.folio.balance}` : ""}
                 </Text>
               ) : null}
+              {onDelete ? (
+                <Pressable
+                  onPress={onDelete}
+                  hitSlop={8}
+                  style={{ alignSelf: "flex-start", marginTop: 6 }}
+                >
+                  <Text style={{ color: colors.danger, fontSize: 12, fontWeight: "700" }}>
+                    {tr("O‘chirish")}
+                  </Text>
+                </Pressable>
+              ) : null}
             </>
           ) : isVacant || isDirty ? (
             <View
@@ -135,7 +157,7 @@ function Tile({
                   },
                 ]}
               >
-                {isVacant ? "Joylashtirish →" : "Tozalash →"}
+                {tr(isVacant ? "Joylashtirish →" : "Tozalash →")}
               </Text>
             </View>
           ) : (
@@ -198,7 +220,10 @@ export function BoardScreen({
   onHotelChanged,
 }: BoardProps) {
   const { width } = useWindowDimensions();
-  const { me, fetchBoard, setRoomStatus, setHotel } = useAuth();
+  const { me, fetchBoard, setRoomStatus, setHotel, hotelId, purgeReservation } =
+    useAuth();
+  const { tr, lang } = useI18n();
+  const [hotelOpen, setHotelOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [tiles, setTiles] = useState<BoardTile[]>([]);
   const [stats, setStats] = useState({
@@ -362,26 +387,22 @@ export function BoardScreen({
   }
 
   function pickHotel() {
-    const hotels = me?.hotels || [];
-    if (hotels.length < 2) return;
-    Alert.alert("Filial", "Qaysi mehmonxona?", [
-      ...hotels.map((h) => ({
-        text: h.name + (h.id === me?.hotel?.id ? " ✓" : ""),
-        onPress: async () => {
-          try {
-            await setHotel(h.id);
-            onHotelChanged?.();
-            await load(true, selectedDay);
-          } catch (e) {
-            Alert.alert(
-              "Filial",
-              e instanceof ApiError ? e.message : "Almashtirish xatosi"
-            );
-          }
-        },
-      })),
-      { text: "Bekor", style: "cancel" as const },
-    ]);
+    if ((me?.hotels?.length || 0) < 2) return;
+    setHotelOpen((v) => !v);
+  }
+
+  async function chooseHotel(id: number | "all") {
+    setHotelOpen(false);
+    try {
+      await setHotel(id);
+      onHotelChanged?.();
+      await load(true, selectedDay);
+    } catch (e) {
+      Alert.alert(
+        "Filial",
+        e instanceof ApiError ? e.message : "Almashtirish xatosi"
+      );
+    }
   }
 
   const filtered = tiles.filter((t) =>
@@ -392,11 +413,13 @@ export function BoardScreen({
     stats.total > 0 ? Math.round((stats.occupied / stats.total) * 100) : 0;
 
   const hotelTitle =
-    (me?.hotel?.name || "").trim().length > 1
-      ? me!.hotel!.name
-      : (me?.tenant.name || "").trim().length > 1
-        ? me!.tenant.name
-        : "Mehmonxona";
+    hotelId === "all"
+      ? "Barcha filiallar"
+      : (me?.hotel?.name || "").trim().length > 1
+        ? me!.hotel!.name
+        : (me?.tenant.name || "").trim().length > 1
+          ? me!.tenant.name
+          : "Mehmonxona";
 
   const quick: { label: string; mark: string; onPress?: () => void }[] = [
     canDash && onOpenDashboard
@@ -444,19 +467,19 @@ export function BoardScreen({
         <View style={styles.statDivider} />
         <View style={styles.statBlock}>
           <Text style={styles.statValue}>{stats.vacant}</Text>
-          <Text style={styles.statLabel}>Bo‘sh</Text>
+          <Text style={styles.statLabel}>{tr("Bo‘sh")}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBlock}>
           <Text style={styles.statValue}>{stats.occupied}</Text>
-          <Text style={styles.statLabel}>Band</Text>
+          <Text style={styles.statLabel}>{tr("Band")}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBlock}>
           <Text style={[styles.statValue, stats.dirty > 0 && { color: colors.warn }]}>
             {stats.dirty}
           </Text>
-          <Text style={styles.statLabel}>Kir</Text>
+          <Text style={styles.statLabel}>{tr("Kir")}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBlock}>
@@ -487,7 +510,7 @@ export function BoardScreen({
               <View style={styles.quickMark}>
                 <Text style={styles.quickMarkText}>{q.mark}</Text>
               </View>
-              <Text style={styles.quickText}>{q.label}</Text>
+              <Text style={styles.quickText}>{tr(q.label)}</Text>
             </Pressable>
           ))}
         </ScrollView>
@@ -507,7 +530,7 @@ export function BoardScreen({
               onPress={() => setFilter(f.id)}
             >
               <Text style={[styles.filterText, on && styles.filterTextOn]}>
-                {f.label}
+                {tr(f.label)}
               </Text>
               <View style={[styles.filterCount, on && styles.filterCountOn]}>
                 <Text
@@ -548,7 +571,7 @@ export function BoardScreen({
                 pressed && { opacity: 0.85 },
               ]}
             >
-              <Text style={styles.bronBtnText}>+ Bron</Text>
+              <Text style={styles.bronBtnText}>{tr("+ Bron")}</Text>
             </Pressable>
           ) : null
         }
@@ -562,7 +585,7 @@ export function BoardScreen({
             onPress={() => setSelectedDay(todayIso)}
           >
             <Text style={styles.dateLabel}>
-              {formatDayLabel(selectedDay || day || todayIso)}
+              {formatDayLabel(selectedDay || day || todayIso, lang)}
             </Text>
             {(selectedDay || day) !== todayIso ? (
               <Text style={styles.todayLink}>Bugun</Text>
@@ -573,6 +596,33 @@ export function BoardScreen({
           </Pressable>
         </View>
       </ScreenHeader>
+      {hotelOpen ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingBottom: 10 }}
+        >
+          <Pressable
+            style={[ui.chip, hotelId === "all" && ui.chipOn]}
+            onPress={() => chooseHotel("all")}
+          >
+            <Text style={[ui.chipText, hotelId === "all" && ui.chipTextOn]}>
+              Barcha filiallar
+            </Text>
+          </Pressable>
+          {(me?.hotels || []).map((h) => (
+            <Pressable
+              key={h.id}
+              style={[ui.chip, hotelId === h.id && ui.chipOn]}
+              onPress={() => chooseHotel(h.id)}
+            >
+              <Text style={[ui.chipText, hotelId === h.id && ui.chipTextOn]}>
+                {h.name}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
 
       {loading && !tiles.length ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={colors.accent} />
@@ -603,6 +653,37 @@ export function BoardScreen({
               <Tile
                 item={item}
                 wide={useSingleCol}
+                showHotel={hotelId === "all"}
+                onDelete={
+                  me?.role === "admin" && item.reservation
+                    ? () => {
+                        const id = item.reservation!.id;
+                        const code = item.reservation!.code;
+                        Alert.alert(
+                          tr("O‘chirish"),
+                          `${code}: bron, hisob va to‘lovlar o‘chadi. Mehmon va xona qoladi.`,
+                          [
+                            { text: tr("Yo‘q"), style: "cancel" },
+                            {
+                              text: tr("O‘chirish"),
+                              style: "destructive",
+                              onPress: async () => {
+                                try {
+                                  await purgeReservation(id);
+                                  await load(true, selectedDay);
+                                } catch (e) {
+                                  Alert.alert(
+                                    "Xato",
+                                    e instanceof ApiError ? e.message : "Xato"
+                                  );
+                                }
+                              },
+                            },
+                          ]
+                        );
+                      }
+                    : undefined
+                }
                 onPress={
                   item.reservation
                     ? () => onOpenReservation(item.reservation!.id)
@@ -685,7 +766,6 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   statsCard: {
-    marginHorizontal: space.lg,
     marginTop: space.md,
     marginBottom: space.sm,
     backgroundColor: colors.surface,
@@ -721,7 +801,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.line,
   },
   quickRow: {
-    paddingHorizontal: space.lg,
     paddingVertical: space.sm,
     gap: space.sm,
   },
@@ -807,7 +886,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   errorPad: { paddingHorizontal: space.lg, marginBottom: space.sm },
-  list: { paddingBottom: 32, paddingHorizontal: space.lg },
+  list: { paddingBottom: 24, paddingHorizontal: space.lg },
   row: {
     gap: 10,
     marginBottom: 10,

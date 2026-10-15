@@ -30,17 +30,29 @@ export function SetupScreen({ onBack }: Props) {
     updatePropertySettings,
     fetchRoomTypes,
     createRoomType,
+    seedRoomTypes,
+    deleteRoomType,
     fetchAdminRooms,
     createAdminRoom,
+    deleteAdminRoom,
     createFloor,
+    deleteFloor,
     updateRoomType,
     updateAdminRoom,
     fetchServicesCatalog,
     createServiceItem,
     fetchRatePlans,
     createRatePlan,
+    updateRatePlan,
+    deleteRatePlan,
     createRateSeason,
     fetchRatePlanMatrix,
+    setDayRate,
+    createProperty,
+    fetchWidget,
+    updateWidget,
+    hotelId,
+    me,
   } = useAuth();
   const [tab, setTab] = useState<Tab>("settings");
   const [loading, setLoading] = useState(true);
@@ -75,11 +87,21 @@ export function SetupScreen({ onBack }: Props) {
   const [matrixPlanId, setMatrixPlanId] = useState<number | null>(null);
   const [matrixRows, setMatrixRows] = useState<Record<string, unknown>[]>([]);
   const [matrixLoading, setMatrixLoading] = useState(false);
+  const [branchName, setBranchName] = useState("");
+  const [branchCode, setBranchCode] = useState("");
+  const [widget, setWidget] = useState<Record<string, unknown> | null>(null);
+  const [wDomains, setWDomains] = useState("");
+  const [wTitle, setWTitle] = useState("");
+  const [wText, setWText] = useState("");
   const [seasonPlanId, setSeasonPlanId] = useState<number | null>(null);
   const [seasonName, setSeasonName] = useState("");
   const [seasonStart, setSeasonStart] = useState("");
   const [seasonEnd, setSeasonEnd] = useState("");
   const [seasonPrice, setSeasonPrice] = useState("");
+  const [editTypeId, setEditTypeId] = useState<number | null>(null);
+  const [editRoomId, setEditRoomId] = useState<number | null>(null);
+  const [editFloorId, setEditFloorId] = useState<number | null>(null);
+  const [editRateId, setEditRateId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -149,14 +171,22 @@ export function SetupScreen({ onBack }: Props) {
   }
 
   async function addRoomType() {
-    if (!rtName.trim() || !rtCode.trim()) return;
+    if (!rtName.trim() || (!editTypeId && !rtCode.trim())) return;
     setBusy(true);
     try {
-      await createRoomType({
-        name: rtName.trim(),
-        code: rtCode.trim(),
-        base_price: rtPrice || "0",
-      });
+      if (editTypeId) {
+        await updateRoomType(editTypeId, {
+          name: rtName.trim(),
+          base_price: rtPrice || "0",
+        });
+        setEditTypeId(null);
+      } else {
+        await createRoomType({
+          name: rtName.trim(),
+          code: rtCode.trim(),
+          base_price: rtPrice || "0",
+        });
+      }
       setRtName("");
       setRtCode("");
       setRtPrice("");
@@ -172,11 +202,20 @@ export function SetupScreen({ onBack }: Props) {
     if (!roomNumber.trim() || !roomTypeId) return;
     setBusy(true);
     try {
-      await createAdminRoom({
-        number: roomNumber.trim(),
-        room_type_id: roomTypeId,
-        ...(floorId ? { floor_id: floorId } : {}),
-      });
+      if (editRoomId) {
+        await updateAdminRoom(editRoomId, {
+          number: roomNumber.trim(),
+          room_type_id: roomTypeId,
+          floor_id: floorId || null,
+        });
+        setEditRoomId(null);
+      } else {
+        await createAdminRoom({
+          number: roomNumber.trim(),
+          room_type_id: roomTypeId,
+          ...(floorId ? { floor_id: floorId } : {}),
+        });
+      }
       setRoomNumber("");
       await load();
     } catch (e) {
@@ -190,10 +229,18 @@ export function SetupScreen({ onBack }: Props) {
     if (!floorNumber.trim()) return;
     setBusy(true);
     try {
-      await createFloor({
-        number: Number(floorNumber.trim()),
-        name: floorName.trim() || undefined,
-      });
+      if (editFloorId) {
+        await updateFloor(editFloorId, {
+          number: Number(floorNumber.trim()),
+          name: floorName.trim() || "",
+        });
+        setEditFloorId(null);
+      } else {
+        await createFloor({
+          number: Number(floorNumber.trim()),
+          name: floorName.trim() || undefined,
+        });
+      }
       setFloorNumber("");
       setFloorName("");
       await load();
@@ -225,16 +272,25 @@ export function SetupScreen({ onBack }: Props) {
   }
 
   async function addRate() {
-    if (!rateName.trim() || !rateCode.trim() || !roomTypeId) return;
+    if (!rateName.trim() || (!editRateId && !rateCode.trim()) || !roomTypeId)
+      return;
     setBusy(true);
     try {
-      await createRatePlan({
-        name: rateName.trim(),
-        code: rateCode.trim(),
-        room_type_id: roomTypeId,
-        price: ratePrice || "0",
-        is_default: rates.length === 0,
-      });
+      if (editRateId) {
+        await updateRatePlan(editRateId, {
+          name: rateName.trim(),
+          price: ratePrice || "0",
+        });
+        setEditRateId(null);
+      } else {
+        await createRatePlan({
+          name: rateName.trim(),
+          code: rateCode.trim(),
+          room_type_id: roomTypeId,
+          price: ratePrice || "0",
+          is_default: rates.length === 0,
+        });
+      }
       setRateName("");
       setRateCode("");
       setRatePrice("");
@@ -273,12 +329,20 @@ export function SetupScreen({ onBack }: Props) {
     }
     setBusy(true);
     try {
-      await createRateSeason(seasonPlanId, {
-        name: seasonName.trim() || "Sezon",
-        date_from: seasonStart.trim(),
-        date_to: seasonEnd.trim(),
-        price: seasonPrice.trim() || "0",
-      });
+      if (seasonStart.trim() === seasonEnd.trim()) {
+        await setDayRate(
+          seasonPlanId,
+          seasonStart.trim(),
+          seasonPrice.trim() || "0"
+        );
+      } else {
+        await createRateSeason(seasonPlanId, {
+          name: seasonName.trim() || "Sezon",
+          date_from: seasonStart.trim(),
+          date_to: seasonEnd.trim(),
+          price: seasonPrice.trim() || "0",
+        });
+      }
       setSeasonName("");
       setSeasonStart("");
       setSeasonEnd("");
@@ -338,10 +402,13 @@ export function SetupScreen({ onBack }: Props) {
         >
           {tab === "settings" ? (
             <FormCard>
-              <FieldLabel>E-mehmon to‘lovi</FieldLabel>
+              <FieldLabel>E-mehmon (eski, ishlatilmaydi)</FieldLabel>
+              <Text style={{ color: colors.faint, marginBottom: 8, fontSize: 13 }}>
+                Summa endi zayezdda qo‘lda yoziladi (O‘zbek / chet el).
+              </Text>
               <TextInput
                 style={ui.input}
-                placeholder="9000"
+                placeholder="—"
                 placeholderTextColor={colors.faint}
                 value={emehmon}
                 onChangeText={setEmehmon}
@@ -415,11 +482,225 @@ export function SetupScreen({ onBack }: Props) {
               />
             </FormCard>
           ) : null}
+          {tab === "settings" && me?.role === "admin" ? (
+            <>
+              <FormCard>
+                <Text style={ui.section}>Yangi filial</Text>
+                <FieldLabel>Nomi</FieldLabel>
+                <TextInput
+                  style={ui.input}
+                  value={branchName}
+                  onChangeText={setBranchName}
+                  placeholder="Filial nomi"
+                  placeholderTextColor={colors.faint}
+                />
+                <FieldLabel>Kod</FieldLabel>
+                <TextInput
+                  style={ui.input}
+                  value={branchCode}
+                  onChangeText={setBranchCode}
+                  placeholder="chilanzar"
+                  autoCapitalize="none"
+                  placeholderTextColor={colors.faint}
+                />
+                <PrimaryButton
+                  label="Filial yaratish"
+                  loading={busy}
+                  onPress={async () => {
+                    if (!branchName.trim()) return;
+                    setBusy(true);
+                    try {
+                      await createProperty({
+                        name: branchName.trim(),
+                        branch_code: branchCode.trim(),
+                      });
+                      setBranchName("");
+                      setBranchCode("");
+                      Alert.alert("OK", "Filial yaratildi. Doskada tanlang.");
+                    } catch (e) {
+                      Alert.alert(
+                        "Xato",
+                        e instanceof ApiError ? e.message : "Xato"
+                      );
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                />
+              </FormCard>
+              <FormCard>
+                <Text style={ui.section}>Onlayn bron</Text>
+                {hotelId === "all" || hotelId == null ? (
+                  <Text style={ui.rowMeta}>
+                    Avval bitta filialni tanlang. «Barcha filiallar» rejimida
+                    widget bitta mehmonxonaga tegishli.
+                  </Text>
+                ) : (
+                  <>
+                    <PrimaryButton
+                      label={widget ? "Widgetni yangilash" : "Widgetni ochish"}
+                      tone="ghost"
+                      loading={busy}
+                      onPress={async () => {
+                        setBusy(true);
+                        try {
+                          const data = await fetchWidget();
+                          setWidget(data);
+                          setWDomains(String(data.allowed_domains || ""));
+                          setWTitle(String(data.welcome_title || ""));
+                          setWText(String(data.welcome_text || ""));
+                        } catch (e) {
+                          Alert.alert(
+                            "Xato",
+                            e instanceof ApiError ? e.message : "Xato"
+                          );
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                    />
+                    {widget ? (
+                      <>
+                        <Pressable
+                          style={[ui.chip, widget.is_enabled ? ui.chipOn : null, { marginTop: 8 }]}
+                          onPress={() =>
+                            setWidget({ ...widget, is_enabled: !widget.is_enabled })
+                          }
+                        >
+                          <Text style={ui.chipText}>
+                            {widget.is_enabled ? "Yoqilgan" : "O‘chiq"}
+                          </Text>
+                        </Pressable>
+                        <FieldLabel>Domenlar (har qator)</FieldLabel>
+                        <TextInput
+                          style={[ui.input, { minHeight: 72 }]}
+                          multiline
+                          value={wDomains}
+                          onChangeText={setWDomains}
+                          placeholder="aida-hotel.uz"
+                          placeholderTextColor={colors.faint}
+                        />
+                        <FieldLabel>Sarlavha</FieldLabel>
+                        <TextInput
+                          style={ui.input}
+                          value={wTitle}
+                          onChangeText={setWTitle}
+                          placeholderTextColor={colors.faint}
+                        />
+                        <FieldLabel>Matn</FieldLabel>
+                        <TextInput
+                          style={ui.input}
+                          value={wText}
+                          onChangeText={setWText}
+                          placeholderTextColor={colors.faint}
+                        />
+                        <PrimaryButton
+                          label="Widgetni saqlash"
+                          loading={busy}
+                          onPress={async () => {
+                            setBusy(true);
+                            try {
+                              const saved = await updateWidget({
+                                is_enabled: !!widget.is_enabled,
+                                allowed_domains: wDomains,
+                                auto_confirm: !!widget.auto_confirm,
+                                auto_assign_room: widget.auto_assign_room !== false,
+                                welcome_title: wTitle,
+                                welcome_text: wText,
+                              });
+                              setWidget(saved);
+                              Alert.alert("OK", "Widget saqlandi");
+                            } catch (e) {
+                              Alert.alert(
+                                "Xato",
+                                e instanceof ApiError ? e.message : "Xato"
+                              );
+                            } finally {
+                              setBusy(false);
+                            }
+                          }}
+                        />
+                        <Pressable
+                          style={[ui.chip, { marginTop: 8 }]}
+                          onPress={() =>
+                            setWidget({
+                              ...widget,
+                              auto_confirm: !widget.auto_confirm,
+                            })
+                          }
+                        >
+                          <Text style={ui.chipText}>
+                            Avto-tasdiq: {widget.auto_confirm ? "ha" : "yo‘q"}
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          style={[ui.chip, { marginTop: 8 }]}
+                          onPress={() =>
+                            setWidget({
+                              ...widget,
+                              auto_assign_room: !widget.auto_assign_room,
+                            })
+                          }
+                        >
+                          <Text style={ui.chipText}>
+                            Xona biriktirish:{" "}
+                            {widget.auto_assign_room !== false ? "ha" : "yo‘q"}
+                          </Text>
+                        </Pressable>
+                        {widget.embed_iframe ? (
+                          <Text style={[ui.rowMeta, { marginTop: 8 }]} selectable>
+                            {String(widget.embed_iframe)}
+                          </Text>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </>
+                )}
+              </FormCard>
+            </>
+          ) : null}
 
           {tab === "rooms" ? (
             <>
               <FormCard>
-                <Text style={ui.section}>Yangi xona turi</Text>
+                <Text style={ui.section}>Standart turlar</Text>
+                <Text style={[ui.rowMeta, { marginBottom: 8 }]}>
+                  Double · Twin · Triple ni bir marta qo‘shadi
+                </Text>
+                <PrimaryButton
+                  label="Seed Double/Twin/Triple"
+                  tone="ghost"
+                  loading={busy}
+                  onPress={async () => {
+                    setBusy(true);
+                    try {
+                      const r = await seedRoomTypes({ with_rates: true });
+                      await load();
+                      const n = Array.isArray(r.created_types)
+                        ? r.created_types.length
+                        : 0;
+                      Alert.alert(
+                        "OK",
+                        n
+                          ? `${n} ta tur qo‘shildi`
+                          : "Standart turlar allaqachon bor"
+                      );
+                    } catch (e) {
+                      Alert.alert(
+                        "Xato",
+                        e instanceof ApiError ? e.message : "Xato"
+                      );
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                />
+              </FormCard>
+
+              <FormCard>
+                <Text style={ui.section}>
+                  {editTypeId ? "Xona turini tahrirlash" : "Yangi xona turi"}
+                </Text>
                 <FieldLabel>Nomi</FieldLabel>
                 <TextInput
                   style={ui.input}
@@ -428,15 +709,19 @@ export function SetupScreen({ onBack }: Props) {
                   value={rtName}
                   onChangeText={setRtName}
                 />
-                <FieldLabel>Kod</FieldLabel>
-                <TextInput
-                  style={ui.input}
-                  placeholder="std"
-                  placeholderTextColor={colors.faint}
-                  value={rtCode}
-                  onChangeText={setRtCode}
-                  autoCapitalize="none"
-                />
+                {!editTypeId ? (
+                  <>
+                    <FieldLabel>Kod</FieldLabel>
+                    <TextInput
+                      style={ui.input}
+                      placeholder="std"
+                      placeholderTextColor={colors.faint}
+                      value={rtCode}
+                      onChangeText={setRtCode}
+                      autoCapitalize="none"
+                    />
+                  </>
+                ) : null}
                 <FieldLabel>Narx</FieldLabel>
                 <TextInput
                   style={ui.input}
@@ -447,10 +732,22 @@ export function SetupScreen({ onBack }: Props) {
                   keyboardType="decimal-pad"
                 />
                 <PrimaryButton
-                  label="Tur qo‘shish"
+                  label={editTypeId ? "Yangilash" : "Tur qo‘shish"}
                   onPress={addRoomType}
                   loading={busy}
                 />
+                {editTypeId ? (
+                  <PrimaryButton
+                    label="Bekor"
+                    tone="ghost"
+                    onPress={() => {
+                      setEditTypeId(null);
+                      setRtName("");
+                      setRtCode("");
+                      setRtPrice("");
+                    }}
+                  />
+                ) : null}
               </FormCard>
 
               <FormCard>
@@ -472,13 +769,61 @@ export function SetupScreen({ onBack }: Props) {
                   value={floorName}
                   onChangeText={setFloorName}
                 />
-                <PrimaryButton label="Qavat qo‘shish" onPress={addFloor} loading={busy} />
+                <PrimaryButton
+                  label={editFloorId ? "Qavatni yangilash" : "Qavat qo‘shish"}
+                  onPress={addFloor}
+                  loading={busy}
+                />
+                {editFloorId ? (
+                  <PrimaryButton
+                    label="Bekor"
+                    tone="ghost"
+                    onPress={() => {
+                      setEditFloorId(null);
+                      setFloorNumber("");
+                      setFloorName("");
+                    }}
+                  />
+                ) : null}
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
                   {floors.map((f) => (
                     <Pressable
                       key={String(f.id)}
                       style={[ui.chip, floorId === Number(f.id) && ui.chipOn]}
                       onPress={() => setFloorId(Number(f.id))}
+                      onLongPress={() => {
+                        Alert.alert(
+                          "Qavat",
+                          `${f.number}${f.name ? ` · ${f.name}` : ""}`,
+                          [
+                            { text: "Bekor", style: "cancel" },
+                            {
+                              text: "Tahrirlash",
+                              onPress: () => {
+                                setEditFloorId(Number(f.id));
+                                setFloorNumber(String(f.number || ""));
+                                setFloorName(String(f.name || ""));
+                              },
+                            },
+                            {
+                              text: "O‘chirish",
+                              style: "destructive",
+                              onPress: async () => {
+                                try {
+                                  await deleteFloor(Number(f.id));
+                                  if (floorId === Number(f.id)) setFloorId(null);
+                                  await load();
+                                } catch (e) {
+                                  Alert.alert(
+                                    "Xato",
+                                    e instanceof ApiError ? e.message : "Xato"
+                                  );
+                                }
+                              },
+                            },
+                          ]
+                        );
+                      }}
                     >
                       <Text style={[ui.chipText, floorId === Number(f.id) && ui.chipTextOn]}>
                         {String(f.number)}{f.name ? ` · ${f.name}` : ""}
@@ -486,6 +831,9 @@ export function SetupScreen({ onBack }: Props) {
                     </Pressable>
                   ))}
                 </View>
+                <Text style={[ui.rowMeta, { marginTop: 4 }]}>
+                  Qavatni uzoq bosib tahrirlash / o‘chirish
+                </Text>
               </FormCard>
 
               <FormCard>
@@ -520,11 +868,78 @@ export function SetupScreen({ onBack }: Props) {
                   </View>
                 </ScrollView>
                 <PrimaryButton
-                  label="Xona qo‘shish"
+                  label={editRoomId ? "Xonani yangilash" : "Xona qo‘shish"}
                   onPress={addRoom}
                   loading={busy}
                 />
+                {editRoomId ? (
+                  <PrimaryButton
+                    label="Bekor"
+                    tone="ghost"
+                    onPress={() => {
+                      setEditRoomId(null);
+                      setRoomNumber("");
+                    }}
+                  />
+                ) : null}
               </FormCard>
+
+              <Text style={ui.section}>Xona turlari ({roomTypes.length})</Text>
+              {roomTypes.map((rt) => (
+                <ListCard
+                  key={`rt-${rt.id}`}
+                  title={String(rt.name)}
+                  meta={`${String(rt.code)} · ${String(rt.base_price)}`}
+                  badge={rt.is_active === false ? "O‘chiq" : "Faol"}
+                  badgeTone={rt.is_active === false ? "neutral" : "accent"}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      gap: 8,
+                      marginTop: 8,
+                    }}
+                  >
+                    <Pressable
+                      style={ui.chip}
+                      onPress={() => {
+                        setEditTypeId(Number(rt.id));
+                        setRtName(String(rt.name || ""));
+                        setRtCode(String(rt.code || ""));
+                        setRtPrice(String(rt.base_price || ""));
+                      }}
+                    >
+                      <Text style={ui.chipText}>Tahrirlash</Text>
+                    </Pressable>
+                    <Pressable
+                      style={ui.chip}
+                      onPress={() =>
+                        Alert.alert("Tur", `${rt.name} o‘chirilsinmi?`, [
+                          { text: "Bekor", style: "cancel" },
+                          {
+                            text: "O‘chirish",
+                            style: "destructive",
+                            onPress: async () => {
+                              try {
+                                await deleteRoomType(Number(rt.id));
+                                await load();
+                              } catch (e) {
+                                Alert.alert(
+                                  "Xato",
+                                  e instanceof ApiError ? e.message : "Xato"
+                                );
+                              }
+                            },
+                          },
+                        ])
+                      }
+                    >
+                      <Text style={ui.chipText}>O‘chirish</Text>
+                    </Pressable>
+                  </View>
+                </ListCard>
+              ))}
 
               <Text style={ui.section}>Xonalar ({rooms.length})</Text>
               {rooms.slice(0, 40).map((r) => (
@@ -534,7 +949,55 @@ export function SetupScreen({ onBack }: Props) {
                   meta={String(r.status)}
                   badge={r.is_active ? "Faol" : "O‘chiq"}
                   badgeTone={r.is_active ? "success" : "neutral"}
-                />
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      gap: 8,
+                      marginTop: 8,
+                    }}
+                  >
+                    <Pressable
+                      style={ui.chip}
+                      onPress={() => {
+                        setEditRoomId(Number(r.id));
+                        setRoomNumber(String(r.number || ""));
+                        setRoomTypeId(
+                          r.room_type_id ? Number(r.room_type_id) : null
+                        );
+                        setFloorId(r.floor_id ? Number(r.floor_id) : null);
+                      }}
+                    >
+                      <Text style={ui.chipText}>Tahrirlash</Text>
+                    </Pressable>
+                    <Pressable
+                      style={ui.chip}
+                      onPress={() =>
+                        Alert.alert("Xona", `${r.number} o‘chirilsinmi?`, [
+                          { text: "Bekor", style: "cancel" },
+                          {
+                            text: "O‘chirish",
+                            style: "destructive",
+                            onPress: async () => {
+                              try {
+                                await deleteAdminRoom(Number(r.id));
+                                await load();
+                              } catch (e) {
+                                Alert.alert(
+                                  "Xato",
+                                  e instanceof ApiError ? e.message : "Xato"
+                                );
+                              }
+                            },
+                          },
+                        ])
+                      }
+                    >
+                      <Text style={ui.chipText}>O‘chirish</Text>
+                    </Pressable>
+                  </View>
+                </ListCard>
               ))}
             </>
           ) : null}
@@ -591,7 +1054,9 @@ export function SetupScreen({ onBack }: Props) {
           {tab === "rates" ? (
             <>
               <FormCard>
-                <Text style={ui.section}>Yangi tarif</Text>
+                <Text style={ui.section}>
+                  {editRateId ? "Tarifni tahrirlash" : "Yangi tarif"}
+                </Text>
                 <FieldLabel>Nomi</FieldLabel>
                 <TextInput
                   style={ui.input}
@@ -600,15 +1065,19 @@ export function SetupScreen({ onBack }: Props) {
                   value={rateName}
                   onChangeText={setRateName}
                 />
-                <FieldLabel>Kod</FieldLabel>
-                <TextInput
-                  style={ui.input}
-                  placeholder="bar"
-                  placeholderTextColor={colors.faint}
-                  value={rateCode}
-                  onChangeText={setRateCode}
-                  autoCapitalize="none"
-                />
+                {!editRateId ? (
+                  <>
+                    <FieldLabel>Kod</FieldLabel>
+                    <TextInput
+                      style={ui.input}
+                      placeholder="bar"
+                      placeholderTextColor={colors.faint}
+                      value={rateCode}
+                      onChangeText={setRateCode}
+                      autoCapitalize="none"
+                    />
+                  </>
+                ) : null}
                 <FieldLabel>Narx</FieldLabel>
                 <TextInput
                   style={ui.input}
@@ -640,10 +1109,22 @@ export function SetupScreen({ onBack }: Props) {
                   </View>
                 </ScrollView>
                 <PrimaryButton
-                  label="Tarif qo‘shish"
+                  label={editRateId ? "Yangilash" : "Tarif qo‘shish"}
                   onPress={addRate}
                   loading={busy}
                 />
+                {editRateId ? (
+                  <PrimaryButton
+                    label="Bekor"
+                    tone="ghost"
+                    onPress={() => {
+                      setEditRateId(null);
+                      setRateName("");
+                      setRateCode("");
+                      setRatePrice("");
+                    }}
+                  />
+                ) : null}
               </FormCard>
               <Text style={ui.section}>Tariflar ({rates.length})</Text>
               {seasonPlanId != null ? (
@@ -739,6 +1220,49 @@ export function SetupScreen({ onBack }: Props) {
                         }
                       >
                         <Text style={ui.chipText}>+ Sezon</Text>
+                      </Pressable>
+                      <Pressable
+                        style={ui.chip}
+                        onPress={() => {
+                          setEditRateId(Number(r.id));
+                          setRateName(String(r.name || ""));
+                          setRateCode(String(r.code || ""));
+                          setRatePrice(String(r.price || ""));
+                          setRoomTypeId(
+                            r.room_type_id ? Number(r.room_type_id) : null
+                          );
+                        }}
+                      >
+                        <Text style={ui.chipText}>Tahrirlash</Text>
+                      </Pressable>
+                      <Pressable
+                        style={ui.chip}
+                        onPress={() =>
+                          Alert.alert("Tarif", `${r.name} o‘chirilsinmi?`, [
+                            { text: "Bekor", style: "cancel" },
+                            {
+                              text: "O‘chirish",
+                              style: "destructive",
+                              onPress: async () => {
+                                try {
+                                  await deleteRatePlan(Number(r.id));
+                                  if (matrixPlanId === Number(r.id)) {
+                                    setMatrixPlanId(null);
+                                    setMatrixRows([]);
+                                  }
+                                  await load();
+                                } catch (e) {
+                                  Alert.alert(
+                                    "Xato",
+                                    e instanceof ApiError ? e.message : "Xato"
+                                  );
+                                }
+                              },
+                            },
+                          ])
+                        }
+                      >
+                        <Text style={ui.chipText}>O‘chirish</Text>
                       </Pressable>
                     </View>
                   </ListCard>

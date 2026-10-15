@@ -8,7 +8,7 @@ import React, {
   useState,
 } from "react";
 
-import { apiRequest } from "../api/client";
+import { apiRequest, apiUpload } from "../api/client";
 import type {
   AvailableRoom,
   BoardData,
@@ -47,11 +47,11 @@ type AuthState = {
   ready: boolean;
   token: string | null;
   tenantId: number | null;
-  hotelId: number | null;
+  hotelId: number | "all" | null;
   me: MePayload | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  setHotel: (hotelId: number) => Promise<void>;
+  setHotel: (hotelId: number | "all") => Promise<void>;
   fetchBoard: (date?: string) => Promise<BoardData>;
   fetchToday: (date?: string) => Promise<TodayData>;
   searchReservations: (q: string) => Promise<ReservationSummary[]>;
@@ -71,6 +71,7 @@ type AuthState = {
       collect_emehmon?: boolean;
       emehmon_amount?: string;
       emehmon_method?: string;
+      emehmon_citizen?: string;
     }
   ) => Promise<CheckInResult>;
   checkOut: (id: number) => Promise<CheckOutResult>;
@@ -266,7 +267,12 @@ type AuthState = {
   ) => Promise<{ balance: string }>;
   postEmehmon: (
     reservationId: number,
-    opts?: { method?: string; amount?: string; note?: string }
+    opts?: {
+      method?: string;
+      amount?: string;
+      note?: string;
+      emehmon_citizen?: string;
+    }
   ) => Promise<{ amount: string; balance: string }>;
   transferToCompany: (
     folioId: number,
@@ -325,6 +331,10 @@ type AuthState = {
   fetchExpenses: (status?: string) => Promise<Record<string, unknown>[]>;
   fetchExpenseMeta: () => Promise<Record<string, unknown>>;
   createExpense: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+  updateExpense: (
+    id: number,
+    payload: Record<string, unknown>
+  ) => Promise<Record<string, unknown>>;
   approveExpense: (id: number) => Promise<Record<string, unknown>>;
   payExpense: (id: number) => Promise<Record<string, unknown>>;
   rejectExpense: (
@@ -334,10 +344,18 @@ type AuthState = {
   reopenExpense: (id: number) => Promise<Record<string, unknown>>;
   deleteExpense: (id: number) => Promise<Record<string, unknown>>;
   createExpenseCategory: (name: string) => Promise<Record<string, unknown>>;
+  updateExpenseCategory: (
+    id: number,
+    payload: Record<string, unknown>
+  ) => Promise<Record<string, unknown>>;
   createExpenseVendor: (payload: {
     name: string;
     phone?: string;
   }) => Promise<Record<string, unknown>>;
+  updateExpenseVendor: (
+    id: number,
+    payload: Record<string, unknown>
+  ) => Promise<Record<string, unknown>>;
   fetchPnl: (year?: number, month?: number) => Promise<Record<string, unknown>>;
   fetchFx: () => Promise<{
     items: Record<string, unknown>[];
@@ -409,6 +427,10 @@ type AuthState = {
   createEmployee: (
     payload: Record<string, unknown>
   ) => Promise<Record<string, unknown>>;
+  updateEmployee: (
+    id: number,
+    payload: Record<string, unknown>
+  ) => Promise<Record<string, unknown>>;
   payEmployee: (
     id: number,
     opts?: { days?: number; work_date?: string; method?: string }
@@ -449,6 +471,14 @@ type AuthState = {
   createRoomType: (
     payload: Record<string, unknown>
   ) => Promise<Record<string, unknown>>;
+  seedRoomTypes: (opts?: {
+    base_price?: string;
+    with_rates?: boolean;
+  }) => Promise<Record<string, unknown>>;
+  deleteRoomType: (id: number) => Promise<Record<string, unknown>>;
+  deleteAdminRoom: (id: number) => Promise<Record<string, unknown>>;
+  deleteFloor: (id: number) => Promise<Record<string, unknown>>;
+  deleteRatePlan: (id: number) => Promise<Record<string, unknown>>;
   fetchAdminRooms: () => Promise<{
     items: Record<string, unknown>[];
     floors: Record<string, unknown>[];
@@ -565,6 +595,73 @@ type AuthState = {
       }[];
   }>;
   dismissNotification: (key: string) => Promise<Record<string, unknown>>;
+  purgeReservation: (id: number) => Promise<{ code?: string; deleted?: boolean }>;
+  deleteGuest: (id: number) => Promise<{ deleted?: boolean; name?: string }>;
+  deleteAccount: () => Promise<{ deleted?: boolean }>;
+  uploadLogo: (uri: string, name: string, mime: string) => Promise<{
+    has_logo: boolean;
+    url: string;
+  }>;
+  clearLogo: () => Promise<{ has_logo: boolean; url: string }>;
+  fetchLogo: () => Promise<{ has_logo: boolean; url: string }>;
+  createProperty: (payload: {
+    name: string;
+    branch_code?: string;
+    address?: string;
+    city?: string;
+    phone?: string;
+    email?: string;
+  }) => Promise<{ id: number; name: string; branch_code: string }>;
+  setDayRate: (
+    planId: number,
+    date: string,
+    price: string
+  ) => Promise<{ id: number; date: string; price: string }>;
+  fetchMaintenanceSpends: () => Promise<{
+    items: {
+      id: number;
+      title: string;
+      amount: string;
+      currency: string;
+      status: string;
+      expense_date: string;
+    }[];
+  }>;
+  voidMaintenanceSpend: (id: number, reason?: string) => Promise<Record<string, unknown>>;
+  deleteMaintenanceSpend: (id: number) => Promise<{ deleted?: boolean }>;
+  printMaintenanceSpend: (id: number) => Promise<{
+    pdf_base64: string;
+    filename: string;
+    mime_type?: string;
+  }>;
+  printMaintenanceStatement: (
+    year?: number,
+    month?: number
+  ) => Promise<{
+    pdf_base64: string;
+    filename: string;
+    mime_type?: string;
+    count?: number;
+    grand_total?: string;
+  }>;
+  fetchPayrollItems: (year?: number, month?: number) => Promise<{
+    year: number;
+    month: number;
+    items: {
+      id: number;
+      employee: string;
+      bonus: string;
+      deduction: string;
+      net_amount: string;
+      paid: boolean;
+    }[];
+  }>;
+  updatePayrollItem: (
+    id: number,
+    payload: { bonus?: string; deduction?: string }
+  ) => Promise<Record<string, unknown>>;
+  fetchWidget: () => Promise<Record<string, unknown>>;
+  updateWidget: (payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -573,7 +670,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [tenantId, setTenantId] = useState<number | null>(null);
-  const [hotelId, setHotelId] = useState<number | null>(null);
+  const [hotelId, setHotelId] = useState<number | "all" | null>(null);
   const [me, setMe] = useState<MePayload | null>(null);
 
   const authOpts = useCallback(
@@ -596,17 +693,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (t) {
           setToken(t);
           setTenantId(tid ? Number(tid) : null);
-          const hotelNum = hid ? Number(hid) : null;
-          setHotelId(hotelNum);
+          const hotelScope: number | "all" | null =
+            hid === "all" ? "all" : hid ? Number(hid) : null;
+          setHotelId(hotelScope);
           try {
             const profile = await apiRequest<MePayload>("/me/", {
               token: t,
               tenantId: tid ? Number(tid) : null,
-              hotelId: hotelNum,
+              hotelId: hotelScope,
             });
             if (!profile.hotels) profile.hotels = [];
             setMe(profile);
-            if (!hotelNum && profile.hotel?.id) {
+            if (hotelScope !== "all" && !hotelScope && profile.hotel?.id) {
               setHotelId(profile.hotel.id);
               await AsyncStorage.setItem(HOTEL_KEY, String(profile.hotel.id));
             }
@@ -661,7 +759,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token, tenantId, hotelId]);
 
   const setHotel = useCallback(
-    async (nextHotelId: number) => {
+    async (nextHotelId: number | "all") => {
       if (!token) throw new Error("Not authenticated");
       await AsyncStorage.setItem(HOTEL_KEY, String(nextHotelId));
       setHotelId(nextHotelId);
@@ -748,6 +846,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         collect_emehmon?: boolean;
         emehmon_amount?: string;
         emehmon_method?: string;
+        emehmon_citizen?: string;
       }
     ) => {
       if (!token) throw new Error("Not authenticated");
@@ -761,6 +860,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           emehmon_method: opts?.emehmon_method || "cash",
           ...(opts?.emehmon_amount
             ? { emehmon_amount: opts.emehmon_amount }
+            : {}),
+          ...(opts?.emehmon_citizen
+            ? { emehmon_citizen: opts.emehmon_citizen }
             : {}),
         },
       });
@@ -1486,7 +1588,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const postEmehmon = useCallback(
     async (
       reservationId: number,
-      opts?: { method?: string; amount?: string; note?: string } | string
+      opts?:
+        | {
+            method?: string;
+            amount?: string;
+            note?: string;
+            emehmon_citizen?: string;
+          }
+        | string
     ) => {
       if (!token) throw new Error("Not authenticated");
       // Back-compat: postEmehmon(id, "cash")
@@ -1497,6 +1606,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               method: opts?.method || "cash",
               ...(opts?.amount ? { amount: opts.amount } : {}),
               ...(opts?.note ? { note: opts.note } : {}),
+              ...(opts?.emehmon_citizen
+                ? { emehmon_citizen: opts.emehmon_citizen }
+                : {}),
             };
       return apiRequest<{ amount: string; balance: string }>(
         `/reservations/${reservationId}/emehmon/`,
@@ -1739,13 +1851,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchExpenseMeta = useCallback(async () => {
     if (!token) throw new Error("Not authenticated");
-    return apiRequest<Record<string, unknown>>("/expenses/meta/", authOpts());
+    return apiRequest<Record<string, unknown>>(
+      "/expenses/meta/?all=1",
+      authOpts()
+    );
   }, [token, authOpts]);
 
   const createExpense = useCallback(
     async (payload: Record<string, unknown>) => {
       if (!token) throw new Error("Not authenticated");
       return apiRequest<Record<string, unknown>>("/expenses/create/", {
+        ...authOpts(),
+        method: "POST",
+        body: payload,
+      });
+    },
+    [token, authOpts]
+  );
+
+  const updateExpense = useCallback(
+    async (id: number, payload: Record<string, unknown>) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<Record<string, unknown>>(`/expenses/${id}/update/`, {
         ...authOpts(),
         method: "POST",
         body: payload,
@@ -1829,6 +1956,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [token, authOpts]
   );
 
+  const updateExpenseCategory = useCallback(
+    async (id: number, payload: Record<string, unknown>) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<Record<string, unknown>>(
+        `/expenses/categories/${id}/update/`,
+        { ...authOpts(), method: "POST", body: payload }
+      );
+    },
+    [token, authOpts]
+  );
+
   const createExpenseVendor = useCallback(
     async (payload: { name: string; phone?: string }) => {
       if (!token) throw new Error("Not authenticated");
@@ -1837,6 +1975,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         body: payload,
       });
+    },
+    [token, authOpts]
+  );
+
+  const updateExpenseVendor = useCallback(
+    async (id: number, payload: Record<string, unknown>) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<Record<string, unknown>>(
+        `/expenses/vendors/${id}/update/`,
+        { ...authOpts(), method: "POST", body: payload }
+      );
     },
     [token, authOpts]
   );
@@ -2179,6 +2328,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [token, authOpts]
   );
 
+  const updateEmployee = useCallback(
+    async (id: number, payload: Record<string, unknown>) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<Record<string, unknown>>(
+        `/hr/employees/${id}/update/`,
+        {
+          ...authOpts(),
+          method: "POST",
+          body: payload,
+        }
+      );
+    },
+    [token, authOpts]
+  );
+
   const fetchPayroll = useCallback(
     async (year?: number, month?: number) => {
       if (!token) throw new Error("Not authenticated");
@@ -2297,6 +2461,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         body: payload,
       });
+    },
+    [token, authOpts]
+  );
+
+  const seedRoomTypes = useCallback(
+    async (opts?: { base_price?: string; with_rates?: boolean }) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<Record<string, unknown>>("/setup/room-types/seed/", {
+        ...authOpts(),
+        method: "POST",
+        body: {
+          ...(opts?.base_price ? { base_price: opts.base_price } : {}),
+          with_rates: opts?.with_rates !== false,
+        },
+      });
+    },
+    [token, authOpts]
+  );
+
+  const deleteRoomType = useCallback(
+    async (id: number) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<Record<string, unknown>>(
+        `/setup/room-types/${id}/delete/`,
+        { ...authOpts(), method: "POST", body: {} }
+      );
+    },
+    [token, authOpts]
+  );
+
+  const deleteAdminRoom = useCallback(
+    async (id: number) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<Record<string, unknown>>(
+        `/setup/rooms/${id}/delete/`,
+        { ...authOpts(), method: "POST", body: {} }
+      );
+    },
+    [token, authOpts]
+  );
+
+  const deleteFloor = useCallback(
+    async (id: number) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<Record<string, unknown>>(
+        `/setup/floors/${id}/delete/`,
+        { ...authOpts(), method: "POST", body: {} }
+      );
+    },
+    [token, authOpts]
+  );
+
+  const deleteRatePlan = useCallback(
+    async (id: number) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<Record<string, unknown>>(
+        `/setup/rate-plans/${id}/delete/`,
+        { ...authOpts(), method: "POST", body: {} }
+      );
     },
     [token, authOpts]
   );
@@ -2629,6 +2852,220 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [token, authOpts]
   );
 
+  const purgeReservation = useCallback(
+    async (id: number) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<{ code?: string; deleted?: boolean }>(
+        `/reservations/${id}/purge/`,
+        { ...authOpts(), method: "POST", body: {} }
+      );
+    },
+    [token, authOpts]
+  );
+
+  const deleteGuest = useCallback(
+    async (id: number) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<{ deleted?: boolean; name?: string }>(
+        `/guests/${id}/delete/`,
+        { ...authOpts(), method: "POST", body: {} }
+      );
+    },
+    [token, authOpts]
+  );
+
+  const deleteAccount = useCallback(async () => {
+    if (!token) throw new Error("Not authenticated");
+    const result = await apiRequest<{ deleted?: boolean }>("/me/delete/", {
+      ...authOpts(),
+      method: "POST",
+      body: {},
+    });
+    await AsyncStorage.multiRemove([TOKEN_KEY, TENANT_KEY, HOTEL_KEY]);
+    setToken(null);
+    setTenantId(null);
+    setHotelId(null);
+    setMe(null);
+    return result;
+  }, [token, authOpts]);
+
+  const fetchLogo = useCallback(async () => {
+    if (!token) throw new Error("Not authenticated");
+    return apiRequest<{ has_logo: boolean; url: string }>("/me/logo/", authOpts());
+  }, [token, authOpts]);
+
+  const clearLogo = useCallback(async () => {
+    if (!token) throw new Error("Not authenticated");
+    return apiRequest<{ has_logo: boolean; url: string }>("/me/logo/", {
+      ...authOpts(),
+      method: "POST",
+      body: { clear: true },
+    });
+  }, [token, authOpts]);
+
+  const uploadLogo = useCallback(
+    async (uri: string, name: string, mime: string) => {
+      if (!token) throw new Error("Not authenticated");
+      const form = new FormData();
+      form.append("logo", { uri, name, type: mime } as unknown as Blob);
+      return apiUpload<{ has_logo: boolean; url: string }>("/me/logo/", {
+        ...authOpts(),
+        form,
+      });
+    },
+    [token, authOpts]
+  );
+
+  const createProperty = useCallback(
+    async (payload: {
+      name: string;
+      branch_code?: string;
+      address?: string;
+      city?: string;
+      phone?: string;
+      email?: string;
+    }) => {
+      if (!token) throw new Error("Not authenticated");
+      const created = await apiRequest<{ id: number; name: string; branch_code: string }>(
+        "/setup/properties/",
+        { ...authOpts(), method: "POST", body: payload }
+      );
+      const profile = await apiRequest<MePayload>("/me/", authOpts());
+      if (!profile.hotels) profile.hotels = [];
+      setMe(profile);
+      return created;
+    },
+    [token, authOpts]
+  );
+
+  const setDayRate = useCallback(
+    async (planId: number, day: string, price: string) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<{ id: number; date: string; price: string }>(
+        `/setup/rate-plans/${planId}/day/`,
+        { ...authOpts(), method: "POST", body: { date: day, price, name: day } }
+      );
+    },
+    [token, authOpts]
+  );
+
+  const fetchMaintenanceSpends = useCallback(async () => {
+    if (!token) throw new Error("Not authenticated");
+    return apiRequest<{
+      items: {
+        id: number;
+        title: string;
+        amount: string;
+        currency: string;
+        status: string;
+        expense_date: string;
+      }[];
+    }>("/maintenance/spends/", authOpts());
+  }, [token, authOpts]);
+
+  const voidMaintenanceSpend = useCallback(
+    async (id: number, reason?: string) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<Record<string, unknown>>(
+        `/maintenance/spends/${id}/void/`,
+        { ...authOpts(), method: "POST", body: { reason: reason || "" } }
+      );
+    },
+    [token, authOpts]
+  );
+
+  const deleteMaintenanceSpend = useCallback(
+    async (id: number) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<{ deleted?: boolean }>(
+        `/maintenance/spends/${id}/delete/`,
+        { ...authOpts(), method: "POST", body: {} }
+      );
+    },
+    [token, authOpts]
+  );
+
+  const printMaintenanceSpend = useCallback(
+    async (id: number) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<{ pdf_base64: string; filename: string; mime_type?: string }>(
+        `/maintenance/spends/${id}/print/`,
+        authOpts()
+      );
+    },
+    [token, authOpts]
+  );
+
+  const printMaintenanceStatement = useCallback(
+    async (year?: number, month?: number) => {
+      if (!token) throw new Error("Not authenticated");
+      const params = new URLSearchParams();
+      if (year) params.set("year", String(year));
+      if (month) params.set("month", String(month));
+      const q = params.toString() ? `?${params}` : "";
+      return apiRequest<{
+        pdf_base64: string;
+        filename: string;
+        mime_type?: string;
+        count?: number;
+        grand_total?: string;
+      }>(`/maintenance/statement/print/${q}`, authOpts());
+    },
+    [token, authOpts]
+  );
+
+  const fetchPayrollItems = useCallback(
+    async (year?: number, month?: number) => {
+      if (!token) throw new Error("Not authenticated");
+      const q = new URLSearchParams();
+      if (year) q.set("year", String(year));
+      if (month) q.set("month", String(month));
+      const suffix = q.toString() ? `?${q.toString()}` : "";
+      return apiRequest<{
+        year: number;
+        month: number;
+        items: {
+          id: number;
+          employee: string;
+          bonus: string;
+          deduction: string;
+          net_amount: string;
+          paid: boolean;
+        }[];
+      }>(`/hr/payroll/items/${suffix}`, authOpts());
+    },
+    [token, authOpts]
+  );
+
+  const updatePayrollItem = useCallback(
+    async (id: number, payload: { bonus?: string; deduction?: string }) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<Record<string, unknown>>(`/hr/payroll/items/${id}/`, {
+        ...authOpts(),
+        method: "POST",
+        body: payload,
+      });
+    },
+    [token, authOpts]
+  );
+
+  const fetchWidget = useCallback(async () => {
+    if (!token) throw new Error("Not authenticated");
+    return apiRequest<Record<string, unknown>>("/setup/widget/", authOpts());
+  }, [token, authOpts]);
+
+  const updateWidget = useCallback(
+    async (payload: Record<string, unknown>) => {
+      if (!token) throw new Error("Not authenticated");
+      return apiRequest<Record<string, unknown>>("/setup/widget/", {
+        ...authOpts(),
+        method: "POST",
+        body: payload,
+      });
+    },
+    [token, authOpts]
+  );
+
   const value = useMemo(
     () => ({
       ready,
@@ -2719,13 +3156,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       fetchExpenses,
       fetchExpenseMeta,
       createExpense,
+      updateExpense,
       approveExpense,
       payExpense,
       rejectExpense,
       reopenExpense,
       deleteExpense,
       createExpenseCategory,
+      updateExpenseCategory,
       createExpenseVendor,
+      updateExpenseVendor,
       fetchPnl,
       fetchFx,
       createFx,
@@ -2748,6 +3188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       payCommission,
       fetchEmployees,
       createEmployee,
+      updateEmployee,
       payEmployee,
       advanceEmployee,
       fetchHrAdvances,
@@ -2764,6 +3205,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updatePropertySettings,
       fetchRoomTypes,
       createRoomType,
+      seedRoomTypes,
+      deleteRoomType,
+      deleteAdminRoom,
+      deleteFloor,
+      deleteRatePlan,
       fetchAdminRooms,
       createAdminRoom,
       fetchServicesCatalog,
@@ -2790,6 +3236,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       printCommission,
       fetchNotifications,
       dismissNotification,
+      purgeReservation,
+      deleteGuest,
+      deleteAccount,
+      uploadLogo,
+      clearLogo,
+      fetchLogo,
+      createProperty,
+      setDayRate,
+      fetchMaintenanceSpends,
+      voidMaintenanceSpend,
+      deleteMaintenanceSpend,
+      printMaintenanceSpend,
+      printMaintenanceStatement,
+      fetchPayrollItems,
+      updatePayrollItem,
+      fetchWidget,
+      updateWidget,
     }),
     [
       ready,
@@ -2880,13 +3343,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       fetchExpenses,
       fetchExpenseMeta,
       createExpense,
+      updateExpense,
       approveExpense,
       payExpense,
       rejectExpense,
       reopenExpense,
       deleteExpense,
       createExpenseCategory,
+      updateExpenseCategory,
       createExpenseVendor,
+      updateExpenseVendor,
       fetchPnl,
       fetchFx,
       createFx,
@@ -2909,6 +3375,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       payCommission,
       fetchEmployees,
       createEmployee,
+      updateEmployee,
       payEmployee,
       advanceEmployee,
       fetchHrAdvances,
@@ -2925,6 +3392,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updatePropertySettings,
       fetchRoomTypes,
       createRoomType,
+      seedRoomTypes,
+      deleteRoomType,
+      deleteAdminRoom,
+      deleteFloor,
+      deleteRatePlan,
       fetchAdminRooms,
       createAdminRoom,
       fetchServicesCatalog,
@@ -2951,6 +3423,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       printCommission,
       fetchNotifications,
       dismissNotification,
+      purgeReservation,
+      deleteGuest,
+      deleteAccount,
+      uploadLogo,
+      clearLogo,
+      fetchLogo,
+      createProperty,
+      setDayRate,
+      fetchMaintenanceSpends,
+      voidMaintenanceSpend,
+      deleteMaintenanceSpend,
+      printMaintenanceSpend,
+      printMaintenanceStatement,
+      fetchPayrollItems,
+      updatePayrollItem,
+      fetchWidget,
+      updateWidget,
     ]
   );
 

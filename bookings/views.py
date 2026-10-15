@@ -366,14 +366,15 @@ def reservation_check_in(request, pk):
     reservation = _get_reservation(request, pk)
     allow_dirty = request.POST.get("allow_dirty") == "1"
     allow_no_docs = request.POST.get("allow_no_docs") == "1"
-    # Doska «Kirish» — forma yo‘q, E-mehmon avtomatik.
+    # Doska «Kirish» — forma yo‘q: E-mehmon keyinroq (summa qo‘lda).
     # Batafsil sahifa — checkbox (emehmon_form=1).
     if request.POST.get("emehmon_form") == "1":
         collect_emehmon = request.POST.get("collect_emehmon") == "1"
     else:
-        collect_emehmon = True
+        collect_emehmon = False
     emehmon_amount = request.POST.get("emehmon_amount")
     emehmon_method = (request.POST.get("emehmon_method") or "cash").strip()
+    emehmon_citizen = (request.POST.get("emehmon_citizen") or "").strip()
     try:
         if occupant_post_bound(request.POST):
             occupant_fs = occupant_formset(request.tenant, request.POST)
@@ -413,34 +414,48 @@ def reservation_check_in(request, pk):
         else:
             messages.success(request, _("Kirish qilindi."))
 
-        # Zayezd paytida E-mehmon: admin tanlaydi
+        # Zayezd paytida E-mehmon: summa va fuqarolik qo‘lda
         reservation.refresh_from_db()
         if collect_emehmon:
             from decimal import Decimal, InvalidOperation
 
-            from folio.services import collect_emehmon_fee, default_emehmon_fee, emehmon_unit_rate
+            from folio.services import collect_emehmon_fee
 
             if not reservation.emehmon_required:
                 reservation.emehmon_required = True
                 reservation.save(update_fields=["emehmon_required", "updated_at"])
 
-            # Asos: kecha × mehmon × tarif. Forma 9000 qoldirsa ham to‘liq olinadi.
-            amount = default_emehmon_fee(reservation)
+            amount = None
             if emehmon_amount not in (None, ""):
                 try:
-                    posted = Decimal(str(emehmon_amount).replace(",", "."))
+                    amount = Decimal(str(emehmon_amount).replace(",", "."))
                 except (InvalidOperation, ValueError):
-                    posted = None
-                else:
-                    unit = emehmon_unit_rate(reservation.hotel_id)
-                    if posted and posted > 0 and posted != unit and posted != amount:
-                        amount = posted
+                    amount = None
+            if amount is None or amount <= 0:
+                messages.warning(
+                    request,
+                    _("E-mehmon uchun summani yozing."),
+                )
+                from django.urls import reverse
+
+                url = reverse("bookings:detail", kwargs={"pk": reservation.pk})
+                return redirect(f"{url}?prompt_emehmon=1")
+            if not emehmon_citizen:
+                messages.warning(
+                    request,
+                    _("Fuqarolikni tanlang (O‘zbekiston yoki chet el)."),
+                )
+                from django.urls import reverse
+
+                url = reverse("bookings:detail", kwargs={"pk": reservation.pk})
+                return redirect(f"{url}?prompt_emehmon=1")
             try:
                 collect_emehmon_fee(
                     reservation,
                     request.user,
                     amount=amount,
                     method=emehmon_method or "cash",
+                    citizen_type=emehmon_citizen,
                 )
                 messages.success(request, _("E-mehmon to‘lovi qabul qilindi."))
             except ValidationError as exc:
@@ -765,6 +780,7 @@ def walk_in(request):
                             request.user,
                             amount=data["emehmon_amount"],
                             method=data.get("emehmon_method") or "cash",
+                            citizen_type=data.get("emehmon_citizen") or "",
                         )
                         messages.success(request, _("E-mehmon to‘lovi qabul qilindi."))
                         return redirect(f"{url}?prompt_deposit=1")

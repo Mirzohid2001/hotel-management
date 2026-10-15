@@ -164,10 +164,18 @@
       </p>
       <div class="form-grid app-form-grid emehmon-fields">
         <p class="form-field">
+          <label for="id_emehmon_citizen">{% trans "Fuqarolik" %}</label>
+          <select name="emehmon_citizen" id="id_emehmon_citizen">
+            <option value="">{% trans "— tanlang —" %}</option>
+            <option value="uz">{% trans "O‘zbekiston fuqarosi" %}</option>
+            <option value="foreign">{% trans "Chet el fuqarosi" %}</option>
+          </select>
+        </p>
+        <p class="form-field">
           <label for="id_emehmon_amount">{% trans "E-mehmon summasi" %}</label>
           <input type="number" name="emehmon_amount" id="id_emehmon_amount" step="0.01" min="0"
-                 value="{% if emehmon_default %}{{ emehmon_default }}{% endif %}">
-          <span class="field-help muted">{% trans "Hisob: mehmon soni × kechalar × tarif (odatda 9000)." %}</span>
+                 placeholder="{% trans 'Summani yozing' %}">
+          <span class="field-help muted">{% trans "Fiks tarif yo‘q — O‘zbekiston / chet el uchun o‘zingiz yozing." %}</span>
         </p>
         <p class="form-field">
           <label for="id_emehmon_method">{% trans "To‘lov usuli" %}</label>
@@ -217,6 +225,14 @@
     {% csrf_token %}
     <div class="form-grid app-form-grid">
       <p class="form-field">
+        <label>{% trans "Fuqarolik" %}</label>
+        <select name="emehmon_citizen" required>
+          <option value="">{% trans "— tanlang —" %}</option>
+          <option value="uz">{% trans "O‘zbekiston fuqarosi" %}</option>
+          <option value="foreign">{% trans "Chet el fuqarosi" %}</option>
+        </select>
+      </p>
+      <p class="form-field">
         <label>{% trans "Usul" %}</label>
         <select name="method">
           <option value="cash">{% trans "Naqd" %}</option>
@@ -235,7 +251,7 @@
       <p class="form-field">
         <label>{% trans "Summa" %}</label>
         <input type="number" name="amount" step="0.01" min="0.01" required
-               value="{% if emehmon_default %}{{ emehmon_default }}{% endif %}">
+               placeholder="{% trans 'Summani yozing' %}">
       </p>
       <input type="hidden" name="kind" value="payment">
       <p class="form-field field-span-2">
@@ -297,11 +313,15 @@
   var form = document.getElementById("checkin-form");
   if (!form) return;
   var collect = form.querySelector("#id_collect_emehmon");
+  var amount = form.querySelector("#id_emehmon_amount");
+  var citizen = form.querySelector("#id_emehmon_citizen");
   function toggle() {
     var on = collect && collect.checked;
     form.querySelectorAll(".emehmon-fields").forEach(function (el) {
       el.style.display = on ? "" : "none";
     });
+    if (amount) amount.required = !!on;
+    if (citizen) citizen.required = !!on;
   }
   if (collect) {
     collect.addEventListener("change", toggle);

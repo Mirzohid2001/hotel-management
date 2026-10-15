@@ -312,7 +312,7 @@ def emehmon_report(request):
     report = build_emehmon_report(
         request.tenant, year=year, month=month, hotel=hotel
     )
-    # Decimal / date / models → JSON-safe
+    # Decimal / date / models → JSON-safe (flatten collections for mobile)
     def _ser(v):
         if hasattr(v, "quantize"):
             return str(v)
@@ -322,6 +322,11 @@ def emehmon_report(request):
             return {k: _ser(x) for k, x in v.items()}
         if isinstance(v, date):
             return v.isoformat()
+        if hasattr(v, "isoformat") and callable(v.isoformat) and not isinstance(v, str):
+            try:
+                return v.isoformat()
+            except Exception:  # noqa: BLE001
+                pass
         if hasattr(v, "pk") and hasattr(v, "_meta"):
             # Django model — keep id + common labels
             out = {"id": v.pk}
@@ -338,4 +343,43 @@ def emehmon_report(request):
             return out
         return v
 
-    return json_ok(_ser(report))
+    payload = _ser(report)
+    # Mobile-friendly collection lines (skip nested model blobs)
+    collections = []
+    for row in report.get("collections") or []:
+        collected = row.get("collected_at")
+        collections.append(
+            {
+                "guest_name": row.get("guest_name") or "—",
+                "hotel_name": row.get("hotel_name") or "—",
+                "code": row.get("code") or "—",
+                "check_in": row["check_in"].isoformat() if row.get("check_in") else "",
+                "check_out": row["check_out"].isoformat() if row.get("check_out") else "",
+                "amount": str(row.get("amount") or "0"),
+                "method": str(row.get("method") or "—"),
+                "collected_at": collected.isoformat() if collected else "",
+                "note": row.get("note") or "",
+                "reservation_id": row["reservation"].pk if row.get("reservation") else None,
+            }
+        )
+    stay_rows = []
+    for row in report.get("rows") or []:
+        res = row.get("reservation")
+        stay_rows.append(
+            {
+                "guest_name": row.get("guest_name") or "—",
+                "hotel_name": row.get("hotel_name") or "—",
+                "code": getattr(res, "code", "") if res else "",
+                "reservation_id": res.pk if res else None,
+                "check_in": row["check_in"].isoformat() if row.get("check_in") else "",
+                "check_out": row["check_out"].isoformat() if row.get("check_out") else "",
+                "guests": row.get("guests") or 0,
+                "nights_in_month": row.get("nights_in_month") or 0,
+                "expected": str(row.get("expected") or "0"),
+                "collected": str(row.get("collected") or "0"),
+                "gap": str(row.get("gap") or "0"),
+            }
+        )
+    payload["collections"] = collections
+    payload["rows"] = stay_rows
+    return json_ok(payload)

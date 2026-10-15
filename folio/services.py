@@ -537,7 +537,59 @@ def open_folio_for_deposit(reservation, user) -> Folio:
 
 EMEHMON_MARKER = "E-mehmon"
 EMEHMON_LEGACY_MARKERS = ("E-mehmon", "Emehmon", "e-mehmon")
-DEFAULT_EMEHMON_UNIT = Decimal("9000")
+DEFAULT_EMEHMON_UNIT = Decimal("9000")  # legacy; summa endi qo‘lda kiritiladi
+
+EMEHMON_CITIZEN_UZ = "uz"
+EMEHMON_CITIZEN_FOREIGN = "foreign"
+EMEHMON_CITIZEN_CHOICES = (
+    (EMEHMON_CITIZEN_UZ, _("O‘zbekiston fuqarosi")),
+    (EMEHMON_CITIZEN_FOREIGN, _("Chet el fuqarosi")),
+)
+EMEHMON_CITIZEN_LABELS = {
+    EMEHMON_CITIZEN_UZ: _("O‘zbekiston fuqarosi"),
+    EMEHMON_CITIZEN_FOREIGN: _("Chet el fuqarosi"),
+}
+
+
+def normalize_emehmon_citizen(value) -> str:
+    raw = (value or "").strip().lower()
+    if raw in {EMEHMON_CITIZEN_UZ, "uzbek", "uzbekistan", "uzb", "local"}:
+        return EMEHMON_CITIZEN_UZ
+    if raw in {
+        EMEHMON_CITIZEN_FOREIGN,
+        "foreign",
+        "chet",
+        "chet_el",
+        "international",
+        "non_uz",
+    }:
+        return EMEHMON_CITIZEN_FOREIGN
+    return ""
+
+
+def emehmon_citizen_label(value) -> str:
+    key = normalize_emehmon_citizen(value)
+    if not key:
+        return ""
+    return str(EMEHMON_CITIZEN_LABELS.get(key, ""))
+
+
+def parse_emehmon_citizen(text: str) -> str:
+    """Charge/payment matnidan fuqarolik turini ajratib olish."""
+    low = (text or "").lower()
+    if "[foreign]" in low or "chet el" in low or "foreign" in low:
+        return EMEHMON_CITIZEN_FOREIGN
+    # Apostrof variantlari: ' ʻ ’ ‘
+    normalized = (
+        low.replace("ʻ", "")
+        .replace("’", "")
+        .replace("‘", "")
+        .replace("'", "")
+        .replace("`", "")
+    )
+    if "[uz]" in low or "ozbek" in normalized or "uzbek" in normalized:
+        return EMEHMON_CITIZEN_UZ
+    return ""
 
 
 def emehmon_charge_q():
@@ -582,7 +634,7 @@ def emehmon_nights_count(nights=None, *, check_in=None, check_out=None) -> int:
 
 
 def calc_emehmon_fee(unit_rate, *, nights: int = 1, guests: int = 1) -> Decimal:
-    """1 mehmon × 1 kecha × tarif = jami E-mehmon komissiyasi."""
+    """Legacy: 1 mehmon × 1 kecha × tarif. Yangi oqimda summa qo‘lda."""
     unit = Decimal(unit_rate or 0)
     if unit <= 0:
         return Decimal("0")
@@ -592,7 +644,7 @@ def calc_emehmon_fee(unit_rate, *, nights: int = 1, guests: int = 1) -> Decimal:
 
 
 def emehmon_unit_rate(hotel) -> Decimal:
-    """Mehmonxona sozlamasidagi 1 mehmon/1 kecha tarif (so‘m)."""
+    """Legacy sozlama — yangi oqimda ishlatilmaydi (summa qo‘lda)."""
     from properties.models import PropertySettings
 
     if hotel is None:
@@ -605,14 +657,8 @@ def emehmon_unit_rate(hotel) -> Decimal:
 
 
 def default_emehmon_fee(reservation) -> Decimal:
-    """Bron uchun jami: tarif × kechalar × mehmonlar."""
-    unit = emehmon_unit_rate(getattr(reservation, "hotel_id", None) or getattr(reservation, "hotel", None))
-    nights = emehmon_nights_count(getattr(reservation, "nights", None))
-    guests = emehmon_guest_count(
-        getattr(reservation, "adults", None),
-        getattr(reservation, "children", None),
-    )
-    return calc_emehmon_fee(unit, nights=nights, guests=guests)
+    """Forma uchun default — bo‘sh (xo‘jayin o‘zi yozadi)."""
+    return Decimal("0")
 
 
 def emehmon_already_posted(folio) -> bool:
@@ -629,38 +675,32 @@ def collect_emehmon_fee(
     note="",
     currency=None,
     fx_rate=None,
+    citizen_type="",
 ) -> tuple[FolioCharge, GuestPayment]:
-    """Post E-mehmon charge (once) and take payment — bron/kirish paytida."""
-    unit = emehmon_unit_rate(reservation.hotel_id)
-    nights = emehmon_nights_count(getattr(reservation, "nights", None))
-    guests = emehmon_guest_count(reservation.adults, reservation.children)
-    computed = calc_emehmon_fee(unit, nights=nights, guests=guests)
-    if amount is None:
-        fee = computed
-        use_breakdown = unit > 0 and computed > 0
-    else:
-        fee = amount
-        use_breakdown = (
-            unit > 0 and computed > 0 and fee == computed
-        )
+    """Post E-mehmon charge (once) and take payment — summa qo‘lda kiritiladi."""
+    fee = amount
     if fee is None or fee <= 0:
         raise ValidationError(_("E-mehmon summasi musbat bo‘lishi kerak."))
+
+    citizen = normalize_emehmon_citizen(citizen_type)
+    if not citizen:
+        raise ValidationError(
+            _("Fuqarolikni tanlang (O‘zbekiston yoki chet el).")
+        )
+    citizen_label = emehmon_citizen_label(citizen)
 
     folio = ensure_folio_for_reservation(reservation, allow_pre_checkin=True)
     if emehmon_already_posted(folio):
         raise ValidationError(_("E-mehmon to‘lovi allaqachon yozilgan."))
 
     cur = currency or folio.tenant.currency or "UZS"
-    if use_breakdown:
-        qty = Decimal(nights * guests)
-        unit_price = unit
-        description = _(
-            "E-mehmon: %(g)s mehmon × %(n)s kecha × %(u)s"
-        ) % {"g": guests, "n": nights, "u": unit}
-    else:
-        qty = Decimal("1")
-        unit_price = fee
-        description = _("E-mehmon: ro‘yxatdan o‘tkazish")
+    qty = Decimal("1")
+    unit_price = fee
+    # [uz]/[foreign] — hisobot parse uchun barqaror marker
+    description = _("E-mehmon [%(k)s]: %(c)s") % {
+        "k": citizen,
+        "c": citizen_label,
+    }
 
     charge = add_charge(
         folio,
@@ -673,6 +713,8 @@ def collect_emehmon_fee(
         fx_rate=fx_rate,
     )
     payment_note = (note or "").strip() or _("E-mehmon to‘lovi")
+    if citizen_label.lower() not in payment_note.lower():
+        payment_note = f"{payment_note} [{citizen}] ({citizen_label})"
     # Naqd P&L tushumdan chiqarish uchun marker majburiy
     if not any(m.lower() in payment_note.lower() for m in EMEHMON_LEGACY_MARKERS):
         payment_note = f"{EMEHMON_MARKER}: {payment_note}"

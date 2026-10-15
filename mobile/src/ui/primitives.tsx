@@ -1,13 +1,24 @@
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
+import { useI18n } from "../i18n";
 import { colors, fontDisplay, fontUi, radius, space, type, ui } from "./theme";
 
 export function SectionLabel({ children }: { children: string }) {
-  return <Text style={ui.section}>{children}</Text>;
+  const { tr } = useI18n();
+  return <Text style={ui.section}>{tr(children)}</Text>;
 }
 
 export function FieldLabel({ children }: { children: string }) {
-  return <Text style={styles.fieldLabel}>{children}</Text>;
+  const { tr } = useI18n();
+  return <Text style={styles.fieldLabel}>{tr(children)}</Text>;
 }
 
 export function PrimaryButton({
@@ -23,6 +34,7 @@ export function PrimaryButton({
   loading?: boolean;
   tone?: "copper" | "ink" | "success" | "danger" | "ghost";
 }) {
+  const { tr } = useI18n();
   const bg =
     tone === "ink"
       ? colors.night
@@ -51,7 +63,7 @@ export function PrimaryButton({
           tone === "ghost" && { color: colors.inkSoft },
         ]}
       >
-        {loading ? "…" : label}
+        {loading ? "…" : tr(label)}
       </Text>
     </Pressable>
   );
@@ -72,9 +84,10 @@ export function StatusBadge({
     info: { bg: colors.infoSoft, fg: colors.info },
     accent: { bg: colors.accentFog, fg: colors.accentDeep },
   }[tone];
+  const { tr } = useI18n();
   return (
     <View style={[styles.badge, { backgroundColor: map.bg }]}>
-      <Text style={[styles.badgeText, { color: map.fg }]}>{label}</Text>
+      <Text style={[styles.badgeText, { color: map.fg }]}>{tr(label)}</Text>
     </View>
   );
 }
@@ -86,11 +99,12 @@ export function EmptyState({
   title: string;
   hint?: string;
 }) {
+  const { tr } = useI18n();
   return (
     <View style={styles.emptyWrap}>
       <View style={styles.emptyMark} />
-      <Text style={styles.emptyTitle}>{title}</Text>
-      {hint ? <Text style={styles.emptyHint}>{hint}</Text> : null}
+      <Text style={styles.emptyTitle}>{tr(title)}</Text>
+      {hint ? <Text style={styles.emptyHint}>{tr(hint)}</Text> : null}
     </View>
   );
 }
@@ -104,18 +118,19 @@ export function SegmentedTabs<T extends string>({
   value: T;
   onChange: (id: T) => void;
 }) {
+  const { tr } = useI18n();
   return (
     <View style={styles.segTrack}>
-      {tabs.map((t) => {
-        const on = t.id === value;
+      {tabs.map((tab) => {
+        const on = tab.id === value;
         return (
           <Pressable
-            key={t.id}
+            key={tab.id}
             style={[styles.segItem, on && styles.segItemOn]}
-            onPress={() => onChange(t.id)}
+            onPress={() => onChange(tab.id)}
           >
             <Text style={[styles.segText, on && styles.segTextOn]} numberOfLines={1}>
-              {t.label}
+              {tr(tab.label)}
             </Text>
           </Pressable>
         );
@@ -131,9 +146,10 @@ export function MenuSection({
   title: string;
   children: React.ReactNode;
 }) {
+  const { tr } = useI18n();
   return (
     <View style={styles.menuSection}>
-      <Text style={styles.menuSectionTitle}>{title}</Text>
+      <Text style={styles.menuSectionTitle}>{tr(title)}</Text>
       <View style={styles.menuCard}>{children}</View>
     </View>
   );
@@ -152,6 +168,7 @@ export function MenuRow({
   mark?: string;
   last?: boolean;
 }) {
+  const { tr } = useI18n();
   return (
     <Pressable
       style={({ pressed }) => [
@@ -167,11 +184,46 @@ export function MenuRow({
         </View>
       ) : null}
       <View style={styles.menuCopy}>
-        <Text style={styles.menuTitle}>{title}</Text>
-        <Text style={styles.menuHint}>{hint}</Text>
+        <Text style={styles.menuTitle}>{tr(title)}</Text>
+        <Text style={styles.menuHint}>{tr(hint)}</Text>
       </View>
       <Text style={styles.chev}>›</Text>
     </Pressable>
+  );
+}
+
+export function MenuGrid({
+  items,
+}: {
+  items: { title: string; hint: string; mark: string; onPress: () => void }[];
+}) {
+  const { tr } = useI18n();
+  const { width } = useWindowDimensions();
+  const tileW = (width - space.lg * 2 - 10) / 2;
+  return (
+    <View style={styles.menuGrid}>
+      {items.map((item) => (
+        <Pressable
+          key={item.title}
+          style={({ pressed }) => [
+            styles.menuTile,
+            { width: tileW },
+            pressed && styles.menuPressed,
+          ]}
+          onPress={item.onPress}
+        >
+          <View style={styles.mark}>
+            <Text style={styles.markText}>{item.mark}</Text>
+          </View>
+          <Text style={styles.menuTitle} numberOfLines={2}>
+            {tr(item.title)}
+          </Text>
+          <Text style={styles.menuHint} numberOfLines={2}>
+            {tr(item.hint)}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
   );
 }
 
@@ -190,6 +242,7 @@ export function ActionCard({
   busy?: boolean;
   tone?: "surface" | "accent" | "night";
 }) {
+  const { tr } = useI18n();
   const isAccent = tone === "accent";
   const isNight = tone === "night";
   return (
@@ -211,7 +264,7 @@ export function ActionCard({
             (isAccent || isNight) && { color: colors.white },
           ]}
         >
-          {title}
+          {tr(title)}
         </Text>
         <Text
           style={[
@@ -220,7 +273,7 @@ export function ActionCard({
             isNight && { color: colors.nightFogDim },
           ]}
         >
-          {hint}
+          {tr(hint)}
         </Text>
       </View>
       <View
@@ -236,7 +289,7 @@ export function ActionCard({
             (isAccent || isNight) && { color: colors.white },
           ]}
         >
-          {busy ? "…" : cta}
+          {busy ? "…" : tr(cta)}
         </Text>
       </View>
     </Pressable>
@@ -349,6 +402,7 @@ export function StatsStrip({
 }: {
   items: { label: string; value: string | number; warn?: boolean }[];
 }) {
+  const { tr } = useI18n();
   return (
     <View style={styles.statsStrip}>
       {items.map((it, i) => (
@@ -363,7 +417,7 @@ export function StatsStrip({
             >
               {it.value}
             </Text>
-            <Text style={styles.statsStripLabel}>{it.label}</Text>
+            <Text style={styles.statsStripLabel}>{tr(it.label)}</Text>
           </View>
         </View>
       ))}
@@ -380,12 +434,13 @@ export function SearchField({
   onChangeText: (t: string) => void;
   placeholder?: string;
 }) {
+  const { tr } = useI18n();
   return (
     <TextInput
       style={styles.search}
       value={value}
       onChangeText={onChangeText}
-      placeholder={placeholder}
+      placeholder={tr(placeholder)}
       placeholderTextColor={colors.faint}
       autoCapitalize="none"
       autoCorrect={false}
@@ -533,6 +588,21 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: colors.faint,
     fontWeight: "300",
+  },
+  menuGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  menuTile: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: space.md,
+    minHeight: 112,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    justifyContent: "flex-start",
+    gap: 6,
   },
   actionCard: {
     flexDirection: "row",

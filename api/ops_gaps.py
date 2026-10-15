@@ -206,6 +206,7 @@ def cash_shift_history(request):
 @require_GET
 def dashboard_report(request):
     from reports.accounting import build_daily_flash
+    from reports.chart_data import dashboard_charts
     from reports.operations import dashboard_insights, operations_kpis
 
     day = timezone.localdate()
@@ -219,12 +220,19 @@ def dashboard_report(request):
     flash = build_daily_flash(request.tenant, day, hotel=hotel)
     kpis = operations_kpis(request.tenant, day, hotel=hotel)
     insights = dashboard_insights(request.tenant, day, hotel=hotel)
+    charts = dashboard_charts(
+        request.tenant,
+        day,
+        hotel=hotel,
+        currency=request.tenant.currency or "UZS",
+    )
     return json_ok(
         {
             "day": day.isoformat(),
             "flash": _jsonable(flash),
             "kpis": _jsonable(kpis),
             "insights": _jsonable(insights),
+            "charts": _jsonable(charts),
         }
     )
 

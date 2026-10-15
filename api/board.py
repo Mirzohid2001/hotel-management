@@ -72,6 +72,7 @@ def build_board(*, tenant, hotel=None, day: date | None = None) -> dict:
                 "status": room.status,
                 "room_type": room.room_type.name if room.room_type_id else "",
                 "hotel_id": room.property_id,
+                "hotel_name": room.property.name if room.property_id else "",
             },
             "state": state,
             "reservation": None,

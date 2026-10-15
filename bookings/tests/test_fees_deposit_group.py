@@ -141,7 +141,7 @@ class EmehmonFeeTests(TestCase):
         self.guest = Guest.objects.create(tenant=self.tenant, first_name="Ali")
         self.today = timezone.localdate()
 
-    def test_default_fee_is_unit_times_nights_times_guests(self):
+    def test_default_fee_is_empty_manual_amount(self):
         from folio.services import default_emehmon_fee
 
         reservation = create_reservation(
@@ -156,11 +156,10 @@ class EmehmonFeeTests(TestCase):
             adults=2,
             children=1,
         )
-        # 9000 × 3 kecha × 3 mehmon
-        self.assertEqual(default_emehmon_fee(reservation), Decimal("81000.00"))
+        self.assertEqual(default_emehmon_fee(reservation), Decimal("0"))
 
-    def test_collect_upgrades_unit_amount_to_full_guest_nights(self):
-        """Zayezd formasi 9000 yuborsa ham to‘liq mehmon×kecha hisoblanadi."""
+    def test_collect_uses_manual_amount_not_unit_times_nights(self):
+        """Summa qo‘lda — 1760 yuborilsa 1760 qoladi (fiks tarif yo‘q)."""
         reservation = create_reservation(
             tenant=self.tenant,
             user=self.user,
@@ -179,7 +178,8 @@ class EmehmonFeeTests(TestCase):
             {
                 "emehmon_form": "1",
                 "collect_emehmon": "1",
-                "emehmon_amount": "9000",
+                "emehmon_citizen": "uz",
+                "emehmon_amount": "1760",
                 "emehmon_method": "card",
             },
         )
@@ -188,9 +188,9 @@ class EmehmonFeeTests(TestCase):
         charge = reservation.folio.charges.get(
             charge_type=FolioCharge.ChargeType.EMEHMON, is_void=False
         )
-        # 9000 × 4 kecha × 1 mehmon
-        self.assertEqual(charge.amount, Decimal("36000.00"))
-        self.assertEqual(charge.quantity, Decimal("4"))
+        self.assertEqual(charge.amount, Decimal("1760.00"))
+        self.assertEqual(charge.quantity, Decimal("1"))
+        self.assertIn("[uz]", charge.description)
 
     def test_collect_emehmon_at_booking(self):
         reservation = create_reservation(
@@ -207,27 +207,34 @@ class EmehmonFeeTests(TestCase):
         charge, payment = collect_emehmon_fee(
             reservation,
             self.user,
+            amount=Decimal("41200"),
             method=GuestPayment.Method.CARD,
+            citizen_type="foreign",
         )
-        # 9000 × 2 kecha × 1 mehmon
-        self.assertEqual(charge.amount, Decimal("18000.00"))
-        self.assertEqual(charge.quantity, Decimal("2"))
-        self.assertEqual(charge.unit_price, Decimal("9000"))
+        self.assertEqual(charge.amount, Decimal("41200.00"))
+        self.assertEqual(charge.quantity, Decimal("1"))
+        self.assertEqual(charge.unit_price, Decimal("41200"))
         self.assertEqual(charge.charge_type, FolioCharge.ChargeType.EMEHMON)
-        self.assertEqual(payment.amount, Decimal("18000.00"))
-        self.assertTrue(charge.description.startswith("E-mehmon"))
+        self.assertEqual(payment.amount, Decimal("41200.00"))
+        self.assertIn("[foreign]", charge.description)
         folio = reservation.folio
         from core.currency import money_sum
 
         all_charges = money_sum(folio.charges.filter(is_void=False))
-        self.assertEqual(folio.emehmon_charges_total, Decimal("18000.00"))
-        self.assertEqual(folio.emehmon_payments_total, Decimal("18000.00"))
+        self.assertEqual(folio.emehmon_charges_total, Decimal("41200.00"))
+        self.assertEqual(folio.emehmon_payments_total, Decimal("41200.00"))
         # E-mehmon xona/mehmonxona jamiyatiga kirmaydi
-        self.assertEqual(folio.charges_total, all_charges - Decimal("18000.00"))
+        self.assertEqual(folio.charges_total, all_charges - Decimal("41200.00"))
         self.assertEqual(folio.payments_total, Decimal("0"))
         self.assertEqual(folio.balance, folio.charges_total)  # nights posted, unpaid
         with self.assertRaises(ValidationError):
-            collect_emehmon_fee(reservation, self.user, method=GuestPayment.Method.CARD)
+            collect_emehmon_fee(
+                reservation,
+                self.user,
+                amount=Decimal("1000"),
+                method=GuestPayment.Method.CARD,
+                citizen_type="uz",
+            )
 
     def test_correct_undercharged_emehmon_upgrades_flat_fee(self):
         from folio.services import correct_undercharged_emehmon
@@ -249,6 +256,7 @@ class EmehmonFeeTests(TestCase):
             self.user,
             amount=Decimal("9000"),
             method=GuestPayment.Method.CARD,
+            citizen_type="uz",
         )
         self.assertEqual(charge.amount, Decimal("9000.00"))
         result = correct_undercharged_emehmon(tenant=self.tenant, dry_run=False)
@@ -273,15 +281,22 @@ class EmehmonFeeTests(TestCase):
             check_out=self.today.replace(day=1) + timedelta(days=2),
             adults=2,
         )
-        collect_emehmon_fee(reservation, self.user, method=GuestPayment.Method.CARD)
+        collect_emehmon_fee(
+            reservation,
+            self.user,
+            amount=Decimal("3520"),
+            method=GuestPayment.Method.CARD,
+            citizen_type="uz",
+        )
         report = build_emehmon_report(
             self.tenant, year=self.today.year, month=self.today.month
         )
         self.assertEqual(report["total_guest_nights"], 4)  # 2 nights × 2 guests
-        self.assertEqual(report["total_expected"], Decimal("36000.00"))
-        self.assertEqual(report["total_collected"], Decimal("36000.00"))
+        self.assertEqual(report["total_expected"], Decimal("3520.00"))
+        self.assertEqual(report["total_collected"], Decimal("3520.00"))
+        self.assertEqual(report["total_gap"], Decimal("0"))
         self.assertEqual(len(report["collections"]), 1)
-        self.assertEqual(report["collections"][0]["amount"], Decimal("36000.00"))
+        self.assertEqual(report["collections"][0]["amount"], Decimal("3520.00"))
 
     def test_emehmon_statement_page(self):
         reservation = create_reservation(
@@ -295,7 +310,13 @@ class EmehmonFeeTests(TestCase):
             check_out=self.today + timedelta(days=1),
             adults=1,
         )
-        collect_emehmon_fee(reservation, self.user, method=GuestPayment.Method.CARD)
+        collect_emehmon_fee(
+            reservation,
+            self.user,
+            amount=Decimal("1760"),
+            method=GuestPayment.Method.CARD,
+            citizen_type="uz",
+        )
         self.client.force_login(self.user)
         resp = self.client.get(
             reverse("bookings:emehmon_statement"),
@@ -303,7 +324,7 @@ class EmehmonFeeTests(TestCase):
         )
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "E-mehmon bayonnomasi")
-        self.assertContains(resp, "9 000")
+        self.assertContains(resp, "1 760")
         self.assertContains(resp, "Jami olingan")
         self.assertContains(resp, "E-mehmonga topshirish")
 
@@ -320,11 +341,11 @@ class EmehmonFeeTests(TestCase):
         self.assertContains(resp, "Olingan")
 
     def test_cross_month_collected_is_prorated(self):
-        """Olingan summa oy kechalariga proporsional — P&L farqi to‘g‘ri."""
+        """Olingan summa oy kechalariga proporsional; kerak = olingan (farq 0)."""
         from bookings.emehmon import emehmon_totals_for_range
         from calendar import monthrange
 
-        # Oxirgi oy oxiri → shu oy: 4 kecha; faqat 9000 olingan
+        # Oxirgi oy oxiri → shu oy: 4 kecha; 9000 olingan
         if self.today.month == 1:
             check_in = date(self.today.year - 1, 12, 30)
         else:
@@ -348,6 +369,7 @@ class EmehmonFeeTests(TestCase):
             self.user,
             amount=Decimal("9000"),
             method=GuestPayment.Method.CARD,
+            citizen_type="uz",
         )
         m_start = self.today.replace(day=1)
         m_end = self.today.replace(day=monthrange(self.today.year, self.today.month)[1])
@@ -359,11 +381,8 @@ class EmehmonFeeTests(TestCase):
             Decimal("0.01")
         )
         self.assertEqual(row["collected"], expected_share)
-        self.assertEqual(row["expected"], Decimal(9000 * nights_cur))
-        self.assertEqual(
-            row["gap"],
-            (Decimal(9000 * nights_cur) - expected_share).quantize(Decimal("0.01")),
-        )
+        self.assertEqual(row["expected"], expected_share)
+        self.assertEqual(row["gap"], Decimal("0"))
 
     def test_emehmon_optional_not_required_skips_expected(self):
         from bookings.emehmon import build_emehmon_report
@@ -400,7 +419,13 @@ class EmehmonFeeTests(TestCase):
             emehmon_required=False,
         )
         self.assertFalse(reservation.emehmon_required)
-        collect_emehmon_fee(reservation, self.user, method=GuestPayment.Method.CARD)
+        collect_emehmon_fee(
+            reservation,
+            self.user,
+            amount=Decimal("1760"),
+            method=GuestPayment.Method.CARD,
+            citizen_type="uz",
+        )
         reservation.refresh_from_db()
         self.assertTrue(reservation.emehmon_required)
 
@@ -411,8 +436,10 @@ class EmehmonFeeTests(TestCase):
         wf = WalkInForm(tenant=self.tenant, hotel=self.prop)
         self.assertNotIn("collect_emehmon", rf.fields)
         self.assertIs(wf.fields["collect_emehmon"].initial, True)
+        self.assertIn("emehmon_citizen", wf.fields)
+        self.assertIsNone(wf.fields["emehmon_amount"].initial)
 
-    def test_check_in_collects_full_guest_nights_even_if_unit_posted(self):
+    def test_check_in_keeps_manual_amount(self):
         from folio.models import FolioCharge
 
         reservation = create_reservation(
@@ -433,7 +460,8 @@ class EmehmonFeeTests(TestCase):
             {
                 "emehmon_form": "1",
                 "collect_emehmon": "1",
-                "emehmon_amount": "9000",
+                "emehmon_citizen": "foreign",
+                "emehmon_amount": "41200",
                 "emehmon_method": "card",
             },
         )
@@ -442,9 +470,9 @@ class EmehmonFeeTests(TestCase):
         charge = reservation.folio.charges.get(
             charge_type=FolioCharge.ChargeType.EMEHMON, is_void=False
         )
-        # 9000 × 3 kecha × 1 mehmon
-        self.assertEqual(charge.amount, Decimal("27000.00"))
-        self.assertEqual(charge.quantity, Decimal("3"))
+        self.assertEqual(charge.amount, Decimal("41200.00"))
+        self.assertEqual(charge.quantity, Decimal("1"))
+        self.assertIn("[foreign]", charge.description)
 
     def test_check_in_collects_emehmon_when_checked(self):
         from folio.models import FolioCharge
@@ -468,7 +496,8 @@ class EmehmonFeeTests(TestCase):
             {
                 "emehmon_form": "1",
                 "collect_emehmon": "1",
-                "emehmon_amount": "9000",
+                "emehmon_citizen": "uz",
+                "emehmon_amount": "1760",
                 "emehmon_method": "card",
             },
         )
@@ -509,10 +538,10 @@ class EmehmonFeeTests(TestCase):
         self.assertFalse(reservation.emehmon_required)
         self.assertFalse(emehmon_already_posted(reservation.folio))
 
-    def test_emehmon_required_unpaid_counts_shortfall(self):
+    def test_emehmon_required_unpaid_no_invented_shortfall(self):
+        """Fiks tarif yo‘q — olinmaganda sun’iy «kerak» va farq yo‘q."""
         from bookings.emehmon import build_emehmon_report
 
-        # O‘tgan sanalar — realized_only bugungi kechalarni qisqartirmasin
         create_reservation(
             tenant=self.tenant,
             user=self.user,
@@ -528,9 +557,12 @@ class EmehmonFeeTests(TestCase):
         report = build_emehmon_report(
             self.tenant, year=self.today.year, month=self.today.month
         )
-        self.assertEqual(report["total_expected"], Decimal("18000.00"))
+        self.assertEqual(report["total_expected"], Decimal("0"))
         self.assertEqual(report["total_collected"], Decimal("0"))
-        self.assertEqual(report["total_gap"], Decimal("18000.00"))
+        self.assertEqual(report["total_gap"], Decimal("0"))
+        self.assertEqual(report["shortfall"], Decimal("0"))
+        unpaid = [r for r in report["rows"] if r["required"] and not r["posted"]]
+        self.assertEqual(len(unpaid), 1)
 
     def test_usd_payment_converts_to_base(self):
         from tenants.models import ExchangeRate

@@ -510,7 +510,18 @@ def check_out_reservation(reservation: Reservation, user) -> Stay:
         )
 
     with transaction.atomic():
-        stay = reservation.stay
+        # Ba'zi eski/import bronlarda Stay yo'q bo'lishi mumkin — chiqishda qayta yaratamiz.
+        stay, _ = Stay.objects.get_or_create(
+            reservation=reservation,
+            defaults={
+                "tenant": reservation.tenant,
+                "actual_check_in": now,
+                "checked_in_by": user,
+            },
+        )
+        if folio.stay_id is None:
+            folio.stay = stay
+            folio.save(update_fields=["stay", "updated_at"])
         stay.actual_check_out = now
         stay.checked_out_by = user
         stay.save(update_fields=["actual_check_out", "checked_out_by", "updated_at"])

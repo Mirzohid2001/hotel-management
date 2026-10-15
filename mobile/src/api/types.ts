@@ -35,6 +35,7 @@ export type BoardTile = {
     status: string;
     room_type: string;
     hotel_id: number;
+    hotel_name?: string;
   };
   state: "vacant" | "occupied" | "dirty" | "ooo" | string;
   reservation: {
@@ -118,6 +119,7 @@ export type ReservationDetail = {
   emehmon_default?: string;
   emehmon_guests?: number;
   emehmon_paid?: boolean;
+  emehmon_citizen_choices?: { value: string; label: string }[];
   guest: { id: number; name: string };
   room: { id: number | null; number: string; status?: string };
   hotel_id: number | null;
@@ -163,6 +165,7 @@ export type WalkInPayload = {
   collect_emehmon?: boolean;
   emehmon_amount?: string;
   emehmon_method?: string;
+  emehmon_citizen?: string;
   occupants?: Record<string, unknown>[];
   guest_id?: number;
   company_id?: number;
@@ -224,6 +227,7 @@ export type ReservationSummary = {
   guest: { id: number; name: string };
   room: { id: number | null; number: string };
   hotel_id: number | null;
+  hotel_name?: string;
 };
 
 export type TodayData = {
@@ -379,6 +383,7 @@ export type CalendarData = {
       number: string;
       status: string;
       room_type: string;
+      hotel_name?: string;
     };
     segments: CalendarSegment[];
   }[];

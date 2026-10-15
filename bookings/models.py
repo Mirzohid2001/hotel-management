@@ -214,7 +214,9 @@ class Reservation(TenantOwnedModel):
     )
     emehmon_required = models.BooleanField(
         default=True,
-        help_text=_("True — E-mehmon: tarif × kecha × mehmon; False — bu bronda olinmaydi."),
+        help_text=_(
+            "True — E-mehmon olinadi (summa qo‘lda); False — bu bronda olinmaydi."
+        ),
     )
     check_in = models.DateField()
     check_out = models.DateField()

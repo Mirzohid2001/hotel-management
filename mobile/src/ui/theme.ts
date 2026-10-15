@@ -310,10 +310,13 @@ export const ui = StyleSheet.create({
     marginTop: 3,
   } as TextStyle,
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 40,
     borderRadius: radius.sm,
     backgroundColor: colors.paperDeep,
+    alignItems: "center",
+    justifyContent: "center",
   } as ViewStyle,
   chipOn: {
     backgroundColor: colors.accent,

@@ -5,6 +5,7 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -13,6 +14,7 @@ import {
 import { ApiError } from "../api/client";
 import type { ReservationSummary } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { useI18n } from "../i18n";
 import {
   EmptyState,
   SearchField,
@@ -67,7 +69,9 @@ export function TodayScreen({
   reloadToken = 0,
   onHotelChanged,
 }: Props) {
-  const { me, logout, fetchToday, searchReservations, setHotel } = useAuth();
+  const { me, logout, fetchToday, searchReservations, setHotel, hotelId } = useAuth();
+  const { t } = useI18n();
+  const [hotelOpen, setHotelOpen] = useState(false);
   const [segment, setSegment] = useState<Segment>("arrivals");
   const [arrivals, setArrivals] = useState<ReservationSummary[]>([]);
   const [departures, setDepartures] = useState<ReservationSummary[]>([]);
@@ -151,37 +155,33 @@ export function TodayScreen({
           : inHouse;
 
   function pickHotel() {
-    const hotels = me?.hotels || [];
-    if (hotels.length < 2) return;
-    Alert.alert(
-      "Filial",
-      "Qaysi mehmonxona?",
-      [
-        ...hotels.map((h) => ({
-          text: h.name + (h.id === me?.hotel?.id ? " ✓" : ""),
-          onPress: async () => {
-            try {
-              await setHotel(h.id);
-              onHotelChanged?.();
-              await load(true);
-            } catch (e) {
-              Alert.alert(
-                "Filial",
-                e instanceof ApiError ? e.message : "Almashtirish xatosi"
-              );
-            }
-          },
-        })),
-        { text: "Bekor", style: "cancel" as const },
-      ]
-    );
+    if ((me?.hotels?.length || 0) < 2) return;
+    setHotelOpen((v) => !v);
+  }
+
+  async function chooseHotel(id: number | "all") {
+    setHotelOpen(false);
+    try {
+      await setHotel(id);
+      onHotelChanged?.();
+      await load(true);
+    } catch (e) {
+      Alert.alert(
+        "Filial",
+        e instanceof ApiError ? e.message : "Almashtirish xatosi"
+      );
+    }
   }
 
   return (
     <View style={ui.screen}>
       <ScreenHeader
         eyebrow="Bugun"
-        title={me?.hotel?.name || me?.tenant.name || "Hotel"}
+        title={
+          hotelId === "all"
+            ? "Barcha filiallar"
+            : me?.hotel?.name || me?.tenant.name || "Hotel"
+        }
         subtitle={day || undefined}
         onTitlePress={(me?.hotels?.length || 0) > 1 ? pickHotel : undefined}
         right={
@@ -189,10 +189,37 @@ export function TodayScreen({
             onPress={logout}
             style={({ pressed }) => [ui.ghostBtn, pressed && { opacity: 0.75 }]}
           >
-            <Text style={ui.ghostBtnText}>Chiqish</Text>
+            <Text style={ui.ghostBtnText}>{t("logout")}</Text>
           </Pressable>
         }
       />
+      {hotelOpen ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingBottom: 10 }}
+        >
+          <Pressable
+            style={[ui.chip, hotelId === "all" && ui.chipOn]}
+            onPress={() => chooseHotel("all")}
+          >
+            <Text style={[ui.chipText, hotelId === "all" && ui.chipTextOn]}>
+              Barcha filiallar
+            </Text>
+          </Pressable>
+          {(me?.hotels || []).map((h) => (
+            <Pressable
+              key={h.id}
+              style={[ui.chip, hotelId === h.id && ui.chipOn]}
+              onPress={() => chooseHotel(h.id)}
+            >
+              <Text style={[ui.chipText, hotelId === h.id && ui.chipTextOn]}>
+                {h.name}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
 
       <View style={styles.searchWrap}>
         <SearchField
@@ -220,7 +247,10 @@ export function TodayScreen({
                   style={[styles.seg, on && styles.segOn]}
                   onPress={() => setSegment(s.id)}
                 >
-                  <Text style={[styles.segText, on && styles.segTextOn]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.segText, on && styles.segTextOn]}
+                  >
                     {s.label}
                   </Text>
                 </Pressable>
@@ -262,7 +292,10 @@ export function TodayScreen({
               onPress={() => onOpenReservation(item.id)}
             >
               <View style={styles.cardTop}>
-                <Text style={styles.room}>{item.room.number || "—"}</Text>
+                <Text style={styles.room}>
+                  {item.room.number || "—"}
+                  {hotelId === "all" && item.hotel_name ? ` · ${item.hotel_name}` : ""}
+                </Text>
                 <StatusBadge
                   label={STATUS_LABEL[item.status] || item.status}
                   tone={statusTone(item.status)}
@@ -305,6 +338,7 @@ const styles = StyleSheet.create({
     color: colors.inkSoft,
     fontSize: 13,
     fontFamily: fontUi,
+    textAlign: "center",
   },
   segTextOn: { color: colors.white },
   searchMeta: {

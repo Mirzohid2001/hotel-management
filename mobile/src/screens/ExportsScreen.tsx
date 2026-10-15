@@ -11,7 +11,7 @@ import {
 
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
-import { ActionCard } from "../ui/primitives";
+import { ActionCard, ListCard } from "../ui/primitives";
 import { ScreenHeader } from "../ui/ScreenHeader";
 import { colors, fontDisplay, fontUi, radius, space, type, ui } from "../ui/theme";
 import { shareCsvBase64, sharePdfBase64 } from "../utils/sharePdf";
@@ -209,6 +209,60 @@ export function ExportsScreen({ onBack }: Props) {
                 <Text style={styles.reportStatLbl}>Farq</Text>
               </View>
             </View>
+
+            {Array.isArray(emehmon.collections) &&
+            (emehmon.collections as unknown[]).length > 0 ? (
+              <View style={{ marginTop: space.md, gap: space.sm }}>
+                <Text style={styles.reportEyebrow}>
+                  Olingan to‘lovlar ({(emehmon.collections as unknown[]).length})
+                </Text>
+                {(
+                  emehmon.collections as {
+                    guest_name?: string;
+                    code?: string;
+                    amount?: string;
+                    method?: string;
+                    check_in?: string;
+                    collected_at?: string;
+                  }[]
+                ).map((row, idx) => (
+                  <ListCard
+                    key={`${row.code || "c"}-${idx}`}
+                    title={String(row.guest_name || "—")}
+                    meta={`${row.code || "—"} · ${row.check_in || row.collected_at || ""} · ${row.method || ""}`}
+                    badge={String(row.amount || "0")}
+                    badgeTone="accent"
+                  />
+                ))}
+              </View>
+            ) : null}
+
+            {Array.isArray(emehmon.rows) &&
+            (emehmon.rows as unknown[]).length > 0 ? (
+              <View style={{ marginTop: space.md, gap: space.sm }}>
+                <Text style={styles.reportEyebrow}>
+                  Bronlar bo‘yicha ({(emehmon.rows as unknown[]).length})
+                </Text>
+                {(
+                  emehmon.rows as {
+                    guest_name?: string;
+                    code?: string;
+                    expected?: string;
+                    collected?: string;
+                    gap?: string;
+                    nights_in_month?: number;
+                  }[]
+                ).map((row, idx) => (
+                  <ListCard
+                    key={`${row.code || "r"}-${idx}`}
+                    title={String(row.guest_name || "—")}
+                    meta={`${row.code || "—"} · ${row.nights_in_month || 0} kecha · kerak ${row.expected || 0} · olingan ${row.collected || 0}`}
+                    badge={String(row.gap || "0")}
+                    badgeTone={Number(row.gap) > 0 ? "warn" : "success"}
+                  />
+                ))}
+              </View>
+            ) : null}
           </View>
         ) : null}
       </ScrollView>

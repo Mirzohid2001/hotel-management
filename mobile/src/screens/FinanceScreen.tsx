@@ -28,8 +28,8 @@ import { sharePdfBase64 } from "../utils/sharePdf";
 
 type Props = { onBack: () => void; mode: "expenses" | "pnl" | "profit"; year?: number; month?: number };
 
-type Cat = { id: number; name: string };
-type Vendor = { id: number; name: string };
+type Cat = { id: number; name: string; is_active?: boolean };
+type Vendor = { id: number; name: string; is_active?: boolean };
 
 function expenseTone(
   status: string
@@ -47,15 +47,19 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
     fetchPnl,
     fetchExpenseMeta,
     createExpense,
+    updateExpense,
     approveExpense,
     payExpense,
     rejectExpense,
     reopenExpense,
     deleteExpense,
     createExpenseCategory,
+    updateExpenseCategory,
     createExpenseVendor,
+    updateExpenseVendor,
     fetchProfit,
     createProfitPartner,
+    updateProfitPartner,
     withdrawProfit,
     resetProfit,
     printPnl,
@@ -66,6 +70,7 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
   const [profit, setProfit] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [categories, setCategories] = useState<Cat[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [title, setTitle] = useState("");
@@ -90,6 +95,8 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
   const [partnerName, setPartnerName] = useState("");
   const [partnerPct, setPartnerPct] = useState("");
   const [showPartnerForm, setShowPartnerForm] = useState(false);
+  const [editingPartnerId, setEditingPartnerId] = useState<number | null>(null);
+  const [partnerActive, setPartnerActive] = useState(true);
   const [withdrawPartnerId, setWithdrawPartnerId] = useState<number | null>(
     null
   );
@@ -138,6 +145,24 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when mode/period/filter changes
   }, [mode, year, month, pnlYear, pnlMonth, expenseStatus]);
 
+  function resetExpenseForm() {
+    setTitle("");
+    setAmount("");
+    setCategoryId(null);
+    setVendorId(null);
+    setEditingId(null);
+    setCreating(false);
+  }
+
+  function startEditExpense(item: Record<string, unknown>) {
+    setEditingId(Number(item.id));
+    setCreating(true);
+    setTitle(String(item.title || ""));
+    setAmount(String(item.amount || ""));
+    setCategoryId(item.category_id ? Number(item.category_id) : null);
+    setVendorId(item.vendor_id ? Number(item.vendor_id) : null);
+  }
+
   async function submitExpense() {
     if (!title.trim() || !amount.trim() || !categoryId) {
       Alert.alert("Xato", "Sarlavha, summa va kategoriya kerak");
@@ -145,17 +170,21 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
     }
     setBusy(true);
     try {
-      await createExpense({
+      const payload = {
         title: title.trim(),
         amount: amount.trim(),
         category_id: categoryId,
-        ...(vendorId ? { vendor_id: vendorId } : {}),
-      });
-      setTitle("");
-      setAmount("");
-      setCreating(false);
+        vendor_id: vendorId || null,
+      };
+      if (editingId) {
+        await updateExpense(editingId, payload);
+        Alert.alert("OK", "Rasxod yangilandi");
+      } else {
+        await createExpense(payload);
+        Alert.alert("OK", "Rasxod qo‘shildi (qoralama)");
+      }
+      resetExpenseForm();
       await load();
-      Alert.alert("OK", "Rasxod qo‘shildi (qoralama)");
     } catch (e) {
       Alert.alert("Xato", e instanceof ApiError ? e.message : "Xato");
     } finally {
@@ -308,12 +337,23 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
     if (!partnerName.trim()) return;
     setBusy(true);
     try {
-      await createProfitPartner({
-        name: partnerName.trim(),
-        share_percent: partnerPct.trim() || "0",
-      });
+      if (editingPartnerId) {
+        await updateProfitPartner(editingPartnerId, {
+          name: partnerName.trim(),
+          share_percent: partnerPct.trim() || "0",
+          is_active: partnerActive,
+        });
+        Alert.alert("OK", "Hamkor yangilandi");
+      } else {
+        await createProfitPartner({
+          name: partnerName.trim(),
+          share_percent: partnerPct.trim() || "0",
+        });
+      }
       setPartnerName("");
       setPartnerPct("");
+      setEditingPartnerId(null);
+      setPartnerActive(true);
       setShowPartnerForm(false);
       await load();
     } catch (e) {
@@ -321,6 +361,15 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
     } finally {
       setBusy(false);
     }
+  }
+
+  function startEditPartner(item: Record<string, unknown>) {
+    setEditingPartnerId(Number(item.partner_id));
+    setPartnerName(String(item.name || ""));
+    setPartnerPct(String(item.share_percent || ""));
+    setPartnerActive(item.is_active !== false);
+    setShowPartnerForm(true);
+    setWithdrawPartnerId(null);
   }
 
   async function onWithdraw() {
@@ -465,7 +514,17 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
                 ui.copperBtn,
                 pressed && { opacity: 0.85 },
               ]}
-              onPress={() => setShowPartnerForm((v) => !v)}
+              onPress={() => {
+                if (showPartnerForm) {
+                  setShowPartnerForm(false);
+                  setEditingPartnerId(null);
+                  setPartnerName("");
+                  setPartnerPct("");
+                } else {
+                  setEditingPartnerId(null);
+                  setShowPartnerForm(true);
+                }
+              }}
             >
               <Text style={ui.copperBtnText}>
                 {showPartnerForm ? "Yopish" : "+ Hamkor"}
@@ -526,8 +585,18 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
                 value={partnerPct}
                 onChangeText={setPartnerPct}
               />
+              {editingPartnerId ? (
+                <Pressable
+                  style={[ui.chip, partnerActive && ui.chipOn, { marginBottom: 8 }]}
+                  onPress={() => setPartnerActive((v) => !v)}
+                >
+                  <Text style={[ui.chipText, partnerActive && ui.chipTextOn]}>
+                    {partnerActive ? "Faol" : "Nofaol"}
+                  </Text>
+                </Pressable>
+              ) : null}
               <PrimaryButton
-                label="Qo‘shish"
+                label={editingPartnerId ? "Yangilash" : "Qo‘shish"}
                 onPress={onCreatePartner}
                 loading={busy}
               />
@@ -591,11 +660,32 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
                 badgeTone={
                   Number(item.remaining) > 0 ? "warn" : "success"
                 }
-                onPress={() => {
-                  setWithdrawPartnerId(Number(item.partner_id));
-                  setWithdrawAmount(String(item.remaining || ""));
-                }}
-              />
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    marginTop: 10,
+                  }}
+                >
+                  <Pressable
+                    style={ui.chip}
+                    onPress={() => {
+                      setWithdrawPartnerId(Number(item.partner_id));
+                      setWithdrawAmount(String(item.remaining || ""));
+                    }}
+                  >
+                    <Text style={ui.chipText}>Yechib olish</Text>
+                  </Pressable>
+                  <Pressable
+                    style={ui.chip}
+                    onPress={() => startEditPartner(item)}
+                  >
+                    <Text style={ui.chipText}>Tahrirlash</Text>
+                  </Pressable>
+                </View>
+              </ListCard>
             )}
           />
         )}
@@ -613,7 +703,13 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
         right={
           <Pressable
             style={({ pressed }) => [ui.copperBtn, pressed && { opacity: 0.85 }]}
-            onPress={() => setCreating((v) => !v)}
+            onPress={() => {
+              if (creating) resetExpenseForm();
+              else {
+                setEditingId(null);
+                setCreating(true);
+              }
+            }}
           >
             <Text style={ui.copperBtnText}>
               {creating ? "Yopish" : "+ Yangi"}
@@ -649,6 +745,33 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
                     key={c.id}
                     style={[ui.chip, categoryId === c.id && ui.chipOn]}
                     onPress={() => setCategoryId(c.id)}
+                    onLongPress={() =>
+                      Alert.alert(
+                        "Kategoriya",
+                        `${c.name} ni ${
+                          c.is_active === false ? "yoqish" : "o‘chirish"
+                        }?`,
+                        [
+                          { text: "Bekor", style: "cancel" },
+                          {
+                            text: "OK",
+                            onPress: async () => {
+                              try {
+                                await updateExpenseCategory(c.id, {
+                                  is_active: c.is_active === false,
+                                });
+                                await load();
+                              } catch (e) {
+                                Alert.alert(
+                                  "Xato",
+                                  e instanceof ApiError ? e.message : "Xato"
+                                );
+                              }
+                            },
+                          },
+                        ]
+                      )
+                    }
                   >
                     <Text
                       style={[
@@ -657,6 +780,7 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
                       ]}
                     >
                       {c.name}
+                      {c.is_active === false ? " · off" : ""}
                     </Text>
                   </Pressable>
                 ))}
@@ -696,6 +820,33 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
                     onPress={() =>
                       setVendorId(vendorId === v.id ? null : v.id)
                     }
+                    onLongPress={() =>
+                      Alert.alert(
+                        "Vendor",
+                        `${v.name} ni ${
+                          v.is_active === false ? "yoqish" : "o‘chirish"
+                        }?`,
+                        [
+                          { text: "Bekor", style: "cancel" },
+                          {
+                            text: "OK",
+                            onPress: async () => {
+                              try {
+                                await updateExpenseVendor(v.id, {
+                                  is_active: v.is_active === false,
+                                });
+                                await load();
+                              } catch (e) {
+                                Alert.alert(
+                                  "Xato",
+                                  e instanceof ApiError ? e.message : "Xato"
+                                );
+                              }
+                            },
+                          },
+                        ]
+                      )
+                    }
                   >
                     <Text
                       style={[
@@ -704,6 +855,7 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
                       ]}
                     >
                       {v.name}
+                      {v.is_active === false ? " · off" : ""}
                     </Text>
                   </Pressable>
                 ))}
@@ -734,7 +886,7 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
             ) : null}
 
             <PrimaryButton
-              label="Saqlash"
+              label={editingId ? "Yangilash" : "Saqlash"}
               onPress={submitExpense}
               loading={busy}
             />
@@ -810,6 +962,14 @@ export function FinanceScreen({ onBack, mode, year, month }: Props) {
                     marginTop: 10,
                   }}
                 >
+                  {st === "draft" || st === "approved" ? (
+                    <Pressable
+                      style={ui.chip}
+                      onPress={() => startEditExpense(item)}
+                    >
+                      <Text style={ui.chipText}>Tahrirlash</Text>
+                    </Pressable>
+                  ) : null}
                   {st === "draft" ? (
                     <Pressable
                       style={ui.chip}

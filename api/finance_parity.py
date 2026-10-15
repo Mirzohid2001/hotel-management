@@ -263,6 +263,59 @@ def expense_vendor_create(request):
     )
 
 
+@api_login_required
+@api_role_required(*FINANCE, TenantMembership.Role.MANAGER)
+@require_POST
+def expense_category_update(request, pk):
+    from finance.models import ExpenseCategory
+
+    cat = ExpenseCategory.objects.filter(pk=pk, tenant=request.tenant).first()
+    if cat is None:
+        return json_error("Category not found.", status=404)
+    data = parse_json(request)
+    if "name" in data:
+        name = (data.get("name") or "").strip()
+        if not name:
+            return json_error("name required.")
+        cat.name = name
+    if "is_active" in data:
+        cat.is_active = bool(data["is_active"])
+    cat.save()
+    return json_ok({"id": cat.pk, "name": cat.name, "is_active": cat.is_active})
+
+
+@api_login_required
+@api_role_required(*FINANCE, TenantMembership.Role.MANAGER)
+@require_POST
+def expense_vendor_update(request, pk):
+    from finance.models import Vendor
+
+    vendor = Vendor.objects.filter(pk=pk, tenant=request.tenant).first()
+    if vendor is None:
+        return json_error("Vendor not found.", status=404)
+    data = parse_json(request)
+    if "name" in data:
+        name = (data.get("name") or "").strip()
+        if not name:
+            return json_error("name required.")
+        vendor.name = name
+    if "phone" in data:
+        vendor.phone = (data.get("phone") or "").strip()
+    if "notes" in data:
+        vendor.notes = (data.get("notes") or "").strip()
+    if "is_active" in data:
+        vendor.is_active = bool(data["is_active"])
+    vendor.save()
+    return json_ok(
+        {
+            "id": vendor.pk,
+            "name": vendor.name,
+            "phone": vendor.phone or "",
+            "is_active": vendor.is_active,
+        }
+    )
+
+
 # ── Company / referrer update ────────────────────────────────────────────────
 
 
@@ -447,6 +500,7 @@ def profit_ledger(request):
                 "entitled": str(row.get("entitled") or 0),
                 "withdrawn": str(row.get("withdrawn") or 0),
                 "remaining": str(row.get("remaining") or 0),
+                "is_active": bool(getattr(p, "is_active", True)),
             }
         )
     snap["rows"] = rows

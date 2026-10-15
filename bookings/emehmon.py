@@ -1,4 +1,4 @@
-"""E-mehmon oylik komissiya hisoboti — mehmon × kecha × tarif."""
+"""E-mehmon oylik hisoboti — qo‘lda olingan summalar (fiks tarif yo‘q)."""
 
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ from django.utils import timezone
 
 from folio.models import FolioCharge
 from folio.services import (
-    calc_emehmon_fee,
     emehmon_already_posted,
+    emehmon_citizen_label,
     emehmon_guest_count,
+    parse_emehmon_citizen,
 )
-from properties.models import PropertySettings
 
 from .models import Reservation
 
@@ -48,6 +48,8 @@ def emehmon_totals_for_range(
     """
     Davr uchun E-mehmon jami.
 
+    Summa fiks tarifdan emas — mehmondan olingan qiymat.
+    Kerak = olingan (farq 0). Olinmagan belgilangan bron — holat «Yo‘q».
     realized_only=True — faqat boshlangan/yashagan bronlar (P&L uchun).
     """
     qs = (
@@ -56,6 +58,7 @@ def emehmon_totals_for_range(
         .exclude(status=Reservation.Status.NO_SHOW)
         .filter(check_in__lte=end, check_out__gt=start)
         .select_related("guest", "hotel", "folio")
+        .prefetch_related("folio__charges")
         .order_by("check_in", "pk")
     )
     if hotel is not None:
@@ -70,75 +73,58 @@ def emehmon_totals_for_range(
             )
         )
 
-    settings_map = {
-        s.property_id: s.emehmon_fee or Decimal("0")
-        for s in PropertySettings.objects.filter(tenant=tenant)
-    }
-
     rows = []
     total_guest_nights = 0
     total_expected = Decimal("0")
     total_collected = Decimal("0")
 
     for res in qs:
-        unit = settings_map.get(res.hotel_id, Decimal("0"))
         guests = emehmon_guest_count(res.adults, res.children)
-        # Joriy oyda kelajak kechalarini Sofga oldindan kiritmaslik
         night_end = end
-        capped = False
         if realized_only:
             today = timezone.localdate()
             if night_end > today:
                 night_end = today
-                capped = True
         nights = nights_overlap(res.check_in, res.check_out, start, night_end)
         if nights <= 0:
             continue
         guest_nights = nights * guests
         collected_full = Decimal("0")
+        citizen = ""
         folio = getattr(res, "folio", None)
         if folio is not None:
-            collected_full = (
-                folio.charges.filter(
-                    is_void=False, charge_type=FolioCharge.ChargeType.EMEHMON
-                ).aggregate(s=Sum("amount_base"))["s"]
-                or Decimal("0")
-            )
-        # Ko‘p oylik bron: olingan summani kechalar ulushiga bo‘lamiz.
-        # Joriy oyda kelajak kechalari qirqilganda — to‘lov avval o‘tgan kechalarga.
-        required = bool(getattr(res, "emehmon_required", False))
-        if required:
-            expected = calc_emehmon_fee(unit, nights=nights, guests=guests)
-            applies = True
-        elif collected_full > 0:
-            expected = Decimal("0")  # temporary; set after collected
-            applies = True
-        else:
-            expected = Decimal("0")
-            applies = False
-            guest_nights = 0
+            emehmon_charges = [
+                c
+                for c in folio.charges.all()
+                if (not c.is_void and c.charge_type == FolioCharge.ChargeType.EMEHMON)
+            ]
+            collected_full = sum(
+                (c.amount_base or c.amount or Decimal("0")) for c in emehmon_charges
+            ) or Decimal("0")
+            if emehmon_charges:
+                citizen = parse_emehmon_citizen(emehmon_charges[0].description or "")
 
-        if collected_full and applies:
-            if capped:
-                # Elapsed nights only: to‘lovni foizli bo‘lmasdan qoplaymiz
-                collected = min(collected_full, expected) if required else collected_full
+        required = bool(getattr(res, "emehmon_required", False))
+        posted = bool(folio and emehmon_already_posted(folio))
+        applies = required or collected_full > 0
+        if not applies:
+            continue
+
+        # Ko‘p oylik bron: olingan summani kechalar ulushiga bo‘lamiz.
+        if collected_full > 0:
+            stay_nights = max(1, int(getattr(res, "nights", None) or nights))
+            if stay_nights == nights:
+                collected = collected_full
             else:
-                stay_nights = max(1, int(getattr(res, "nights", None) or nights))
                 collected = (
                     collected_full * Decimal(nights) / Decimal(stay_nights)
                 ).quantize(Decimal("0.01"))
         else:
             collected = Decimal("0")
 
-        if applies and not required and collected_full > 0:
-            expected = collected
-        # Ixtiyoriy: faqat belgilangan bronlarda to‘liq kutilgan summa.
-        # Belgilanmagan, lekin biror to‘lov bor — kutilgan = olingan (farq 0).
-        if not applies:
-            expected = Decimal("0")
-            guest_nights = 0
-
-        posted = bool(folio and emehmon_already_posted(folio))
+        # Fiks tarif yo‘q — kerak = olingan (yoki 0 agar hali olinmagan).
+        expected = collected
+        gap = Decimal("0")
 
         total_guest_nights += guest_nights
         total_expected += expected
@@ -154,14 +140,16 @@ def emehmon_totals_for_range(
                 "guests": guests,
                 "nights_in_month": nights,
                 "guest_nights": guest_nights,
-                "unit": unit,
+                "unit": Decimal("0"),
+                "citizen": citizen,
+                "citizen_label": emehmon_citizen_label(citizen) if citizen else "",
                 "expected": expected,
                 "collected": collected,
                 "collected_full": collected_full,
                 "posted": posted,
                 "applies": applies,
                 "required": required,
-                "gap": expected - collected,
+                "gap": gap,
             }
         )
 
@@ -189,7 +177,7 @@ def emehmon_totals_for_range(
         "total_gap": gap,
         "shortfall": shortfall,
         "posted_in_period": posted_in_period,
-        "default_unit": Decimal("9000"),
+        "default_unit": Decimal("0"),
     }
 
 
@@ -236,6 +224,11 @@ def emehmon_collection_rows(
             .order_by("created_at")
             .first()
         )
+        citizen = parse_emehmon_citizen(
+            (charge.description or "")
+            + " "
+            + ((payment.note if payment else "") or "")
+        )
         rows.append(
             {
                 "charge": charge,
@@ -250,6 +243,8 @@ def emehmon_collection_rows(
                 "method": payment.get_method_display() if payment else "—",
                 "collected_at": charge.created_at,
                 "note": (payment.note if payment else charge.description) or "",
+                "citizen": citizen,
+                "citizen_label": emehmon_citizen_label(citizen) if citizen else "",
             }
         )
     return rows

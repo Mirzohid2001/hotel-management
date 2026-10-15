@@ -24,7 +24,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mehmonxona logotipi uchun galereyadan rasm tanlash."
+        }
+      ]
     ]
   }
 }

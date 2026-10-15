@@ -1,6 +1,18 @@
 from django.urls import path
 
-from . import admin_parity, finance_parity, notify_parity, ops, ops_extra, ops_gaps, parity, print_parity, setup, views
+from . import (
+    admin_parity,
+    finance_parity,
+    mobile_gaps,
+    notify_parity,
+    ops,
+    ops_extra,
+    ops_gaps,
+    parity,
+    print_parity,
+    setup,
+    views,
+)
 
 app_name = "api"
 
@@ -9,6 +21,8 @@ urlpatterns = [
     path("auth/logout/", views.logout, name="logout"),
     path("me/", views.me, name="me"),
     path("me/update/", views.me_update, name="me_update"),
+    path("me/delete/", mobile_gaps.profile_delete, name="profile_delete"),
+    path("me/logo/", mobile_gaps.tenant_logo, name="tenant_logo"),
     path("board/", views.board, name="board"),
     path("today/", views.today, name="today"),
     path("inquiries/", ops.inquiries, name="inquiries"),
@@ -95,6 +109,12 @@ urlpatterns = [
         name="hr_payroll_finalize",
     ),
     path("hr/payroll/pay-all/", ops_extra.hr_payroll_pay_all, name="hr_payroll_pay_all"),
+    path("hr/payroll/items/", mobile_gaps.payroll_items, name="payroll_items"),
+    path(
+        "hr/payroll/items/<int:pk>/",
+        mobile_gaps.payroll_item_update,
+        name="payroll_item_update",
+    ),
     path("maintenance/", ops.maintenance_list, name="maintenance_list"),
     path("maintenance/create/", ops.maintenance_create, name="maintenance_create"),
     path(
@@ -117,6 +137,29 @@ urlpatterns = [
         ops.maintenance_spend,
         name="maintenance_spend",
     ),
+    path("maintenance/spends/", mobile_gaps.maintenance_spends, name="maintenance_spends"),
+    path(
+        "maintenance/spends/<int:pk>/void/",
+        mobile_gaps.maintenance_spend_void,
+        name="maintenance_spend_void",
+    ),
+    path(
+        "maintenance/spends/<int:pk>/delete/",
+        mobile_gaps.maintenance_spend_delete,
+        name="maintenance_spend_delete",
+    ),
+    path(
+        "maintenance/spends/<int:pk>/print/",
+        mobile_gaps.maintenance_spend_print,
+        name="maintenance_spend_print",
+    ),
+    path(
+        "maintenance/statement/print/",
+        mobile_gaps.maintenance_statement_print,
+        name="maintenance_statement_print",
+    ),
+    path("setup/properties/", mobile_gaps.property_create, name="property_create"),
+    path("setup/widget/", mobile_gaps.widget_config, name="widget_config"),
     path("setup/settings/", setup.property_settings, name="property_settings"),
     path(
         "setup/settings/update/",
@@ -125,10 +168,16 @@ urlpatterns = [
     ),
     path("setup/room-types/", setup.room_types, name="room_types"),
     path("setup/room-types/create/", setup.room_type_create, name="room_type_create"),
+    path("setup/room-types/seed/", setup.room_types_seed, name="room_types_seed"),
     path(
         "setup/room-types/<int:pk>/update/",
         setup.room_type_update,
         name="room_type_update",
+    ),
+    path(
+        "setup/room-types/<int:pk>/delete/",
+        setup.room_type_delete,
+        name="room_type_delete",
     ),
     path("setup/rooms/", setup.rooms_admin, name="rooms_admin"),
     path("setup/rooms/create/", setup.room_create, name="room_create"),
@@ -137,11 +186,21 @@ urlpatterns = [
         setup.room_update,
         name="room_update",
     ),
+    path(
+        "setup/rooms/<int:pk>/delete/",
+        setup.room_delete,
+        name="room_delete",
+    ),
     path("setup/floors/", setup.floors_admin, name="floors_admin"),
     path(
         "setup/floors/<int:pk>/update/",
         setup.floor_update,
         name="floor_update",
+    ),
+    path(
+        "setup/floors/<int:pk>/delete/",
+        setup.floor_delete,
+        name="floor_delete",
     ),
     path("setup/services/", setup.services_catalog, name="services_catalog"),
     path(
@@ -157,9 +216,19 @@ urlpatterns = [
         name="rate_plan_update",
     ),
     path(
+        "setup/rate-plans/<int:pk>/delete/",
+        setup.rate_plan_delete,
+        name="rate_plan_delete",
+    ),
+    path(
         "setup/rate-plans/<int:pk>/seasons/",
         setup.rate_plan_season_create,
         name="rate_plan_season_create",
+    ),
+    path(
+        "setup/rate-plans/<int:pk>/day/",
+        mobile_gaps.rate_plan_set_day,
+        name="rate_plan_set_day",
     ),
     path(
         "setup/rate-plans/<int:pk>/matrix/",
@@ -210,6 +279,7 @@ urlpatterns = [
     path("expenses/", parity.expenses, name="expenses"),
     path("expenses/meta/", parity.expenses_meta, name="expenses_meta"),
     path("expenses/create/", parity.expense_create, name="expense_create"),
+    path("expenses/<int:pk>/update/", parity.expense_update, name="expense_update"),
     path("expenses/<int:pk>/print/", print_parity.expense_print, name="expense_print"),
     path("expenses/<int:pk>/approve/", parity.expense_approve, name="expense_approve"),
     path("expenses/<int:pk>/pay/", parity.expense_pay, name="expense_pay"),
@@ -234,6 +304,16 @@ urlpatterns = [
         name="expense_category_create",
     ),
     path(
+        "expenses/categories/<int:pk>/update/",
+        finance_parity.expense_category_update,
+        name="expense_category_update",
+    ),
+    path(
+        "expenses/vendors/<int:pk>/update/",
+        finance_parity.expense_vendor_update,
+        name="expense_vendor_update",
+    ),
+    path(
         "expenses/vendors/create/",
         finance_parity.expense_vendor_create,
         name="expense_vendor_create",
@@ -254,6 +334,7 @@ urlpatterns = [
     path("guests/", ops.guest_list, name="guest_list"),
     path("guests/create/", ops.guest_create, name="guest_create"),
     path("guests/<int:pk>/", parity.guest_update, name="guest_detail"),
+    path("guests/<int:pk>/delete/", mobile_gaps.guest_delete, name="guest_delete"),
     path(
         "guests/<int:pk>/documents/",
         parity.guest_add_document,
@@ -347,6 +428,11 @@ urlpatterns = [
         "reservations/<int:pk>/no-show/",
         views.reservation_no_show,
         name="reservation_no_show",
+    ),
+    path(
+        "reservations/<int:pk>/purge/",
+        mobile_gaps.reservation_purge,
+        name="reservation_purge",
     ),
     path(
         "reservations/<int:pk>/confirm/",

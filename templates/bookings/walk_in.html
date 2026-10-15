@@ -103,13 +103,18 @@
       </p>
       <div class="emehmon-box" style="margin-top:1rem;padding-top:0.85rem;border-top:1px solid var(--border, #e5e7eb)" id="emehmon-box">
         <h3 class="walkin-section-title" style="font-size:1rem;margin-bottom:0.5rem">{% trans "E-mehmon to‘lovi" %}</h3>
-        <p class="muted" style="margin:0 0 0.65rem;font-size:0.9rem">{% trans "Ixtiyoriy. Belgilanmasa olinmaydi; belgilansa: tarif × tunlar × mehmonlar." %}</p>
+        <p class="muted" style="margin:0 0 0.65rem;font-size:0.9rem">{% trans "Ixtiyoriy. Belgilanmasa olinmaydi; belgilansa fuqarolikni tanlab summani o‘zingiz yozing." %}</p>
         <div class="form-grid walkin-fields">
           <p class="field-span-2">
             <label class="checkbox-row">
               {{ form.collect_emehmon }}
               <span>{{ form.collect_emehmon.label }}</span>
             </label>
+          </p>
+          <p class="emehmon-fields">
+            <label for="{{ form.emehmon_citizen.id_for_label }}">{{ form.emehmon_citizen.label }}</label>
+            {{ form.emehmon_citizen }}
+            {{ form.emehmon_citizen.errors }}
           </p>
           <p class="emehmon-fields">
             <label for="{{ form.emehmon_amount.id_for_label }}">{{ form.emehmon_amount.label }}</label>
@@ -274,7 +279,6 @@
     });
   }
 
-  var amount = form.querySelector('[name="emehmon_amount"]');
   var collect = form.querySelector('[name="collect_emehmon"]');
   function toggleEmehmon() {
     var on = collect && collect.checked;
@@ -285,27 +289,6 @@
   if (collect) {
     collect.addEventListener("change", toggleEmehmon);
     toggleEmehmon();
-  }
-  if (amount) {
-    var unit = parseFloat(amount.getAttribute("data-emehmon-unit") || "0") || 0;
-    function recalcEmehmon() {
-      if (!unit || (collect && !collect.checked)) return;
-      var nightsEl = form.querySelector('[name="nights"]');
-      var adultsEl = form.querySelector('[name="adults"]');
-      var childrenEl = form.querySelector('[name="children"]');
-      var nights = Math.max(1, parseInt(nightsEl && nightsEl.value, 10) || 1);
-      var guests = Math.max(
-        1,
-        (parseInt(adultsEl && adultsEl.value, 10) || 1) +
-          (parseInt(childrenEl && childrenEl.value, 10) || 0)
-      );
-      amount.value = (unit * nights * guests).toFixed(2);
-    }
-    ["nights", "adults", "children"].forEach(function (name) {
-      var el = form.querySelector('[name="' + name + '"]');
-      if (el) el.addEventListener("change", recalcEmehmon);
-    });
-    if (collect) collect.addEventListener("change", function () { if (collect.checked) recalcEmehmon(); });
   }
 })();
 </script>

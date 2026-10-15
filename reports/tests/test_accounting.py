@@ -237,16 +237,11 @@ class AccountingReportsTests(TestCase):
         self.assertEqual(pnl["commission_rows"][0]["name"], "Agent2")
 
     def test_emehmon_pass_through_pnl(self):
-        """E-mehmon tushum emas; faqat qoplanmagan farq rasxod."""
+        """E-mehmon tushum emas; qo‘lda olinganda farq (shortfall) yo‘q."""
         from folio.services import collect_emehmon_fee, add_payment
         from folio.models import GuestPayment
         from reports.accounting import build_pnl_report, cash_pnl_for_range
 
-        settings = self.prop.settings
-        settings.emehmon_fee = Decimal("9000")
-        settings.save(update_fields=["emehmon_fee"])
-
-        # 2 o‘tgan kecha × 1 mehmon = 18000 expected; half collected → shortfall 9000
         self.reservation.emehmon_required = True
         self.reservation.check_in = self.today - timedelta(days=1)
         self.reservation.check_out = self.today + timedelta(days=1)
@@ -260,6 +255,7 @@ class AccountingReportsTests(TestCase):
             self.user,
             amount=Decimal("9000"),
             method=GuestPayment.Method.CARD,
+            citizen_type="uz",
         )
         # Extra room payment should stay in revenue
         from folio.services import ensure_folio_for_reservation
@@ -278,9 +274,7 @@ class AccountingReportsTests(TestCase):
         )
         # 9000 E-mehmon payment excluded from revenue; 100000 remains
         self.assertEqual(report["revenue_total"], Decimal("100000"))
-        self.assertEqual(report["emehmon_shortfall"], Decimal("9000"))
-        labels = " ".join(str(r["label"]) for r in report["expenses_breakdown"])
-        self.assertIn("E-mehmon", labels)
+        self.assertEqual(report["emehmon_shortfall"], Decimal("0"))
 
         # Accrual: EMEHMON charge not in revenue
         from folio.models import FolioCharge
@@ -299,7 +293,7 @@ class AccountingReportsTests(TestCase):
             day=monthrange(self.today.year, self.today.month)[1]
         )
         month_pnl = cash_pnl_for_range(self.tenant, month_start, month_end)
-        self.assertEqual(month_pnl["emehmon_shortfall"], Decimal("9000"))
+        self.assertEqual(month_pnl["emehmon_shortfall"], Decimal("0"))
         self.assertEqual(month_pnl["guest_payments"], Decimal("100000"))
 
     def test_reinvestment_excluded_from_pnl_net(self):
@@ -365,21 +359,17 @@ class AccountingReportsTests(TestCase):
         flash = build_daily_flash(self.tenant, self.today, hotel=self.prop)
         self.assertEqual(flash["revenue_cash"], Decimal("250000"))
 
-    def test_emehmon_shortfall_does_not_count_future_nights(self):
-        """Joriy oy Sofi kelajak kechalarini oldindan ayirmasin."""
-        from bookings.emehmon import emehmon_shortfall_for_range, nights_overlap
+    def test_emehmon_shortfall_zero_without_fixed_tariff(self):
+        """Fiks tarif yo‘q — olinmaganda ham sun’iy shortfall yo‘q."""
+        from bookings.emehmon import emehmon_shortfall_for_range
         from calendar import monthrange
 
-        settings = self.prop.settings
-        settings.emehmon_fee = Decimal("9000")
-        settings.save(update_fields=["emehmon_fee"])
         self.reservation.emehmon_required = True
         self.reservation.adults = 1
         self.reservation.check_out = self.today + timedelta(days=10)
         self.reservation.save(
             update_fields=["emehmon_required", "adults", "check_out", "updated_at"]
         )
-        # already checked in in setUp
 
         month_start = self.today.replace(day=1)
         month_end = self.today.replace(
@@ -388,21 +378,7 @@ class AccountingReportsTests(TestCase):
         shortfall = emehmon_shortfall_for_range(
             self.tenant, month_start, month_end, hotel=self.prop
         )
-        expected_nights = nights_overlap(
-            self.reservation.check_in,
-            self.reservation.check_out,
-            month_start,
-            self.today,
-        )
-        self.assertEqual(shortfall, Decimal(expected_nights) * Decimal("9000"))
-        full_month_nights = nights_overlap(
-            self.reservation.check_in,
-            self.reservation.check_out,
-            month_start,
-            month_end,
-        )
-        if full_month_nights > expected_nights:
-            self.assertLess(shortfall, Decimal(full_month_nights) * Decimal("9000"))
+        self.assertEqual(shortfall, Decimal("0"))
 
     def test_flash_and_guest_ar(self):
         flash = build_daily_flash(self.tenant, self.today)

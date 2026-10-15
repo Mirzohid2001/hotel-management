@@ -45,13 +45,7 @@ type Props = {
 };
 
 export function WalkInScreen({ room, onBack, onCreated }: Props) {
-  const {
-    walkIn,
-    searchGuests,
-    fetchCompanies,
-    fetchReferrers,
-    fetchPropertySettings,
-  } = useAuth();
+  const { walkIn, searchGuests, fetchCompanies, fetchReferrers } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -71,34 +65,25 @@ export function WalkInScreen({ room, onBack, onCreated }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [collectEmehmon, setCollectEmehmon] = useState(true);
-  const [emehmonUnit, setEmehmonUnit] = useState(0);
+  const [emehmonCitizen, setEmehmonCitizen] = useState<"uz" | "foreign" | "">(
+    ""
+  );
   const [emehmonAmount, setEmehmonAmount] = useState("");
   const [companions, setCompanions] = useState<CompanionDraft[]>([]);
 
   const guestLocked = guestId != null;
 
-  const guestsCount = Math.max(
-    1,
-    (parseInt(adults, 10) || 1) + (parseInt(children, 10) || 0)
-  );
-  const nightsCount = Math.max(1, parseInt(nights, 10) || 1);
-  const emehmonDefault =
-    emehmonUnit > 0 ? String(emehmonUnit * nightsCount * guestsCount) : "";
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [cos, refs, settings] = await Promise.all([
+        const [cos, refs] = await Promise.all([
           fetchCompanies().catch(() => []),
           fetchReferrers().catch(() => []),
-          fetchPropertySettings().catch(() => null),
         ]);
         if (!cancelled) {
           setCompanies(cos);
           setReferrers(refs);
-          const unit = Number(settings?.emehmon_fee || 0);
-          setEmehmonUnit(Number.isFinite(unit) ? unit : 0);
         }
       } catch {
         /* ignore */
@@ -107,11 +92,7 @@ export function WalkInScreen({ room, onBack, onCreated }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [fetchCompanies, fetchReferrers, fetchPropertySettings]);
-
-  useEffect(() => {
-    if (emehmonDefault) setEmehmonAmount(emehmonDefault);
-  }, [emehmonDefault]);
+  }, [fetchCompanies, fetchReferrers]);
 
   useEffect(() => {
     const a = Math.max(1, parseInt(adults, 10) || 1);
@@ -170,6 +151,16 @@ export function WalkInScreen({ room, onBack, onCreated }: Props) {
       setBusy(false);
       return;
     }
+    if (collectEmehmon) {
+      if (!emehmonCitizen) {
+        setError("Fuqarolikni tanlang (O‘zbekiston yoki chet el).");
+        return;
+      }
+      if (!emehmonAmount.trim() || Number(emehmonAmount) <= 0) {
+        setError("E-mehmon summasini yozing.");
+        return;
+      }
+    }
     setBusy(true);
     try {
       const result = await walkIn({
@@ -185,8 +176,11 @@ export function WalkInScreen({ room, onBack, onCreated }: Props) {
         allow_no_docs: !!force?.allow_no_docs || !docNumber.trim(),
         collect_emehmon: collectEmehmon,
         emehmon_method: "cash",
-        ...(collectEmehmon && emehmonAmount.trim()
-          ? { emehmon_amount: emehmonAmount.trim() }
+        ...(collectEmehmon
+          ? {
+              emehmon_amount: emehmonAmount.trim(),
+              emehmon_citizen: emehmonCitizen,
+            }
           : {}),
         ...(companions.length
           ? { occupants: companionPayload(companions) }
@@ -341,9 +335,7 @@ export function WalkInScreen({ room, onBack, onCreated }: Props) {
         <FormCard>
           <Text style={styles.section}>E-mehmon</Text>
           <Text style={styles.hint}>
-            {emehmonUnit > 0
-              ? `${emehmonUnit} × ${nightsCount} kecha × ${guestsCount} kishi`
-              : "Setup’da tarif yo‘q"}
+            Fiks tarif yo‘q — fuqarolikni tanlab summani o‘zingiz yozing.
           </Text>
           <Pressable
             style={[ui.chip, collectEmehmon && ui.chipOn, { marginBottom: 8 }]}
@@ -355,13 +347,42 @@ export function WalkInScreen({ room, onBack, onCreated }: Props) {
           </Pressable>
           {collectEmehmon ? (
             <>
-              <FieldLabel>Summa (o‘zgartirish mumkin)</FieldLabel>
+              <FieldLabel>Fuqarolik</FieldLabel>
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
+                <Pressable
+                  style={[ui.chip, emehmonCitizen === "uz" && ui.chipOn]}
+                  onPress={() => setEmehmonCitizen("uz")}
+                >
+                  <Text
+                    style={[
+                      ui.chipText,
+                      emehmonCitizen === "uz" && ui.chipTextOn,
+                    ]}
+                  >
+                    O‘zbekiston
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[ui.chip, emehmonCitizen === "foreign" && ui.chipOn]}
+                  onPress={() => setEmehmonCitizen("foreign")}
+                >
+                  <Text
+                    style={[
+                      ui.chipText,
+                      emehmonCitizen === "foreign" && ui.chipTextOn,
+                    ]}
+                  >
+                    Chet el
+                  </Text>
+                </Pressable>
+              </View>
+              <FieldLabel>Summa</FieldLabel>
               <TextInput
                 style={ui.input}
                 value={emehmonAmount}
                 onChangeText={setEmehmonAmount}
                 keyboardType="decimal-pad"
-                placeholder={emehmonDefault || "0"}
+                placeholder="Summani yozing"
                 placeholderTextColor={colors.faint}
               />
             </>
