@@ -12,11 +12,22 @@ from django.urls import reverse
 SALT = "folio.receipt.v1"
 
 
+def _encode_token(signed: str) -> str:
+    """URL path uchun xavfsiz (:, / yo‘q)."""
+    return base64.urlsafe_b64encode(signed.encode("utf-8")).decode("ascii").rstrip("=")
+
+
+def _decode_token(token: str) -> str:
+    pad = "=" * (-len(token) % 4)
+    return base64.urlsafe_b64decode(token + pad).decode("utf-8")
+
+
 def make_receipt_token(folio) -> str:
-    return signing.dumps(
+    signed = signing.dumps(
         {"f": folio.pk, "t": folio.tenant_id},
         salt=SALT,
     )
+    return _encode_token(signed)
 
 
 def resolve_receipt_token(token: str):
@@ -24,10 +35,18 @@ def resolve_receipt_token(token: str):
     from .models import Folio, FolioCharge, GuestPayment
 
     try:
-        data = signing.loads(token, salt=SALT)
+        signed = _decode_token(token)
+        data = signing.loads(signed, salt=SALT)
         folio_id = int(data["f"])
         tenant_id = int(data["t"])
-    except (signing.BadSignature, signing.SignatureExpired, KeyError, TypeError, ValueError):
+    except (
+        signing.BadSignature,
+        signing.SignatureExpired,
+        KeyError,
+        TypeError,
+        ValueError,
+        UnicodeDecodeError,
+    ):
         return None
 
     return (
