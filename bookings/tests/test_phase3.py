@@ -168,12 +168,34 @@ class CheckoutReceiptTests(TestCase):
         self.assertContains(resp, self.prop.name)
         self.assertContains(resp, "To‘lovlar")
         self.assertContains(resp, "Chop etish")
+        self.assertContains(resp, "QR kodni skaner qiling")
+        self.assertContains(resp, "data:image/png;base64,")
+        self.assertContains(resp, 'class="receipt-qr"')
+
+    def test_public_receipt_share_opens_without_login(self):
+        from folio.receipt_share import make_receipt_token, receipt_share_path
+
+        folio = self.reservation.folio
+        path = receipt_share_path(folio)
+        self.client.logout()
+        resp = self.client.get(path)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, self.reservation.code)
+        self.assertContains(resp, self.prop.name)
+        self.assertContains(resp, "data:image/png;base64,")
+
+        bad = reverse("folio:receipt_share", args=["not-a-valid-token"])
+        self.assertEqual(self.client.get(bad).status_code, 404)
+        # token mismatch
+        self.assertNotEqual(make_receipt_token(folio), "not-a-valid-token")
 
     def test_pdf_includes_payment_lines(self):
         from folio.pdf import build_folio_pdf
+        from folio.receipt_share import receipt_share_path
 
         folio = self.reservation.folio
-        pdf = build_folio_pdf(folio)
+        share = "https://example.test" + receipt_share_path(folio)
+        pdf = build_folio_pdf(folio, share_url=share)
         self.assertGreater(len(pdf), 500)
         resp = self.client.get(reverse("folio:pdf", args=[folio.pk]))
         self.assertEqual(resp.status_code, 200)

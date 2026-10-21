@@ -207,9 +207,14 @@ def folio_receipt(request, pk):
         }
         for p in folio.payments.filter(is_void=False).order_by("created_at")
     ]
+    from folio.receipt_share import receipt_share_url
+
+    share_url = receipt_share_url(request, folio)
     pdf_b64 = None
     if (request.GET.get("pdf") or "").strip() in ("1", "true", "yes"):
-        pdf_b64 = base64.b64encode(build_folio_pdf(folio)).decode("ascii")
+        pdf_b64 = base64.b64encode(
+            build_folio_pdf(folio, share_url=share_url)
+        ).decode("ascii")
 
     return json_ok(
         {
@@ -219,6 +224,7 @@ def folio_receipt(request, pk):
             "reservation": _reservation_summary(res) if res else None,
             "charges": charges,
             "payments": payments,
+            "share_url": share_url,
             "pdf_base64": pdf_b64,
             "filename": f"invoice-{res.code if res else folio.pk}.pdf",
         }

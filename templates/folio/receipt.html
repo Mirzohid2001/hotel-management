@@ -76,6 +76,22 @@
       color: var(--muted);
       text-align: center;
     }
+    .receipt-qr {
+      margin: 1.25rem 0 0;
+      padding-top: 0.85rem;
+      border-top: 1px dashed var(--line);
+      text-align: center;
+    }
+    .receipt-qr img {
+      width: 120px;
+      height: 120px;
+      image-rendering: pixelated;
+    }
+    .receipt-qr p {
+      margin: 0.4rem 0 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
     .toolbar {
       display: flex;
       gap: 0.5rem;
@@ -107,7 +123,11 @@
 <body>
   <div class="toolbar no-print">
     <button type="button" class="primary" onclick="window.print()">{% trans "Chop etish" %}</button>
+    {% if is_public %}
+    <a href="?pdf=1">{% trans "PDF yuklab olish" %}</a>
+    {% else %}
     <a href="{% url 'folio:pdf' folio.pk %}">{% trans "PDF yuklab olish" %}</a>
+    {% endif %}
   </div>
 
   <header class="receipt-head">
@@ -187,6 +207,13 @@
     <tr class="total"><td>{% trans "Qoldiq" %}</td><td class="num">{{ folio.amount_due|money }} {{ tenant.currency|default:"UZS" }}</td></tr>
     {% endif %}
   </table>
+
+  {% if qr_data_uri %}
+  <div class="receipt-qr">
+    <img src="{{ qr_data_uri }}" alt="QR" width="120" height="120">
+    <p>{% trans "QR kodni skaner qiling — chek ochiladi" %}</p>
+  </div>
+  {% endif %}
 
   <footer class="receipt-foot">
     {% trans "Rahmat!" %} · {{ tenant.currency|default:"UZS" }}

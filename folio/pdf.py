@@ -12,6 +12,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     HRFlowable,
+    Image,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -204,7 +205,7 @@ def _totals_table(pairs, styles, currency: str, emphasize_last=True):
     return t
 
 
-def build_folio_pdf(folio) -> bytes:
+def build_folio_pdf(folio, *, share_url: str | None = None) -> bytes:
     reservation = folio.reservation
     hotel = reservation.hotel
     guest = reservation.guest
@@ -351,6 +352,17 @@ def build_folio_pdf(folio) -> bytes:
     else:
         story.append(Spacer(1, 6))
         story.append(_totals_table([(_("Qoldiq"), folio.balance)], styles, currency))
+
+    if share_url:
+        from .receipt_share import receipt_qr_png_bytes
+
+        qr_buf = BytesIO(receipt_qr_png_bytes(share_url))
+        story.append(Spacer(1, 12))
+        story.append(Image(qr_buf, width=32 * mm, height=32 * mm))
+        story.append(Spacer(1, 4))
+        story.append(
+            Paragraph(_("QR kodni skaner qiling — chek ochiladi"), styles["muted"])
+        )
 
     story.append(Spacer(1, 18))
     story.append(

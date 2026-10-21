@@ -19,6 +19,7 @@ urlpatterns = [
     path("payments/<int:pk>/void/", views.folio_void_payment, name="void_payment"),
     path("<int:pk>/close/", views.folio_close, name="close"),
     path("<int:pk>/receipt/", views.folio_receipt, name="receipt"),
+    path("share/<str:token>/", views.folio_receipt_share, name="receipt_share"),
     path("<int:pk>/pdf/", views.folio_pdf, name="pdf"),
     path("<int:pk>/to-company/", views.folio_to_city_ledger, name="to_company"),
     path("city-ledger/", views.city_ledger_list, name="city_ledger"),

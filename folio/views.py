@@ -410,6 +410,19 @@ def folio_close(request, pk):
     return redirect("folio:detail", reservation_id=folio.reservation_id)
 
 
+def _receipt_context(request, folio, *, is_public: bool = False) -> dict:
+    from .receipt_share import receipt_qr_data_uri, receipt_share_url
+
+    share_url = receipt_share_url(request, folio)
+    return {
+        "folio": folio,
+        "tenant": folio.tenant,
+        "share_url": share_url,
+        "qr_data_uri": receipt_qr_data_uri(share_url),
+        "is_public": is_public,
+    }
+
+
 @role_required(*FRONT_DESK_MONEY)
 def folio_receipt(request, pk):
     from .models import FolioCharge, GuestPayment
@@ -437,7 +450,34 @@ def folio_receipt(request, pk):
     return render(
         request,
         "folio/receipt.html",
-        {"folio": folio, "tenant": request.tenant},
+        _receipt_context(request, folio, is_public=False),
+    )
+
+
+def folio_receipt_share(request, token: str):
+    """Login talab qilmaydi — QR skaner uchun ochiq chek."""
+    from django.http import Http404, HttpResponse
+
+    from .pdf import build_folio_pdf
+    from .receipt_share import resolve_receipt_token
+
+    folio = resolve_receipt_token(token)
+    if folio is None:
+        raise Http404(_("Chek topilmadi yoki havola noto‘g‘ri."))
+
+    if request.GET.get("pdf") == "1":
+        share_url = request.build_absolute_uri(request.path)
+        pdf = build_folio_pdf(folio, share_url=share_url)
+        response = HttpResponse(pdf, content_type="application/pdf")
+        response["Content-Disposition"] = (
+            f'inline; filename="check-{folio.reservation.code}.pdf"'
+        )
+        return response
+
+    return render(
+        request,
+        "folio/receipt.html",
+        _receipt_context(request, folio, is_public=True),
     )
 
 
@@ -628,8 +668,9 @@ def folio_pdf(request, pk):
         tenant=request.tenant,
     )
     from .pdf import build_folio_pdf
+    from .receipt_share import receipt_share_url
 
-    pdf = build_folio_pdf(folio)
+    pdf = build_folio_pdf(folio, share_url=receipt_share_url(request, folio))
     response = HttpResponse(pdf, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="invoice-{folio.reservation.code}.pdf"'
     return response
