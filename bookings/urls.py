@@ -18,6 +18,7 @@ urlpatterns = [
     path("referrers/quick/", views.referrer_quick_create, name="referrer_quick"),
     path("referrers/new/", views.referrer_create, name="referrer_create"),
     path("referrers/<int:pk>/edit/", views.referrer_edit, name="referrer_edit"),
+    path("referrers/<int:pk>/delete/", views.referrer_delete, name="referrer_delete"),
     path("commission/", views.commission_report, name="commission_report"),
     path("emehmon/", views.emehmon_report, name="emehmon_report"),
     path("emehmon/statement/", views.emehmon_statement, name="emehmon_statement"),

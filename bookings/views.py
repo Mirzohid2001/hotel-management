@@ -36,7 +36,7 @@ from .forms import (
     occupant_post_bound,
     occupants_complete,
 )
-from .models import BookingReferrer, Reservation, ReservationGroup
+from .models import BookingReferrer, ReferrerCommissionPayment, Reservation, ReservationGroup
 from .timeline import build_room_timeline, mark_covers_today
 from .totals import (
     default_month_bounds,
@@ -1260,6 +1260,36 @@ def referrer_edit(request, pk):
         "bookings/referrer_form.html",
         {"form": form, "title": _("Yo‘naltiruvchini tahrirlash"), "referrer": referrer},
     )
+
+
+@role_required(*FRONT_OFFICE)
+@require_POST
+def referrer_delete(request, pk):
+    referrer = get_object_or_404(BookingReferrer, pk=pk, tenant=request.tenant)
+    name = referrer.name
+    has_history = (
+        Reservation.objects.filter(tenant=request.tenant, referrer=referrer).exists()
+        or ReferrerCommissionPayment.objects.filter(
+            tenant=request.tenant, referrer=referrer
+        ).exists()
+    )
+    if has_history:
+        if referrer.is_active:
+            referrer.is_active = False
+            referrer.save(update_fields=["is_active", "updated_at"])
+            messages.success(
+                request,
+                _(
+                    "%(name)s o‘chirildi (nofaol). Bron/komissiya tarixi saqlanadi."
+                )
+                % {"name": name},
+            )
+        else:
+            messages.info(request, _("%(name)s allaqachon nofaol.") % {"name": name})
+    else:
+        referrer.delete()
+        messages.success(request, _("Yo‘naltiruvchi o‘chirildi: %(name)s") % {"name": name})
+    return redirect("bookings:referrer_list")
 
 
 @role_required(*ACCOUNTING)

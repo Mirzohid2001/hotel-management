@@ -25,7 +25,16 @@
       <td>{{ r.phone|default:"—" }}</td>
       <td>{{ r.default_commission_percent }}%</td>
       <td>{% if r.is_active %}{% trans "Faol" %}{% else %}<span class="muted">{% trans "Nofaol" %}</span>{% endif %}</td>
-      <td><a class="btn-ghost btn-sm" href="{% url 'bookings:referrer_edit' r.pk %}">{% trans "Tahrirlash" %}</a></td>
+      <td>
+        <div class="detail-actions">
+          <a class="btn-ghost btn-sm" href="{% url 'bookings:referrer_edit' r.pk %}">{% trans "Tahrirlash" %}</a>
+          <form method="post" action="{% url 'bookings:referrer_delete' r.pk %}" class="inline-form" hx-boost="false"
+                onsubmit="return confirm('{% trans "O‘chirishni tasdiqlaysizmi?" %}');">
+            {% csrf_token %}
+            <button type="submit" class="btn-ghost btn-sm expense-danger">{% trans "O‘chirish" %}</button>
+          </form>
+        </div>
+      </td>
     </tr>
     {% endfor %}
   </tbody>
