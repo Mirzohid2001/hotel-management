@@ -411,6 +411,8 @@ def folio_close(request, pk):
 
 
 def _receipt_context(request, folio, *, is_public: bool = False) -> dict:
+    from bookings.occupants import reservation_guest_display_names
+
     from .receipt_share import receipt_qr_data_uri, receipt_share_url
 
     share_url = receipt_share_url(request, folio)
@@ -420,6 +422,7 @@ def _receipt_context(request, folio, *, is_public: bool = False) -> dict:
         "share_url": share_url,
         "qr_data_uri": receipt_qr_data_uri(share_url),
         "is_public": is_public,
+        "guest_names": reservation_guest_display_names(folio.reservation),
     }
 
 
@@ -435,6 +438,7 @@ def folio_receipt(request, pk):
             "reservation__hotel",
             "reservation__room",
         ).prefetch_related(
+            "reservation__occupants__guest",
             Prefetch(
                 "charges",
                 queryset=FolioCharge.objects.filter(is_void=False).order_by("created_at"),
@@ -655,6 +659,7 @@ def folio_pdf(request, pk):
             "reservation__hotel",
             "reservation__room",
         ).prefetch_related(
+            "reservation__occupants__guest",
             Prefetch(
                 "charges",
                 queryset=FolioCharge.objects.filter(is_void=False).order_by("created_at"),

@@ -140,7 +140,7 @@
 
   <div class="meta-block">
     <strong>{{ folio.reservation.code }}</strong>
-    · {{ folio.reservation.guest.full_name }}
+    · {% if guest_names %}{{ guest_names|join:", " }}{% else %}{{ folio.reservation.guest.full_name }}{% endif %}
     {% if folio.reservation.room %}
     · {% trans "Xona" %} {{ folio.reservation.room.number }}
     {% endif %}

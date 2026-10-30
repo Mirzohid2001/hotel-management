@@ -58,6 +58,7 @@ def resolve_receipt_token(token: str):
             "reservation__room",
         )
         .prefetch_related(
+            "reservation__occupants__guest",
             Prefetch(
                 "charges",
                 queryset=FolioCharge.objects.filter(is_void=False).order_by("created_at"),

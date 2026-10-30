@@ -206,6 +206,8 @@ def _totals_table(pairs, styles, currency: str, emphasize_last=True):
 
 
 def build_folio_pdf(folio, *, share_url: str | None = None) -> bytes:
+    from bookings.occupants import reservation_guest_display_names
+
     reservation = folio.reservation
     hotel = reservation.hotel
     guest = reservation.guest
@@ -244,10 +246,12 @@ def build_folio_pdf(folio, *, share_url: str | None = None) -> bytes:
         Paragraph(_("Mehmon hisobi"), styles["title"]),
     ]
 
-    guest_bits = [f"<b>{guest.full_name}</b>"]
-    if guest.phone:
+    names = reservation_guest_display_names(reservation)
+    name_line = ", ".join(names) if names else (guest.full_name if guest else "")
+    guest_bits = [f"<b>{name_line}</b>"]
+    if guest and guest.phone:
         guest_bits.append(guest.phone)
-    if guest.email:
+    if guest and guest.email:
         guest_bits.append(guest.email)
     stay = f"{reservation.check_in.strftime('%d.%m.%Y')} → {reservation.check_out.strftime('%d.%m.%Y')}"
     if reservation.room_id:

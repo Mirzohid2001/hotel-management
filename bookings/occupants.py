@@ -40,6 +40,28 @@ def occupants_qs(reservation):
     )
 
 
+def reservation_guest_display_names(reservation) -> list[str]:
+    """Chek / PDF uchun barcha yotuvchilar ismlari (primary birinchi)."""
+    names: list[str] = []
+    seen: set[int] = set()
+    for occ in occupants_qs(reservation):
+        guest = occ.guest
+        if guest is None or guest.pk in seen:
+            continue
+        name = (guest.full_name or "").strip()
+        if not name:
+            continue
+        seen.add(guest.pk)
+        names.append(name)
+    if not names and getattr(reservation, "guest_id", None):
+        primary = reservation.guest
+        if primary is not None:
+            name = (primary.full_name or "").strip()
+            if name:
+                names.append(name)
+    return names
+
+
 def guest_document_number(guest) -> str:
     if guest is None:
         return ""
