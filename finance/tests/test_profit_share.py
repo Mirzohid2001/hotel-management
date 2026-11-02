@@ -10,6 +10,7 @@ from finance.models import Expense, ExpenseCategory, ProfitPartner, ProfitPeriod
 from finance.profit import (
     build_partner_ledger,
     ensure_open_period,
+    record_partner_deduction,
     record_withdrawal,
     reset_profit_period,
 )
@@ -196,8 +197,8 @@ class ProfitShareTests(TestCase):
         self.assertEqual(ledger["period"].pk, closed.pk)
         self.assertEqual(ledger["reinvestment"], Decimal("5000000.00"))
 
-    def test_partner_specific_share_cuts(self):
-        """Eshmat/Toshmat: foiz teng, lekin rasxodlar alohida ulushlardan."""
+    def test_after_split_partner_deductions(self):
+        """Foyda ulashilgandan KEYIN — kimning ulushidan rasxod."""
         ProfitPartner.objects.filter(tenant=self.tenant).delete()
         eshmat = ProfitPartner.objects.create(
             tenant=self.tenant, name="Eshmat", share_percent=Decimal("50")
@@ -205,44 +206,35 @@ class ProfitShareTests(TestCase):
         toshmat = ProfitPartner.objects.create(
             tenant=self.tenant, name="Toshmat", share_percent=Decimal("50")
         )
-        cat = ExpenseCategory.objects.filter(tenant=self.tenant, name="Reinvestitsiya").first()
-        if cat is None:
-            cat = ExpenseCategory.objects.create(tenant=self.tenant, name="Reinvestitsiya")
-        # Sof = 1_000_000 − 200_000 = 800_000 → har kimga gross 400_000
-        Expense.objects.create(
-            tenant=self.tenant,
-            hotel=self.prop,
-            category=cat,
-            title="Eshmat hisobidan",
+        # Sof = 800_000 → har kimga 400_000
+        record_partner_deduction(
+            self.tenant,
+            self.user,
+            partner=eshmat,
+            title="Eshmat hisobidan xarajat",
             amount=Decimal("100000"),
-            expense_date=self.today,
-            status=Expense.Status.PAID,
-            funding=Expense.Funding.REINVESTMENT,
-            charged_to_partner=eshmat,
-            created_by=self.user,
         )
-        Expense.objects.create(
-            tenant=self.tenant,
-            hotel=self.prop,
-            category=cat,
-            title="Toshmat hisobidan",
+        record_partner_deduction(
+            self.tenant,
+            self.user,
+            partner=toshmat,
+            title="Toshmat o‘z rasxodi",
             amount=Decimal("50000"),
-            expense_date=self.today,
-            status=Expense.Status.PAID,
-            funding=Expense.Funding.REINVESTMENT,
-            charged_to_partner=toshmat,
-            created_by=self.user,
         )
         ledger = build_partner_ledger(self.tenant)
         by_name = {r["partner"].name: r for r in ledger["rows"]}
         self.assertEqual(ledger["net"], Decimal("800000.00"))
         self.assertEqual(by_name["Eshmat"]["gross_entitled"], Decimal("400000.00"))
-        self.assertEqual(by_name["Eshmat"]["reinvestment_cut"], Decimal("100000.00"))
+        self.assertEqual(by_name["Eshmat"]["personal_deduction"], Decimal("100000.00"))
         self.assertEqual(by_name["Eshmat"]["entitled"], Decimal("300000.00"))
         self.assertEqual(by_name["Toshmat"]["gross_entitled"], Decimal("400000.00"))
-        self.assertEqual(by_name["Toshmat"]["reinvestment_cut"], Decimal("50000.00"))
+        self.assertEqual(by_name["Toshmat"]["personal_deduction"], Decimal("50000.00"))
         self.assertEqual(by_name["Toshmat"]["entitled"], Decimal("350000.00"))
-        self.assertEqual(ledger["reinvestment"], Decimal("150000.00"))
+        self.assertEqual(ledger["deducted_total"], Decimal("150000.00"))
+
+        page = self.client.get(reverse("finance:profit_partner_deduction"))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, "Kimning foydasidan")
 
     def test_unassigned_partner_cut_goes_to_major(self):
         """Sherik tanlanmasa — eng katta ulushdan (eski reinvest qoidasi)."""

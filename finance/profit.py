@@ -11,7 +11,7 @@ from django.db.models import Sum
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from .models import ProfitPartner, ProfitPeriod, ProfitWithdrawal
+from .models import ProfitPartner, ProfitPartnerDeduction, ProfitPeriod, ProfitWithdrawal
 
 ZERO = Decimal("0.00")
 HUNDRED = Decimal("100")
@@ -167,23 +167,34 @@ def build_profit_receipt(ledger: dict) -> dict:
                     share_lines.append(
                         _receipt_line(
                             "−",
-                            cl.get("title") or _("Sherik ulushidan rasxod"),
+                            cl.get("title") or _("Mehmonxona rasxodi (ulushdan)"),
                             _q(cl.get("amount")),
                             tone="warn",
-                            note=_("%(name)s foydasidan") % {"name": partner.name},
+                            note=_("%(name)s ulushidan") % {"name": partner.name},
                         )
                     )
             else:
                 share_lines.append(
                     _receipt_line(
                         "−",
-                        _("Sherik ulushidan (%(name)s)")
+                        _("Mehmonxona rasxodi (%(name)s ulushidan)")
                         % {"name": partner.name},
                         row["reinvestment_cut"],
                         tone="warn",
-                        note=_("Sofga kirmaydi — faqat shu sherikdan"),
                     )
                 )
+        if row.get("personal_deduction"):
+            for dl in row.get("deduction_lines") or []:
+                share_lines.append(
+                    _receipt_line(
+                        "−",
+                        dl.get("title") or _("Sherik rasxodi"),
+                        _q(dl.get("amount")),
+                        tone="warn",
+                        note=_("%(name)s olgan foydasidan") % {"name": partner.name},
+                    )
+                )
+        if row.get("reinvestment_cut") or row.get("personal_deduction"):
             share_lines.append(
                 _receipt_line(
                     "=",
@@ -401,8 +412,9 @@ def build_partner_ledger(
 ) -> dict:
     """
     Sof = tushum − joriy rasxod − oylik − komissiya − ombor …
-    Ulushlar sof foydadan. Reinvestitsiya Sofga kirmaydi — ulushi eng katta
-    sherikning ulushidan ayiriladi (qolganlar to‘liq foizini oladi).
+    Ulushlar sof foydadan (foiz).
+    Keyin: «sherik ulushidan» mehmonxona rasxodi + sherikning shaxsiy
+    foyda-rasxodlari shu sherik ulushidan ayiriladi.
     as_of — yopishda «kechagi kungacha» snayp olish uchun.
     """
     from reports.accounting import (
@@ -433,9 +445,29 @@ def build_partner_ledger(
             getattr(w, "amount_base", None) or w.amount
         )
 
+    deductions = (
+        ProfitPartnerDeduction.objects.filter(tenant=tenant, period=period)
+        .select_related("partner")
+        .order_by("-spent_on", "-id")
+    )
+    deducted_by_partner: dict[int, Decimal] = {}
+    deduction_lines_by_partner: dict[int, list] = {}
+    for d in deductions:
+        amt = _q(getattr(d, "amount_base", None) or d.amount)
+        deducted_by_partner[d.partner_id] = deducted_by_partner.get(d.partner_id, ZERO) + amt
+        deduction_lines_by_partner.setdefault(d.partner_id, []).append(
+            {
+                "id": d.pk,
+                "title": d.title,
+                "amount": amt,
+                "spent_on": d.spent_on,
+                "note": d.note or "",
+            }
+        )
+
     partners = list(active_partners(tenant))
     share_sum = sum((_q(p.share_percent) for p in partners), ZERO)
-    # Tanlanmagan «sherik ulushidan» rasxodlar — eng katta ulushli sherikdan (eski qoida)
+    # Tanlanmagan «sherik ulushidan» mehmonxona rasxodi — eng katta ulushdan
     major = _major_share_partner(partners) if _q(cuts["unassigned"]) > 0 else None
     cut_by_partner: dict[int, Decimal] = {
         int(pid): _q(amt) for pid, amt in (cuts["by_partner"] or {}).items()
@@ -449,21 +481,27 @@ def build_partner_ledger(
     entitled_total = ZERO
     withdrawn_total = ZERO
     remaining_total = ZERO
+    deducted_total = ZERO
     for p in partners:
         pct = _q(p.share_percent)
         # Zarar sheriklarga «qarz» qilib bo‘linmaydi — faqat sof>0 da ulashiladi
         gross = _q(net * pct / HUNDRED) if net > 0 else ZERO
         reinvest_cut = cut_by_partner.get(p.pk, ZERO) if net > 0 else ZERO
-        # Ulushdan katta yechim — qoldiq manfiy bo‘lmasin
+        personal_cut = deducted_by_partner.get(p.pk, ZERO) if net > 0 else ZERO
+        # Ulushdan katta yechim — qoldiq manfiy bo‘lmasin (avval mehmonxona, keyin shaxsiy)
         if reinvest_cut > gross:
             reinvest_cut = gross
-        entitled = _q(gross - reinvest_cut)
+        after_reinvest = _q(gross - reinvest_cut)
+        if personal_cut > after_reinvest:
+            personal_cut = after_reinvest
+        entitled = _q(after_reinvest - personal_cut)
         withdrawn = withdrawn_by_partner.get(p.pk, ZERO)
         remaining = _q(entitled - withdrawn)
         entitled_total += entitled
         withdrawn_total += withdrawn
         remaining_total += remaining
-        partner_lines = [
+        deducted_total += personal_cut
+        hotel_lines = [
             line
             for line in (cuts.get("lines") or [])
             if (line.get("partner_id") == p.pk)
@@ -479,11 +517,13 @@ def build_partner_ledger(
                 "share_percent": pct,
                 "gross_entitled": gross,
                 "reinvestment_cut": reinvest_cut,
+                "personal_deduction": personal_cut,
                 "entitled": entitled,
                 "withdrawn": withdrawn,
                 "remaining": remaining,
                 "bears_reinvestment": bool(reinvest_cut),
-                "share_cut_lines": partner_lines,
+                "share_cut_lines": hotel_lines,
+                "deduction_lines": deduction_lines_by_partner.get(p.pk, []),
             }
         )
 
@@ -500,11 +540,13 @@ def build_partner_ledger(
                 "share_percent": _q(partner.share_percent),
                 "gross_entitled": ZERO,
                 "reinvestment_cut": ZERO,
+                "personal_deduction": ZERO,
                 "entitled": ZERO,
                 "withdrawn": amt,
                 "remaining": _q(ZERO - amt),
                 "bears_reinvestment": False,
                 "share_cut_lines": [],
+                "deduction_lines": [],
                 "inactive": True,
             }
         )
@@ -662,7 +704,9 @@ def build_partner_ledger(
         "entitled_total": entitled_total,
         "withdrawn_total": withdrawn_total,
         "remaining_total": remaining_total,
+        "deducted_total": _q(deducted_total),
         "withdrawals": list(withdrawals[:40]),
+        "deductions": list(deductions[:40]),
         "next_steps": next_steps,
         "ready_to_reset": withdrawn_total > 0 and remaining_total <= 0 and bool(partners),
         "prior_period": prior_period,
@@ -720,6 +764,42 @@ def record_withdrawal(
         paid_on=paid_on or timezone.localdate(),
         payment_method=payment_method,
         note=note,
+        created_by=user,
+    )
+
+
+@transaction.atomic
+def record_partner_deduction(
+    tenant,
+    user,
+    *,
+    partner: ProfitPartner,
+    title: str,
+    amount: Decimal,
+    spent_on: date | None = None,
+    note: str = "",
+    currency: str | None = None,
+) -> ProfitPartnerDeduction:
+    """Foyda ulashilgandan keyin — sherikning o‘z ulushidan rasxod."""
+    if partner.tenant_id != tenant.id:
+        raise ValidationError(_("Sherik topilmadi."))
+    title = (title or "").strip()
+    if not title:
+        raise ValidationError(_("Rasxod nomi kerak."))
+    amount = _q(amount)
+    if amount <= 0:
+        raise ValidationError(_("Summa 0 dan katta bo‘lishi kerak."))
+
+    period, _pending = resolve_working_period(tenant)
+    return ProfitPartnerDeduction.objects.create(
+        tenant=tenant,
+        period=period,
+        partner=partner,
+        title=title,
+        amount=amount,
+        currency=currency or tenant.currency or "UZS",
+        spent_on=spent_on or timezone.localdate(),
+        note=note or "",
         created_by=user,
     )
 

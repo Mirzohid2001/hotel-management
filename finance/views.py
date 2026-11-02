@@ -16,6 +16,7 @@ from .forms import (
     ExchangeRateForm,
     ExpenseCategoryForm,
     ExpenseForm,
+    ProfitPartnerDeductionForm,
     ProfitPartnerForm,
     ProfitResetForm,
     ProfitWithdrawalForm,
@@ -31,6 +32,7 @@ from .profit import (
     build_partner_ledger,
     ensure_open_period,
     ledger_from_period,
+    record_partner_deduction,
     record_withdrawal,
     reset_profit_period,
 )
@@ -627,6 +629,53 @@ def profit_partner_edit(request, pk):
             "form": form,
             "title": _("Sherikni tahrirlash"),
             "cancel_url_name": "finance:profit_share",
+        },
+    )
+
+
+@feature_required("pnl")
+@role_required(*FINANCE)
+@require_http_methods(["GET", "POST"])
+def profit_partner_deduction(request):
+    """Foyda foiz bo‘yicha ulashilgandan keyin — sherik ulushidan rasxod."""
+    ledger = build_partner_ledger(tenant=request.tenant)
+    initial = {"spent_on": date.today().isoformat()}
+    partner_id = request.GET.get("partner")
+    selected_row = None
+    if partner_id and partner_id.isdigit():
+        pid = int(partner_id)
+        initial["partner"] = pid
+        selected_row = next((r for r in ledger["rows"] if r["partner"].pk == pid), None)
+    form = ProfitPartnerDeductionForm(
+        request.POST or None, tenant=request.tenant, initial=initial
+    )
+    if request.method == "POST" and form.is_valid():
+        try:
+            record_partner_deduction(
+                request.tenant,
+                request.user,
+                partner=form.cleaned_data["partner"],
+                title=form.cleaned_data["title"],
+                amount=form.cleaned_data["amount"],
+                spent_on=form.cleaned_data["spent_on"],
+                note=form.cleaned_data.get("note") or "",
+                currency=form.cleaned_data.get("currency"),
+            )
+        except ValidationError as exc:
+            messages.error(request, "; ".join(exc.messages))
+        else:
+            messages.success(
+                request,
+                _("Rasxod sherik foydasidan yechildi."),
+            )
+            return redirect("finance:profit_share")
+    return render(
+        request,
+        "finance/profit_deduction.html",
+        {
+            "form": form,
+            "ledger": ledger,
+            "selected_row": selected_row,
         },
     )
 

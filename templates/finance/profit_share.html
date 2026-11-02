@@ -21,6 +21,7 @@
       <a class="btn-ghost" href="{% url 'finance:profit_share_print' %}" target="_blank" rel="noopener">{% trans "Chek hisobot" %}</a>
       <a class="btn-ghost" href="{% url 'finance:profit_history' %}">{% trans "Tarix" %}</a>
       <a class="btn-ghost" href="{% url 'finance:profit_partner_create' %}">{% trans "Sherik" %}</a>
+      <a class="btn" href="{% url 'finance:profit_partner_deduction' %}">{% trans "Sherik rasxodi" %}</a>
       <a class="btn" href="{% url 'finance:profit_withdraw' %}">{% trans "Foyda olish" %}</a>
       <a class="btn" href="{% url 'finance:profit_reset' %}">{% trans "0 qilib qayta" %}</a>
     </div>
@@ -167,23 +168,27 @@
           <a class="btn-ghost btn-sm" href="{% url 'finance:profit_partner_edit' row.partner.pk %}">{% trans "Tahrirlash" %}</a>
         </span>
         <span class="muted">
-          {% if row.reinvestment_cut %}
           {% trans "Ulush" %}: <span class="money">{{ row.gross_entitled|money }}</span>
-          − {% trans "Ulushdan yechilgan" %} <span class="money">{{ row.reinvestment_cut|money }}</span>
+          {% if row.reinvestment_cut %}
+          − {% trans "mehmonxona" %} <span class="money">{{ row.reinvestment_cut|money }}</span>
+          {% endif %}
+          {% if row.personal_deduction %}
+          − {% trans "rasxod" %} <span class="money">{{ row.personal_deduction|money }}</span>
+          {% endif %}
+          {% if row.reinvestment_cut or row.personal_deduction %}
           = <span class="money">{{ row.entitled|money }}</span>
-          {% if row.share_cut_lines %}
+          {% endif %}
+          {% if row.deduction_lines %}
           <span style="display:block;font-size:.85em;margin-top:.2rem">
-            {% for cl in row.share_cut_lines %}
-            · {{ cl.title }}: −{{ cl.amount|money }}{% if not forloop.last %}<br>{% endif %}
+            {% for dl in row.deduction_lines %}
+            · {{ dl.title }}: −{{ dl.amount|money }}{% if not forloop.last %}<br>{% endif %}
             {% endfor %}
           </span>
-          {% endif %}
-          {% else %}
-          {% trans "Ulush" %}: <span class="money">{{ row.entitled|money }}</span>
           {% endif %}
           · {% trans "Olingan" %}: <span class="money">{{ row.withdrawn|money }}</span>
           · {% trans "Qoldiq" %}: <strong class="money">{{ row.remaining|money }}</strong>
         </span>
+        <a class="btn-ghost btn-sm" href="{% url 'finance:profit_partner_deduction' %}?partner={{ row.partner.pk }}">{% trans "Rasxod" %}</a>
         {% if row.remaining > 0 %}
         <a class="btn btn-sm" href="{% url 'finance:profit_withdraw' %}?partner={{ row.partner.pk }}">{% trans "Qoldiqni olish" %}</a>
         {% else %}
@@ -209,6 +214,23 @@
       {% trans "Barcha qoldiqlar yopilgan. Yangi sof hisobni boshlashga tayyor." %}
       <a class="btn" href="{% url 'finance:profit_reset' %}">{% trans "0 qilib qayta" %}</a>
     </p>
+  </section>
+  {% endif %}
+
+  {% if ledger.deductions %}
+  <section class="section-panel stack-gap">
+    <div class="dash-section-head">
+      <h2>{% trans "Sherik foydasidan rasxodlar" %}</h2>
+      <a class="btn-ghost btn-sm" href="{% url 'finance:profit_partner_deduction' %}">{% trans "Yangi" %}</a>
+    </div>
+    <ul class="list report-breakdown">
+      {% for d in ledger.deductions %}
+      <li class="guest-chip">
+        <span>{{ d.spent_on }} · {{ d.partner.name }} · {{ d.title }}{% if d.note %} · {{ d.note }}{% endif %}</span>
+        <span class="money">−{{ d.amount|money }}</span>
+      </li>
+      {% endfor %}
+    </ul>
   </section>
   {% endif %}
 

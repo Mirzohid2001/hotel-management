@@ -5,7 +5,14 @@ from django.utils.translation import gettext_lazy as _
 from core.currency import CURRENCY_CHOICES
 from tenants.models import ExchangeRate, Tenant
 
-from .models import Expense, ExpenseCategory, ProfitPartner, ProfitWithdrawal, Vendor
+from .models import (
+    Expense,
+    ExpenseCategory,
+    ProfitPartner,
+    ProfitPartnerDeduction,
+    ProfitWithdrawal,
+    Vendor,
+)
 
 
 class ExpenseForm(forms.ModelForm):
@@ -153,6 +160,33 @@ class ProfitPartnerForm(forms.ModelForm):
         if value is None or value <= 0 or value > 100:
             raise forms.ValidationError(_("Ulush 0 dan katta va 100 dan oshmasin."))
         return value
+
+
+class ProfitPartnerDeductionForm(forms.Form):
+    """Foyda ulashilgandan keyin — kimning ulushidan rasxod yechiladi."""
+
+    partner = forms.ModelChoiceField(
+        queryset=ProfitPartner.objects.none(),
+        label=_("Kimning foydasidan?"),
+        help_text=_("Masalan Eshmat yoki Toshmat — shu odamning ulushidan ayiriladi."),
+    )
+    title = forms.CharField(max_length=200, label=_("Rasxod nomi"))
+    amount = forms.DecimalField(
+        min_value=0.01, max_digits=14, decimal_places=2, label=_("Summa")
+    )
+    currency = forms.ChoiceField(choices=CURRENCY_CHOICES, label=_("Valyuta"), initial="UZS")
+    spent_on = forms.DateField(
+        label=_("Sana"), widget=forms.DateInput(attrs={"type": "date"})
+    )
+    note = forms.CharField(required=False, max_length=255, label=_("Izoh"))
+
+    def __init__(self, *args, tenant=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if tenant is not None:
+            self.fields["partner"].queryset = ProfitPartner.objects.filter(
+                tenant=tenant, is_active=True
+            ).order_by("-share_percent", "name")
+            self.fields["currency"].initial = tenant.currency or "UZS"
 
 
 class ProfitWithdrawalForm(forms.Form):

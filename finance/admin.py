@@ -4,6 +4,7 @@ from .models import (
     Expense,
     ExpenseCategory,
     ProfitPartner,
+    ProfitPartnerDeduction,
     ProfitPeriod,
     ProfitWithdrawal,
     Vendor,
@@ -68,6 +69,15 @@ class ProfitPeriodAdmin(admin.ModelAdmin):
     search_fields = ("tenant__name",)
     autocomplete_fields = ("tenant",)
     date_hierarchy = "started_on"
+
+
+@admin.register(ProfitPartnerDeduction)
+class ProfitPartnerDeductionAdmin(admin.ModelAdmin):
+    list_display = ("partner", "title", "amount", "spent_on", "period", "tenant")
+    list_filter = ("tenant",)
+    search_fields = ("partner__name", "title", "note")
+    autocomplete_fields = ("partner", "period", "tenant")
+    date_hierarchy = "spent_on"
 
 
 @admin.register(ProfitWithdrawal)

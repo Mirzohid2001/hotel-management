@@ -29,6 +29,11 @@ urlpatterns = [
     path("profit/partners/new/", views.profit_partner_create, name="profit_partner_create"),
     path("profit/partners/<int:pk>/edit/", views.profit_partner_edit, name="profit_partner_edit"),
     path("profit/withdraw/", views.profit_withdraw, name="profit_withdraw"),
+    path(
+        "profit/rasxod/",
+        views.profit_partner_deduction,
+        name="profit_partner_deduction",
+    ),
     path("profit/reset/", views.profit_reset, name="profit_reset"),
     path("currencies/", views.exchange_rates, name="exchange_rates"),
     path("currencies/<int:pk>/delete/", views.exchange_rate_delete, name="exchange_rate_delete"),

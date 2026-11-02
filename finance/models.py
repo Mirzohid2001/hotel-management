@@ -225,6 +225,46 @@ class ProfitPeriod(TenantOwnedModel):
         return self.ended_on is None
 
 
+class ProfitPartnerDeduction(MoneyFieldsMixin, TenantOwnedModel):
+    """
+    Foyda foiz bo‘yicha ulashilgandan KEYIN sherikning o‘z ulushidan
+    yechiladigan rasxod (Eshmat/Toshmat misoli). Sof foydaga tegmaydi.
+    """
+
+    period = models.ForeignKey(
+        ProfitPeriod, on_delete=models.CASCADE, related_name="partner_deductions"
+    )
+    partner = models.ForeignKey(
+        ProfitPartner,
+        on_delete=models.PROTECT,
+        related_name="profit_deductions",
+        verbose_name=_("Sherik"),
+    )
+    title = models.CharField(max_length=200, verbose_name=_("Rasxod nomi"))
+    amount = models.DecimalField(max_digits=14, decimal_places=2, verbose_name=_("Summa"))
+    spent_on = models.DateField(verbose_name=_("Sana"))
+    note = models.CharField(max_length=255, blank=True, verbose_name=_("Izoh"))
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="profit_deductions_created",
+    )
+
+    class Meta:
+        ordering = ["-spent_on", "-id"]
+        verbose_name = _("Sherik foydasidan rasxod")
+        verbose_name_plural = _("Sherik foydasidan rasxodlar")
+
+    def save(self, *args, **kwargs):
+        apply_money(self, on_date=self.spent_on)
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.partner_id}: {self.title} −{self.amount}"
+
+
 class ProfitWithdrawal(MoneyFieldsMixin, TenantOwnedModel):
     """Partner took (part of) their share from the open/current period."""
 
