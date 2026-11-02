@@ -12,7 +12,10 @@
         · {% trans "Sof foyda" %}: <strong class="money">{{ ledger.net|money }}</strong>
         · {% trans "Taqsimlanadigan" %}: <strong class="money">{{ ledger.distributable|money }}</strong>
         {% if ledger.reinvestment %}
-        · {% trans "Sherik ulushidan" %}: <strong class="money">−{{ ledger.reinvestment|money }}</strong>
+        · {% trans "Reinvestitsiya" %}: <strong class="money">−{{ ledger.reinvestment|money }}</strong>
+        {% if ledger.reinvestment_partner %}
+        ({% blocktrans with name=ledger.reinvestment_partner.name %}{{ name }} ulushidan{% endblocktrans %})
+        {% endif %}
         {% endif %}
       </p>
     </div>
@@ -107,9 +110,11 @@
       <strong class="money">{{ ledger.operating_net|money }}</strong>
     </div>
     <div class="dash-pnl-item">
-      <span>{% trans "Sherik ulushidan" %}</span>
+      <span>{% trans "Reinvestitsiya" %}</span>
       <strong class="money">−{{ ledger.reinvestment|money }}</strong>
-      <span class="muted" style="display:block;font-size:.85em">{% trans "Sofga kirmaydi — tanlangan sherikdan" %}</span>
+      {% if ledger.reinvestment_partner %}
+      <span class="muted" style="display:block;font-size:.85em">{% blocktrans with name=ledger.reinvestment_partner.name %}{{ name }} ulushidan{% endblocktrans %}</span>
+      {% endif %}
     </div>
     <div class="dash-pnl-item dash-pnl-net">
       <span>{% trans "Taqsimlanadigan" %}</span>
@@ -131,7 +136,7 @@
       <a class="btn btn-sm" href="{% url 'finance:profit_share_print' %}" target="_blank" rel="noopener">{% trans "Chop etish" %}</a>
     </div>
     <p class="muted report-footnote">
-      {% trans "Qaysi operatsiyaga qancha ketayotgani — qatorma-qator. Sof foydadan foiz; «sherik ulushidan» rasxodlar tanlangan sherikdan." %}
+      {% trans "Qaysi operatsiyaga qancha ketayotgani — qatorma-qator. Sof foydadan foiz; reinvestitsiya eng katta ulushdan; sherik rasxodi — o‘z ulushidan." %}
     </p>
     {% for section in ledger.receipt.sections %}
     <div class="profit-receipt-block">
@@ -170,7 +175,7 @@
         <span class="muted">
           {% trans "Ulush" %}: <span class="money">{{ row.gross_entitled|money }}</span>
           {% if row.reinvestment_cut %}
-          − {% trans "mehmonxona" %} <span class="money">{{ row.reinvestment_cut|money }}</span>
+          − {% trans "Reinvestitsiya" %} <span class="money">{{ row.reinvestment_cut|money }}</span>
           {% endif %}
           {% if row.personal_deduction %}
           − {% trans "rasxod" %} <span class="money">{{ row.personal_deduction|money }}</span>

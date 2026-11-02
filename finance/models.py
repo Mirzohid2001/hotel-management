@@ -48,10 +48,10 @@ class Expense(MoneyFieldsMixin, TenantOwnedModel):
         TRANSFER = "transfer", _("O‘tkazma")
 
     class Funding(models.TextChoices):
-        """Joriy → Sof (P&L); sherik ulushidan → Sofga tegmaydi, tanlangan sherikdan."""
+        """Joriy → Sof (P&L); reinvestitsiya → ulushi eng katta sherikning foydasidan."""
 
-        OPERATING = "operating", _("Joriy (Sofdan — hammaga)")
-        REINVESTMENT = "reinvestment", _("Sherik ulushidan (foydadan)")
+        OPERATING = "operating", _("Joriy (Sofdan)")
+        REINVESTMENT = "reinvestment", _("Reinvestitsiya (foydadan)")
 
     hotel = models.ForeignKey(
         "properties.Property",
@@ -80,20 +80,8 @@ class Expense(MoneyFieldsMixin, TenantOwnedModel):
         default=Funding.OPERATING,
         verbose_name=_("Moliyalashtirish"),
         help_text=_(
-            "Joriy — sof foydani kamaytiradi (hamma foiziga ta’sir). "
-            "Sherik ulushidan — sofga tegmaydi; tanlangan sherikning foydasidan ayiriladi."
-        ),
-    )
-    charged_to_partner = models.ForeignKey(
-        "finance.ProfitPartner",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="charged_expenses",
-        verbose_name=_("Kimning foydasidan?"),
-        help_text=_(
-            "Faqat «Sherik ulushidan» uchun. Bo‘sh qoldirilsa — eng katta ulushli "
-            "sherikdan yechiladi (eski reinvestitsiya qoidasi)."
+            "Joriy — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, "
+            "ulushi eng katta sherikning ulushidan ayiriladi."
         ),
     )
     title = models.CharField(max_length=200)

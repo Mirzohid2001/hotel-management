@@ -123,7 +123,7 @@ def expenses_in_range(tenant, start: date, end: date, *, hotel=None) -> Decimal:
 
 
 def reinvestment_in_range(tenant, start: date, end: date, *, hotel=None) -> Decimal:
-    """To‘langan «sherik ulushidan» rasxodlar jami — Sofdan emas, foyda ulushidan."""
+    """To‘langan reinvestitsiya — Sofdan emas, foyda ulushidan (eng katta sherik)."""
     qs = Expense.objects.filter(
         tenant=tenant,
         status=Expense.Status.PAID,
@@ -132,60 +132,6 @@ def reinvestment_in_range(tenant, start: date, end: date, *, hotel=None) -> Deci
     if hotel is not None:
         qs = qs.filter(hotel=hotel)
     return qs.aggregate(s=Sum("amount_base"))["s"] or Decimal("0")
-
-
-def partner_share_cuts_in_range(tenant, start: date, end: date, *, hotel=None) -> dict:
-    """
-    Sherik ulushidan yechiladigan rasxodlar.
-
-    Returns:
-      total: Decimal
-      by_partner: {partner_id: Decimal} — charged_to_partner biriktirilganlar
-      unassigned: Decimal — sherik tanlanmagan (eski reinvest → eng katta ulush)
-      lines: [{partner_id|None, title, amount, expense_id}, ...]
-    """
-    qs = (
-        Expense.objects.filter(
-            tenant=tenant,
-            status=Expense.Status.PAID,
-            funding=Expense.Funding.REINVESTMENT,
-        )
-        .filter(_paid_expense_date_q(start, end))
-        .select_related("charged_to_partner")
-        .order_by("expense_date", "id")
-    )
-    if hotel is not None:
-        qs = qs.filter(hotel=hotel)
-
-    by_partner: dict[int, Decimal] = {}
-    unassigned = Decimal("0")
-    total = Decimal("0")
-    lines = []
-    for exp in qs:
-        amt = Decimal(getattr(exp, "amount_base", None) or exp.amount or 0)
-        total += amt
-        pid = exp.charged_to_partner_id
-        if pid:
-            by_partner[pid] = by_partner.get(pid, Decimal("0")) + amt
-        else:
-            unassigned += amt
-        lines.append(
-            {
-                "expense_id": exp.pk,
-                "title": exp.title,
-                "amount": amt,
-                "partner_id": pid,
-                "partner_name": (
-                    exp.charged_to_partner.name if exp.charged_to_partner_id else ""
-                ),
-            }
-        )
-    return {
-        "total": total,
-        "by_partner": by_partner,
-        "unassigned": unassigned,
-        "lines": lines,
-    }
 
 
 def payroll_in_range(tenant, start: date, end: date) -> Decimal:

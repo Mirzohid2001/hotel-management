@@ -236,8 +236,8 @@ class ProfitShareTests(TestCase):
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, "Kimning foydasidan")
 
-    def test_unassigned_partner_cut_goes_to_major(self):
-        """Sherik tanlanmasa — eng katta ulushdan (eski reinvest qoidasi)."""
+    def test_reinvestment_goes_to_major_partner(self):
+        """Reinvestitsiya — eng katta ulushdan (avvalgi qoida)."""
         ProfitPartner.objects.filter(tenant=self.tenant).delete()
         oybek = ProfitPartner.objects.create(
             tenant=self.tenant, name="Oybek", share_percent=Decimal("70")
@@ -257,12 +257,10 @@ class ProfitShareTests(TestCase):
             expense_date=self.today,
             status=Expense.Status.PAID,
             funding=Expense.Funding.REINVESTMENT,
-            charged_to_partner=None,
             created_by=self.user,
         )
         ledger = build_partner_ledger(self.tenant)
         by_name = {r["partner"].name: r for r in ledger["rows"]}
-        # Sof 800k → Oybek 560k − 100k = 460k; Jamshid 240k
         self.assertEqual(by_name["Oybek"]["reinvestment_cut"], Decimal("100000.00"))
         self.assertEqual(by_name["Jamshid"]["reinvestment_cut"], Decimal("0.00"))
         self.assertEqual(ledger["reinvestment_partner"].pk, oybek.pk)
