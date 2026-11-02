@@ -33,6 +33,7 @@ class ExpenseAdmin(admin.ModelAdmin):
         "hotel",
         "category",
         "funding",
+        "charged_to_partner",
         "amount",
         "expense_date",
         "status",
@@ -40,9 +41,16 @@ class ExpenseAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "funding", "tenant", "hotel", "category")
     search_fields = ("title", "notes")
-    autocomplete_fields = ("tenant", "hotel", "category", "vendor", "maintenance_ticket")
+    autocomplete_fields = (
+        "tenant",
+        "hotel",
+        "category",
+        "vendor",
+        "maintenance_ticket",
+        "charged_to_partner",
+    )
     date_hierarchy = "expense_date"
-    list_select_related = ("tenant", "hotel", "category", "vendor")
+    list_select_related = ("tenant", "hotel", "category", "vendor", "charged_to_partner")
 
 
 @admin.register(ProfitPartner)

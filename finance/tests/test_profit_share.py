@@ -196,6 +196,85 @@ class ProfitShareTests(TestCase):
         self.assertEqual(ledger["period"].pk, closed.pk)
         self.assertEqual(ledger["reinvestment"], Decimal("5000000.00"))
 
+    def test_partner_specific_share_cuts(self):
+        """Eshmat/Toshmat: foiz teng, lekin rasxodlar alohida ulushlardan."""
+        ProfitPartner.objects.filter(tenant=self.tenant).delete()
+        eshmat = ProfitPartner.objects.create(
+            tenant=self.tenant, name="Eshmat", share_percent=Decimal("50")
+        )
+        toshmat = ProfitPartner.objects.create(
+            tenant=self.tenant, name="Toshmat", share_percent=Decimal("50")
+        )
+        cat = ExpenseCategory.objects.filter(tenant=self.tenant, name="Reinvestitsiya").first()
+        if cat is None:
+            cat = ExpenseCategory.objects.create(tenant=self.tenant, name="Reinvestitsiya")
+        # Sof = 1_000_000 − 200_000 = 800_000 → har kimga gross 400_000
+        Expense.objects.create(
+            tenant=self.tenant,
+            hotel=self.prop,
+            category=cat,
+            title="Eshmat hisobidan",
+            amount=Decimal("100000"),
+            expense_date=self.today,
+            status=Expense.Status.PAID,
+            funding=Expense.Funding.REINVESTMENT,
+            charged_to_partner=eshmat,
+            created_by=self.user,
+        )
+        Expense.objects.create(
+            tenant=self.tenant,
+            hotel=self.prop,
+            category=cat,
+            title="Toshmat hisobidan",
+            amount=Decimal("50000"),
+            expense_date=self.today,
+            status=Expense.Status.PAID,
+            funding=Expense.Funding.REINVESTMENT,
+            charged_to_partner=toshmat,
+            created_by=self.user,
+        )
+        ledger = build_partner_ledger(self.tenant)
+        by_name = {r["partner"].name: r for r in ledger["rows"]}
+        self.assertEqual(ledger["net"], Decimal("800000.00"))
+        self.assertEqual(by_name["Eshmat"]["gross_entitled"], Decimal("400000.00"))
+        self.assertEqual(by_name["Eshmat"]["reinvestment_cut"], Decimal("100000.00"))
+        self.assertEqual(by_name["Eshmat"]["entitled"], Decimal("300000.00"))
+        self.assertEqual(by_name["Toshmat"]["gross_entitled"], Decimal("400000.00"))
+        self.assertEqual(by_name["Toshmat"]["reinvestment_cut"], Decimal("50000.00"))
+        self.assertEqual(by_name["Toshmat"]["entitled"], Decimal("350000.00"))
+        self.assertEqual(ledger["reinvestment"], Decimal("150000.00"))
+
+    def test_unassigned_partner_cut_goes_to_major(self):
+        """Sherik tanlanmasa — eng katta ulushdan (eski reinvest qoidasi)."""
+        ProfitPartner.objects.filter(tenant=self.tenant).delete()
+        oybek = ProfitPartner.objects.create(
+            tenant=self.tenant, name="Oybek", share_percent=Decimal("70")
+        )
+        ProfitPartner.objects.create(
+            tenant=self.tenant, name="Jamshid", share_percent=Decimal("30")
+        )
+        cat = ExpenseCategory.objects.filter(tenant=self.tenant, name="Reinvestitsiya").first()
+        if cat is None:
+            cat = ExpenseCategory.objects.create(tenant=self.tenant, name="Reinvestitsiya")
+        Expense.objects.create(
+            tenant=self.tenant,
+            hotel=self.prop,
+            category=cat,
+            title="Remont",
+            amount=Decimal("100000"),
+            expense_date=self.today,
+            status=Expense.Status.PAID,
+            funding=Expense.Funding.REINVESTMENT,
+            charged_to_partner=None,
+            created_by=self.user,
+        )
+        ledger = build_partner_ledger(self.tenant)
+        by_name = {r["partner"].name: r for r in ledger["rows"]}
+        # Sof 800k → Oybek 560k − 100k = 460k; Jamshid 240k
+        self.assertEqual(by_name["Oybek"]["reinvestment_cut"], Decimal("100000.00"))
+        self.assertEqual(by_name["Jamshid"]["reinvestment_cut"], Decimal("0.00"))
+        self.assertEqual(ledger["reinvestment_partner"].pk, oybek.pk)
+
     def test_loss_period_does_not_assign_negative_shares(self):
         cat = ExpenseCategory.objects.get(tenant=self.tenant, name="Ops")
         Expense.objects.create(

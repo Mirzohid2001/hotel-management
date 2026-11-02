@@ -137,7 +137,10 @@ def build_profit_receipt(ledger: dict) -> dict:
         {
             "key": "sof",
             "title": _("1. Sof foyda hisobi"),
-            "hint": _("Tushum minus operatsion xarajatlar. Reinvestitsiya bu yerga kirmaydi."),
+            "hint": _(
+                "Tushum minus joriy (Sofdan) xarajatlar. "
+                "«Sherik ulushidan» rasxodlar bu yerga kirmaydi."
+            ),
             "lines": sof_lines,
         }
     )
@@ -158,16 +161,29 @@ def build_profit_receipt(ledger: dict) -> dict:
             )
         )
         if row.get("reinvestment_cut"):
-            share_lines.append(
-                _receipt_line(
-                    "−",
-                    _("Reinvestitsiya (%(name)s ulushidan)")
-                    % {"name": partner.name},
-                    row["reinvestment_cut"],
-                    tone="warn",
-                    note=_("Ulushi eng katta sherikdan ayiriladi"),
+            cut_lines = row.get("share_cut_lines") or []
+            if cut_lines:
+                for cl in cut_lines:
+                    share_lines.append(
+                        _receipt_line(
+                            "−",
+                            cl.get("title") or _("Sherik ulushidan rasxod"),
+                            _q(cl.get("amount")),
+                            tone="warn",
+                            note=_("%(name)s foydasidan") % {"name": partner.name},
+                        )
+                    )
+            else:
+                share_lines.append(
+                    _receipt_line(
+                        "−",
+                        _("Sherik ulushidan (%(name)s)")
+                        % {"name": partner.name},
+                        row["reinvestment_cut"],
+                        tone="warn",
+                        note=_("Sofga kirmaydi — faqat shu sherikdan"),
+                    )
                 )
-            )
             share_lines.append(
                 _receipt_line(
                     "=",
@@ -230,10 +246,14 @@ def build_profit_receipt(ledger: dict) -> dict:
         )
     )
 
-    reinvest_hint = _("Avval sof foydadan foiz, keyin reinvestitsiya ulushi katta sherikdan.")
+    reinvest_hint = _(
+        "Avval sof foydadan foiz, keyin «sherik ulushidan» rasxodlar tanlangan "
+        "sherikdan (bo‘sh qolgani — eng katta ulushdan)."
+    )
     if ledger.get("reinvestment_partner"):
         reinvest_hint = _(
-            "Reinvestitsiya %(name)s (%(pct)s%%) ulushidan ayiriladi."
+            "Tanlanmagan rasxodlar %(name)s (%(pct)s%%) ulushidan; "
+            "biriktirilganlari — o‘z sherigidan."
         ) % {
             "name": ledger["reinvestment_partner"].name,
             "pct": _q(ledger["reinvestment_partner"].share_percent),
@@ -385,7 +405,11 @@ def build_partner_ledger(
     sherikning ulushidan ayiriladi (qolganlar to‘liq foizini oladi).
     as_of — yopishda «kechagi kungacha» snayp olish uchun.
     """
-    from reports.accounting import cash_pnl_for_range, reinvestment_in_range
+    from reports.accounting import (
+        cash_pnl_for_range,
+        partner_share_cuts_in_range,
+        reinvestment_in_range,
+    )
 
     pending_open: ProfitPeriod | None = None
     if period is None:
@@ -393,8 +417,9 @@ def build_partner_ledger(
     start, end = period_bounds(period, as_of=as_of)
     pnl = cash_pnl_for_range(tenant, start, end, hotel=hotel)
     operating_net = _q(pnl["net"])
-    reinvestment = _q(reinvestment_in_range(tenant, start, end, hotel=hotel))
-    # net = sof foyda (ulushlar shundan); reinvest alohida — major sherikdan
+    cuts = partner_share_cuts_in_range(tenant, start, end, hotel=hotel)
+    reinvestment = _q(cuts["total"])
+    # net = sof foyda (ulushlar shundan); sherik ulushidan rasxodlar Sofga kirmaydi
     net = operating_net
 
     withdrawals = (
@@ -410,7 +435,16 @@ def build_partner_ledger(
 
     partners = list(active_partners(tenant))
     share_sum = sum((_q(p.share_percent) for p in partners), ZERO)
-    major = _major_share_partner(partners) if reinvestment > 0 else None
+    # Tanlanmagan «sherik ulushidan» rasxodlar — eng katta ulushli sherikdan (eski qoida)
+    major = _major_share_partner(partners) if _q(cuts["unassigned"]) > 0 else None
+    cut_by_partner: dict[int, Decimal] = {
+        int(pid): _q(amt) for pid, amt in (cuts["by_partner"] or {}).items()
+    }
+    if major is not None and _q(cuts["unassigned"]) > 0:
+        cut_by_partner[major.pk] = cut_by_partner.get(major.pk, ZERO) + _q(
+            cuts["unassigned"]
+        )
+
     rows = []
     entitled_total = ZERO
     withdrawn_total = ZERO
@@ -419,12 +453,8 @@ def build_partner_ledger(
         pct = _q(p.share_percent)
         # Zarar sheriklarga «qarz» qilib bo‘linmaydi — faqat sof>0 da ulashiladi
         gross = _q(net * pct / HUNDRED) if net > 0 else ZERO
-        reinvest_cut = (
-            _q(reinvestment)
-            if major is not None and p.pk == major.pk and net > 0
-            else ZERO
-        )
-        # Reinvest ulushdan katta bo‘lsa — qoldiq manfiy bo‘lmasin
+        reinvest_cut = cut_by_partner.get(p.pk, ZERO) if net > 0 else ZERO
+        # Ulushdan katta yechim — qoldiq manfiy bo‘lmasin
         if reinvest_cut > gross:
             reinvest_cut = gross
         entitled = _q(gross - reinvest_cut)
@@ -433,6 +463,16 @@ def build_partner_ledger(
         entitled_total += entitled
         withdrawn_total += withdrawn
         remaining_total += remaining
+        partner_lines = [
+            line
+            for line in (cuts.get("lines") or [])
+            if (line.get("partner_id") == p.pk)
+            or (
+                line.get("partner_id") is None
+                and major is not None
+                and p.pk == major.pk
+            )
+        ]
         rows.append(
             {
                 "partner": p,
@@ -443,6 +483,7 @@ def build_partner_ledger(
                 "withdrawn": withdrawn,
                 "remaining": remaining,
                 "bears_reinvestment": bool(reinvest_cut),
+                "share_cut_lines": partner_lines,
             }
         )
 
@@ -463,6 +504,7 @@ def build_partner_ledger(
                 "withdrawn": amt,
                 "remaining": _q(ZERO - amt),
                 "bears_reinvestment": False,
+                "share_cut_lines": [],
                 "inactive": True,
             }
         )
@@ -609,6 +651,7 @@ def build_partner_ledger(
         "operating_net": operating_net,
         "reinvestment": reinvestment,
         "reinvestment_partner": major,
+        "partner_cuts": cuts,
         "net": net,
         "distributable": distributable,
         "share_sum": share_sum,

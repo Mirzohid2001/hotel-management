@@ -20,6 +20,7 @@ class ExpenseForm(forms.ModelForm):
             "expense_date",
             "payment_method",
             "funding",
+            "charged_to_partner",
             "receipt",
             "notes",
         )
@@ -32,22 +33,30 @@ class ExpenseForm(forms.ModelForm):
             "expense_date": _("Sana"),
             "payment_method": _("To‘lov usuli"),
             "funding": _("Moliyalashtirish"),
+            "charged_to_partner": _("Kimning foydasidan?"),
             "receipt": _("Chek"),
             "notes": _("Izoh"),
         }
         help_texts = {
             "funding": _(
-                "Joriy — sof foydadan. Reinvestitsiya — sof foydaga tegmaydi, ulushi katta sherikdan."
+                "Joriy — sof foydadan (hamma). Sherik ulushidan — faqat tanlangan "
+                "sherikning oy oxiri foydasidan."
+            ),
+            "charged_to_partner": _(
+                "«Sherik ulushidan» bo‘lsa majburiy tanlang. "
+                "Masalan: faqat Eshmatdan yoki faqat Toshmatdan."
             ),
         }
         widgets = {"expense_date": forms.DateInput(attrs={"type": "date"})}
 
     def __init__(self, *args, tenant=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self._tenant = tenant
         if tenant is not None:
             self.fields["currency"].initial = tenant.currency or "UZS"
             cats = ExpenseCategory.objects.filter(tenant=tenant, is_active=True)
             vendors = Vendor.objects.filter(tenant=tenant, is_active=True)
+            partners = ProfitPartner.objects.filter(tenant=tenant, is_active=True)
             # Tahrirlashda hozirgi (faol emas) qiymatlar ham tanlovda qolsin
             if self.instance and self.instance.pk:
                 if self.instance.category_id:
@@ -58,21 +67,43 @@ class ExpenseForm(forms.ModelForm):
                     vendors = Vendor.objects.filter(
                         Q(pk=self.instance.vendor_id) | Q(tenant=tenant, is_active=True)
                     ).distinct()
+                if self.instance.charged_to_partner_id:
+                    partners = ProfitPartner.objects.filter(
+                        Q(pk=self.instance.charged_to_partner_id)
+                        | Q(tenant=tenant, is_active=True)
+                    ).distinct()
             self.fields["category"].queryset = cats.order_by("name")
             self.fields["vendor"].queryset = vendors.order_by("name")
             self.fields["vendor"].required = False
+            self.fields["charged_to_partner"].queryset = partners.order_by(
+                "-share_percent", "name"
+            )
+            self.fields["charged_to_partner"].required = False
+            self.fields["charged_to_partner"].empty_label = _(
+                "— avto: eng katta ulush —"
+            )
 
     def clean(self):
         cleaned = super().clean()
         category = cleaned.get("category")
         funding = cleaned.get("funding")
+        partner = cleaned.get("charged_to_partner")
+        if funding == Expense.Funding.OPERATING:
+            cleaned["charged_to_partner"] = None
+        elif funding == Expense.Funding.REINVESTMENT and partner is not None:
+            tenant = self._tenant or getattr(self.instance, "tenant", None)
+            if tenant is not None and partner.tenant_id != tenant.id:
+                self.add_error(
+                    "charged_to_partner",
+                    _("Sherik shu mehmonxonaga tegishli emas."),
+                )
         if category and funding:
             name = (category.name or "").strip().lower()
             if "reinvest" in name and funding != Expense.Funding.REINVESTMENT:
                 raise forms.ValidationError(
                     _(
                         "«Reinvestitsiya» kategoriyasi uchun moliyalashtirish "
-                        "«Reinvestitsiya (foydadan)» bo‘lishi kerak."
+                        "«Sherik ulushidan» bo‘lishi kerak."
                     )
                 )
             if name.startswith("ta’mir") or name.startswith("ta'mir"):

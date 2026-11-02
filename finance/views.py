@@ -55,7 +55,12 @@ def _expense_branch_blocked(request, expense) -> bool:
 
 def _render_expense_row(request, expense):
     expense = Expense.objects.select_related(
-        "category", "vendor", "approved_by", "rejected_by", "paid_by"
+        "category",
+        "vendor",
+        "approved_by",
+        "rejected_by",
+        "paid_by",
+        "charged_to_partner",
     ).get(pk=expense.pk)
     return render(
         request,
@@ -79,7 +84,14 @@ def _filtered_expenses(request):
     date_to = _parse_date(request.GET.get("date_to", ""))
 
     expenses = Expense.objects.filter(tenant=request.tenant).select_related(
-        "category", "vendor", "approved_by", "rejected_by", "paid_by", "hotel", "created_by"
+        "category",
+        "vendor",
+        "approved_by",
+        "rejected_by",
+        "paid_by",
+        "hotel",
+        "created_by",
+        "charged_to_partner",
     )
     hotel = getattr(request, "active_property", None)
     if hotel is not None:
