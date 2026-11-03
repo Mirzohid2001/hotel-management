@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Ulushdorlar pul o‘tkazmasi" %}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with title=_("Ulushdorlar o‘rtasida pul o‘tkazmalarini nazorat") eyebrow=_("Moliya") subtitle=_("Kunlik tushum topshiruvi, tasdiq, sarf va qoldiq. Sof foyda hisobiga tegmaydi.") %}
+
+<div class="page-actions" style="margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:.5rem">
+  <a class="btn" href="{% url 'finance:partner_cash_handover' %}">{% trans "Pul topshirish" %}</a>
+  <a class="btn" href="{% url 'finance:partner_cash_spend' %}">{% trans "Sarf yozish" %}</a>
+  <a class="btn-ghost" href="{% url 'finance:profit_share' %}">{% trans "Foyda ulushi" %}</a>
+</div>
+
+<p class="muted" style="margin-bottom:1rem">
+  {% trans "Bu bo‘lim faqat qo‘ldagi naqd oqimini kuzatadi. Sof foyda / Foyda ulushi o‘zgarmaydi." %}
+</p>
+
+<section class="section-panel stack-gap" style="margin-bottom:1.25rem">
+  <h2>{% trans "Qo‘ldagi qoldiq" %}</h2>
+  {% if board.balances %}
+  <div class="dash-pnl" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));gap:.75rem">
+    {% for b in board.balances %}
+    <div class="dash-pnl-item">
+      <span>{{ b.holder.name }}</span>
+      <strong class="money">{{ b.remaining|money }}</strong>
+      <span class="muted" style="display:block;font-size:.85em">
+        {% trans "Qabul" %}: {{ b.received|money }}
+        · {% trans "Sarf" %}: −{{ b.spent|money }}
+        {% if b.pending_in %}
+        · {% trans "Kutilmoqda" %}: {{ b.pending_in|money }}
+        {% endif %}
+      </span>
+      <a class="btn-ghost btn-sm" href="{% url 'finance:partner_cash_spend' %}?holder={{ b.holder.pk }}" style="margin-top:.35rem">{% trans "Sarf" %}</a>
+    </div>
+    {% endfor %}
+    <div class="dash-pnl-item">
+      <span>{% trans "Jami qoldiq" %}</span>
+      <strong class="money">{{ board.total_remaining|money }}</strong>
+    </div>
+  </div>
+  {% else %}
+  <p class="muted">{% trans "Avval Foyda ulushida sheriklarni qo‘shing." %}</p>
+  {% endif %}
+</section>
+
+{% if board.pending %}
+<section class="section-panel stack-gap" style="margin-bottom:1.25rem">
+  <h2>{% trans "Tasdiq kutayotganlar" %}</h2>
+  <ul class="list report-breakdown">
+    {% for h in board.pending %}
+    <li class="guest-chip" style="flex-wrap:wrap;gap:.5rem">
+      <span>
+        {{ h.handed_on }} · {{ h.from_partner.name }} → {{ h.to_partner.name }}
+        · <strong class="money">{{ h.amount|money }}</strong>
+        {% if h.note %}<span class="muted">— {{ h.note }}</span>{% endif %}
+      </span>
+      <span style="display:flex;gap:.35rem">
+        <a class="btn btn-sm" href="{% url 'finance:partner_cash_confirm' h.pk %}">{% trans "Tasdiqlash" %}</a>
+        <form method="post" action="{% url 'finance:partner_cash_reject' h.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost btn-sm">{% trans "Rad" %}</button>
+        </form>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="section-panel stack-gap" style="margin-bottom:1.25rem">
+  <h2>{% trans "Topshiriqlar" %}</h2>
+  <p class="muted" style="margin-top:0">{% trans "Sana, topshirilgan summa, tasdiq, qabul qilingan summa." %}</p>
+  {% if board.handovers %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{% trans "Sana" %}</th>
+          <th>{% trans "Kimdan → Kimga" %}</th>
+          <th class="num">{% trans "Topshirildi" %}</th>
+          <th>{% trans "Tasdiq" %}</th>
+          <th class="num">{% trans "Qabul" %}</th>
+          <th>{% trans "Izoh" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in board.handovers %}
+        <tr>
+          <td>{{ h.handed_on }}</td>
+          <td>{{ h.from_partner.name }} → {{ h.to_partner.name }}</td>
+          <td class="num money">{{ h.amount|money }}</td>
+          <td>
+            {% if h.status == "pending" %}
+            <span class="muted">{% trans "Kutilmoqda" %}</span>
+            {% elif h.status == "confirmed" %}
+            <span>{% trans "Tasdiqlangan" %}</span>
+            {% else %}
+            <span>{% trans "Rad etilgan" %}</span>
+            {% endif %}
+          </td>
+          <td class="num money">
+            {% if h.status == "confirmed" %}{{ h.confirmed_amount|money }}{% else %}—{% endif %}
+          </td>
+          <td class="muted">{{ h.note }}{% if h.confirm_note %} · {{ h.confirm_note }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">{% trans "Hali topshiriq yo‘q." %}</p>
+  {% endif %}
+</section>
+
+<section class="section-panel stack-gap">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
+    <h2 style="margin:0">{% trans "Xarajatlar (sarflar)" %}</h2>
+    <a class="btn-ghost btn-sm" href="{% url 'finance:partner_cash_spend' %}">{% trans "Yangi" %}</a>
+  </div>
+  {% if board.spends %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{% trans "Sana" %}</th>
+          <th>{% trans "Kimdan" %}</th>
+          <th>{% trans "Nomi" %}</th>
+          <th class="num">{% trans "Summa" %}</th>
+          <th>{% trans "Izoh" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in board.spends %}
+        <tr>
+          <td>{{ s.spent_on }}</td>
+          <td>{{ s.holder.name }}</td>
+          <td>{{ s.title }}</td>
+          <td class="num money">−{{ s.amount|money }}</td>
+          <td class="muted">{{ s.note }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">{% trans "Hali sarf yo‘q." %}</p>
+  {% endif %}
+</section>
+{% endblock %}

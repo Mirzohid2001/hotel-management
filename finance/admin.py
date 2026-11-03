@@ -3,6 +3,8 @@ from django.contrib import admin
 from .models import (
     Expense,
     ExpenseCategory,
+    PartnerCashHandover,
+    PartnerCashSpend,
     ProfitPartner,
     ProfitPartnerDeduction,
     ProfitPeriod,
@@ -79,3 +81,29 @@ class ProfitWithdrawalAdmin(admin.ModelAdmin):
     search_fields = ("partner__name", "note")
     autocomplete_fields = ("partner", "period", "tenant")
     date_hierarchy = "paid_on"
+
+
+@admin.register(PartnerCashHandover)
+class PartnerCashHandoverAdmin(admin.ModelAdmin):
+    list_display = (
+        "handed_on",
+        "from_partner",
+        "to_partner",
+        "amount",
+        "status",
+        "confirmed_amount",
+        "tenant",
+    )
+    list_filter = ("status", "tenant")
+    search_fields = ("from_partner__name", "to_partner__name", "note")
+    autocomplete_fields = ("from_partner", "to_partner", "tenant")
+    date_hierarchy = "handed_on"
+
+
+@admin.register(PartnerCashSpend)
+class PartnerCashSpendAdmin(admin.ModelAdmin):
+    list_display = ("spent_on", "holder", "title", "amount", "tenant")
+    list_filter = ("tenant",)
+    search_fields = ("holder__name", "title", "note")
+    autocomplete_fields = ("holder", "tenant")
+    date_hierarchy = "spent_on"

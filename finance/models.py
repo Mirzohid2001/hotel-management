@@ -295,3 +295,113 @@ class ProfitWithdrawal(MoneyFieldsMixin, TenantOwnedModel):
 
     def __str__(self) -> str:
         return f"{self.partner_id}: {self.amount} {self.currency}"
+
+
+class PartnerCashHandover(MoneyFieldsMixin, TenantOwnedModel):
+    """
+    Ulushdor A → ulushdor B naqd topshiruvi.
+    Sof foyda / P&L ga tegmaydi — faqat qo‘ldagi pul oqimi nazorati.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", _("Kutilmoqda")
+        CONFIRMED = "confirmed", _("Tasdiqlangan")
+        REJECTED = "rejected", _("Rad etilgan")
+
+    from_partner = models.ForeignKey(
+        ProfitPartner,
+        on_delete=models.PROTECT,
+        related_name="cash_handovers_sent",
+        verbose_name=_("Kim topshiradi"),
+    )
+    to_partner = models.ForeignKey(
+        ProfitPartner,
+        on_delete=models.PROTECT,
+        related_name="cash_handovers_received",
+        verbose_name=_("Kimga"),
+    )
+    amount = models.DecimalField(
+        max_digits=14, decimal_places=2, verbose_name=_("Topshirilgan summa")
+    )
+    handed_on = models.DateField(verbose_name=_("Sana"))
+    note = models.CharField(max_length=255, blank=True, verbose_name=_("Izoh"))
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        verbose_name=_("Holat"),
+    )
+    confirmed_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name=_("Qabul qilingan summa"),
+        help_text=_("Tasdiqlanganda — haqiqatda olingan summa (odatda topshirilgan bilan bir xil)."),
+    )
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="partner_cash_handovers_confirmed",
+    )
+    confirm_note = models.CharField(max_length=255, blank=True, verbose_name=_("Tasdiq izohi"))
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="partner_cash_handovers_created",
+    )
+
+    class Meta:
+        ordering = ["-handed_on", "-id"]
+        verbose_name = _("Ulushdor pul topshiruvi")
+        verbose_name_plural = _("Ulushdor pul topshiruvlari")
+
+    def save(self, *args, **kwargs):
+        apply_money(self, on_date=self.handed_on)
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.from_partner_id}→{self.to_partner_id}: {self.amount} ({self.status})"
+
+
+class PartnerCashSpend(MoneyFieldsMixin, TenantOwnedModel):
+    """
+    Pulni saqlovchi ulushdorning sarfi (qo‘ldagi naqddan).
+    Sof foyda / mehmonxona Rasxodlariga bog‘lanmaydi.
+    """
+
+    holder = models.ForeignKey(
+        ProfitPartner,
+        on_delete=models.PROTECT,
+        related_name="cash_spends",
+        verbose_name=_("Kimning qo‘lidan"),
+        help_text=_("Odatda pulni qabul qilib saqlovchi ulushdor."),
+    )
+    title = models.CharField(max_length=200, verbose_name=_("Sarf nomi"))
+    amount = models.DecimalField(max_digits=14, decimal_places=2, verbose_name=_("Summa"))
+    spent_on = models.DateField(verbose_name=_("Sana"))
+    note = models.CharField(max_length=255, blank=True, verbose_name=_("Izoh"))
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="partner_cash_spends_created",
+    )
+
+    class Meta:
+        ordering = ["-spent_on", "-id"]
+        verbose_name = _("Ulushdor naqd sarfi")
+        verbose_name_plural = _("Ulushdor naqd sarflari")
+
+    def save(self, *args, **kwargs):
+        apply_money(self, on_date=self.spent_on)
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.holder_id}: {self.title} −{self.amount}"

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load i18n money_fmt %}
+{% block title %}{% trans "Qabulni tasdiqlash" %}{% endblock %}
+{% block content %}
+{% url 'finance:partner_cash' as cancel_url %}
+{% include "includes/page_header.html" with title=_("Qabulni tasdiqlash") eyebrow=_("Ulushdor puli") subtitle=_("Ikkinchi ulushdor pulni olganini tasdiqlaydi.") %}
+
+<div class="panel form-narrow">
+  <p>
+    {{ handover.handed_on }} ·
+    <strong>{{ handover.from_partner.name }}</strong> →
+    <strong>{{ handover.to_partner.name }}</strong>
+  </p>
+  <p class="muted">
+    {% trans "Topshirilgan" %}: <strong class="money">{{ handover.amount|money }}</strong>
+    {% if handover.note %} · {{ handover.note }}{% endif %}
+  </p>
+  <form method="post" class="app-form is-embedded">
+    {% csrf_token %}
+    <div class="app-form-grid">
+      {% include "includes/form_fields.html" with form=form %}
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn">{% trans "Tasdiqlash" %}</button>
+      <a class="btn-ghost" href="{{ cancel_url }}">{% trans "Bekor" %}</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

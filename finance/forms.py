@@ -236,3 +236,81 @@ class ExchangeRateForm(forms.ModelForm):
         if self.tenant and cleaned.get("currency") == self.tenant.currency:
             raise forms.ValidationError(_("Bazaviy valyuta uchun kurs kiritilmaydi."))
         return cleaned
+
+
+class PartnerCashHandoverForm(forms.Form):
+    """1-ulushdor → 2-ulushdor naqd topshiruvi (sof foydaga tegmaydi)."""
+
+    from_partner = forms.ModelChoiceField(
+        queryset=ProfitPartner.objects.none(),
+        label=_("Kim topshiradi"),
+    )
+    to_partner = forms.ModelChoiceField(
+        queryset=ProfitPartner.objects.none(),
+        label=_("Kimga"),
+    )
+    amount = forms.DecimalField(
+        min_value=0.01, max_digits=14, decimal_places=2, label=_("Topshirilgan summa")
+    )
+    currency = forms.ChoiceField(choices=CURRENCY_CHOICES, label=_("Valyuta"), initial="UZS")
+    handed_on = forms.DateField(
+        label=_("Sana"), widget=forms.DateInput(attrs={"type": "date"})
+    )
+    note = forms.CharField(required=False, max_length=255, label=_("Izoh"))
+
+    def __init__(self, *args, tenant=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if tenant is not None:
+            qs = ProfitPartner.objects.filter(tenant=tenant, is_active=True).order_by(
+                "-share_percent", "name"
+            )
+            self.fields["from_partner"].queryset = qs
+            self.fields["to_partner"].queryset = qs
+            self.fields["currency"].initial = tenant.currency or "UZS"
+
+    def clean(self):
+        cleaned = super().clean()
+        a = cleaned.get("from_partner")
+        b = cleaned.get("to_partner")
+        if a and b and a.pk == b.pk:
+            raise forms.ValidationError(_("Bir xil ulushdorga topshirish mumkin emas."))
+        return cleaned
+
+
+class PartnerCashConfirmForm(forms.Form):
+    confirmed_amount = forms.DecimalField(
+        min_value=0.01,
+        max_digits=14,
+        decimal_places=2,
+        label=_("Qabul qilingan summa"),
+    )
+    confirm_note = forms.CharField(required=False, max_length=255, label=_("Izoh"))
+
+
+class PartnerCashSpendForm(forms.Form):
+    holder = forms.ModelChoiceField(
+        queryset=ProfitPartner.objects.none(),
+        label=_("Kimning qo‘lidan"),
+        help_text=_("Pulni saqlab, xarajat qilgan ulushdor."),
+    )
+    title = forms.CharField(max_length=200, label=_("Sarf nomi"))
+    amount = forms.DecimalField(
+        min_value=0.01, max_digits=14, decimal_places=2, label=_("Summa")
+    )
+    currency = forms.ChoiceField(choices=CURRENCY_CHOICES, label=_("Valyuta"), initial="UZS")
+    spent_on = forms.DateField(
+        label=_("Sana"), widget=forms.DateInput(attrs={"type": "date"})
+    )
+    note = forms.CharField(required=False, max_length=255, label=_("Izoh"))
+    allow_overdraw = forms.BooleanField(
+        required=False,
+        label=_("Qoldiqdan ko‘p sarflashga ruxsat"),
+    )
+
+    def __init__(self, *args, tenant=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if tenant is not None:
+            self.fields["holder"].queryset = ProfitPartner.objects.filter(
+                tenant=tenant, is_active=True
+            ).order_by("-share_percent", "name")
+            self.fields["currency"].initial = tenant.currency or "UZS"

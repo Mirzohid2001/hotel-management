@@ -112,6 +112,7 @@
           {% if "pnl" in plan_features and nav_perms.pnl %}
           <a href="{% url 'reports:pnl' %}" data-nav="pnl" class="{% if request.resolver_match.url_name == 'pnl' %}is-active{% endif %}">{% trans "Foyda/zarar" %}</a>
           <a href="{% url 'finance:profit_share' %}" data-nav="profit_share" class="{% if request.resolver_match.url_name and 'profit' in request.resolver_match.url_name %}is-active{% endif %}">{% trans "Foyda ulushi" %}</a>
+          <a href="{% url 'finance:partner_cash' %}" data-nav="partner_cash" class="{% if request.resolver_match.url_name and 'partner_cash' in request.resolver_match.url_name %}is-active{% endif %}">{% trans "Ulushdor puli" %}</a>
           <a href="{% url 'bookings:commission_report' %}" data-nav="commission" class="{% if request.resolver_match.url_name == 'commission_report' %}is-active{% endif %}">{% trans "Komissiya" %}</a>
           <a href="{% url 'bookings:emehmon_report' %}" data-nav="emehmon" class="{% if request.resolver_match.url_name == 'emehmon_report' %}is-active{% endif %}">{% trans "E-mehmon" %}</a>
           <a href="{% url 'reports:flash' %}" data-nav="flash" class="{% if request.resolver_match.url_name == 'flash' %}is-active{% endif %}">{% trans "Kunlik hisobot" %}</a>

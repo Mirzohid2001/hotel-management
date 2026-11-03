@@ -16,6 +16,9 @@ from .forms import (
     ExchangeRateForm,
     ExpenseCategoryForm,
     ExpenseForm,
+    PartnerCashConfirmForm,
+    PartnerCashHandoverForm,
+    PartnerCashSpendForm,
     ProfitPartnerDeductionForm,
     ProfitPartnerForm,
     ProfitResetForm,
@@ -26,7 +29,21 @@ from core.dates import parse_user_date
 from tenants.models import ExchangeRate
 from core.currency import CURRENCY_CHOICES, DEFAULT_RATES_TO_UZS, get_rate_to_base
 from django.utils import timezone
-from .models import Expense, ExpenseCategory, ProfitPartner, ProfitPeriod, Vendor
+from .models import (
+    Expense,
+    ExpenseCategory,
+    PartnerCashHandover,
+    ProfitPartner,
+    ProfitPeriod,
+    Vendor,
+)
+from .partner_cash import (
+    build_partner_cash_board,
+    confirm_handover,
+    create_handover,
+    record_cash_spend,
+    reject_handover,
+)
 from .profit import (
     active_share_total,
     build_partner_ledger,
@@ -877,3 +894,156 @@ def exchange_rate_delete(request, pk):
     row.delete()
     messages.success(request, _("Kurs o‘chirildi."))
     return redirect("finance:exchange_rates")
+
+
+@feature_required("pnl")
+@role_required(*FINANCE)
+def partner_cash_board(request):
+    """Ulushdorlar o‘rtasida pul o‘tkazmalarini nazorat — sof foydaga tegmaydi."""
+    board = build_partner_cash_board(request.tenant)
+    return render(
+        request,
+        "finance/partner_cash.html",
+        {"board": board},
+    )
+
+
+@feature_required("pnl")
+@role_required(*FINANCE)
+@require_http_methods(["GET", "POST"])
+def partner_cash_handover(request):
+    initial = {"handed_on": date.today().isoformat()}
+    form = PartnerCashHandoverForm(
+        request.POST or None, tenant=request.tenant, initial=initial
+    )
+    if request.method == "POST" and form.is_valid():
+        try:
+            create_handover(
+                request.tenant,
+                request.user,
+                from_partner=form.cleaned_data["from_partner"],
+                to_partner=form.cleaned_data["to_partner"],
+                amount=form.cleaned_data["amount"],
+                handed_on=form.cleaned_data["handed_on"],
+                note=form.cleaned_data.get("note") or "",
+                currency=form.cleaned_data.get("currency"),
+            )
+        except ValidationError as exc:
+            messages.error(request, "; ".join(exc.messages))
+        else:
+            messages.success(
+                request,
+                _("Topshiriq yozildi. Qabul qiluvchi tasdiqlashi kerak."),
+            )
+            return redirect("finance:partner_cash")
+    return render(
+        request,
+        "finance/expense_form.html",
+        {
+            "form": form,
+            "title": _("Pul topshirish"),
+            "subtitle": _(
+                "1-ulushdor kunlik tushumni 2-ulushdorga topshiradi. Sof foydaga tegmaydi."
+            ),
+            "cancel_url_name": "finance:partner_cash",
+        },
+    )
+
+
+@feature_required("pnl")
+@role_required(*FINANCE)
+@require_http_methods(["GET", "POST"])
+def partner_cash_confirm(request, pk):
+    handover = get_object_or_404(
+        PartnerCashHandover.objects.select_related("from_partner", "to_partner"),
+        pk=pk,
+        tenant=request.tenant,
+    )
+    if handover.status != PartnerCashHandover.Status.PENDING:
+        messages.error(request, _("Bu topshiriq allaqachon yopilgan."))
+        return redirect("finance:partner_cash")
+    form = PartnerCashConfirmForm(
+        request.POST or None,
+        initial={"confirmed_amount": handover.amount},
+    )
+    if request.method == "POST" and form.is_valid():
+        try:
+            confirm_handover(
+                request.tenant,
+                request.user,
+                handover,
+                confirmed_amount=form.cleaned_data["confirmed_amount"],
+                confirm_note=form.cleaned_data.get("confirm_note") or "",
+            )
+        except ValidationError as exc:
+            messages.error(request, "; ".join(exc.messages))
+        else:
+            messages.success(request, _("Qabul tasdiqlandi."))
+            return redirect("finance:partner_cash")
+    return render(
+        request,
+        "finance/partner_cash_confirm.html",
+        {"form": form, "handover": handover},
+    )
+
+
+@feature_required("pnl")
+@role_required(*FINANCE)
+@require_POST
+def partner_cash_reject(request, pk):
+    handover = get_object_or_404(PartnerCashHandover, pk=pk, tenant=request.tenant)
+    try:
+        reject_handover(
+            request.tenant,
+            request.user,
+            handover,
+            confirm_note=(request.POST.get("confirm_note") or "").strip(),
+        )
+    except ValidationError as exc:
+        messages.error(request, "; ".join(exc.messages))
+    else:
+        messages.success(request, _("Topshiriq rad etildi."))
+    return redirect("finance:partner_cash")
+
+
+@feature_required("pnl")
+@role_required(*FINANCE)
+@require_http_methods(["GET", "POST"])
+def partner_cash_spend(request):
+    initial = {"spent_on": date.today().isoformat()}
+    holder_id = request.GET.get("holder")
+    if holder_id and holder_id.isdigit():
+        initial["holder"] = int(holder_id)
+    form = PartnerCashSpendForm(
+        request.POST or None, tenant=request.tenant, initial=initial
+    )
+    if request.method == "POST" and form.is_valid():
+        try:
+            record_cash_spend(
+                request.tenant,
+                request.user,
+                holder=form.cleaned_data["holder"],
+                title=form.cleaned_data["title"],
+                amount=form.cleaned_data["amount"],
+                spent_on=form.cleaned_data["spent_on"],
+                note=form.cleaned_data.get("note") or "",
+                currency=form.cleaned_data.get("currency"),
+                allow_overdraw=bool(form.cleaned_data.get("allow_overdraw")),
+            )
+        except ValidationError as exc:
+            messages.error(request, "; ".join(exc.messages))
+        else:
+            messages.success(request, _("Sarf qo‘ldagi puldan yozildi."))
+            return redirect("finance:partner_cash")
+    return render(
+        request,
+        "finance/expense_form.html",
+        {
+            "form": form,
+            "title": _("Naqd sarf"),
+            "subtitle": _(
+                "Saqlovchi ulushdor xarajatni shu yerda yozadi. Sof foyda o‘zgarmaydi."
+            ),
+            "cancel_url_name": "finance:partner_cash",
+        },
+    )

@@ -37,4 +37,17 @@ urlpatterns = [
     path("profit/reset/", views.profit_reset, name="profit_reset"),
     path("currencies/", views.exchange_rates, name="exchange_rates"),
     path("currencies/<int:pk>/delete/", views.exchange_rate_delete, name="exchange_rate_delete"),
+    path("ulushdor-pul/", views.partner_cash_board, name="partner_cash"),
+    path("ulushdor-pul/topshirish/", views.partner_cash_handover, name="partner_cash_handover"),
+    path(
+        "ulushdor-pul/<int:pk>/tasdiq/",
+        views.partner_cash_confirm,
+        name="partner_cash_confirm",
+    ),
+    path(
+        "ulushdor-pul/<int:pk>/rad/",
+        views.partner_cash_reject,
+        name="partner_cash_reject",
+    ),
+    path("ulushdor-pul/sarf/", views.partner_cash_spend, name="partner_cash_spend"),
 ]
